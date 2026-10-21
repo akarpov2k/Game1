@@ -104,3 +104,15 @@ crashlytics-build.properties
 *.aab
 *.unitypackage
 *.app
+
+# --- AnomalyPath: наш C# вне Unity (эти файлы версионируются) ---
+!src/**/*.csproj
+!tests/**/*.csproj
+!/AnomalyPath.sln
+
+# Локальные кэши dotnet и временные проверки
+.nuget/
+.dotnet/
+.dotnet-home/
+_probe/
+

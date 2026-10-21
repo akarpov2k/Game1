@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "abstract": true,
+  "category": "weapon",
+  "maxStack": 1,
+  "rotatable": true,
+  "weapon": {
+    "damageTypeId": "dmg_bullet",
+    "reloadTime": 2,
+    "durabilityMax": 100,
+    "durabilityPerShot": 0.5
+  }
+}

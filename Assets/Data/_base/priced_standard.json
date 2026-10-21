@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "abstract": true,
+  "price": { "mode": "fixed", "buy": 100, "sell": 40 },
+  "sellable": true,
+  "droppable": true
+}

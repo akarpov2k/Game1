@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "core",
+  "name": "Базовый контент",
+  "version": "0.1.0",
+  "priority": 0,
+  "files": [
+    "items/col_weapons.json"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "wpn_ak74",
+  "extends": "_base/weapon_rifle.json",
+  "include": ["_base/priced_standard.json"],
+  "nameKey": "item.wpn_ak74.name",
+  "descriptionKey": "item.wpn_ak74.desc",
+  "icon": "icons/wpn_ak74",
+  "footprint": [2, 3],
+  "tier": 2,
+  "price": { "mode": "reputation", "base": 1200, "factionId": "fct_caravan" },
+  "weapon": {
+    "classId": "wclass_rifle",
+    "damage": 12,
+    "accuracy": 0.55,
+    "magazine": 30,
+    "ammoCaliber": "5.45x39",
+    "skills": ["skill_burst", "skill_aimed"]
+  }
+}
