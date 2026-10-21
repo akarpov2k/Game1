@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "wpn_pm",
+  "extends": "_base/weapon_rifle.json",
+  "include": ["_base/priced_standard.json"],
+  "nameKey": "item.wpn_pm.name",
+  "icon": "icons/wpn_pm",
+  "footprint": [1, 2],
+  "tier": 1,
+  "equipSlots": ["main", "secondary"],
+  "price": { "mode": "fixed", "buy": 250, "sell": 100 },
+  "weapon": {
+    "classId": "wclass_pistol",
+    "damage": 7,
+    "accuracyCoefficient": 0.8,
+    "magazine": 8,
+    "ammoCaliber": "9x18",
+    "skills": ["skill_aimed"]
+  }
+}

@@ -56,6 +56,14 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 
+# --- Visual Studio / IDE state (locked while editor is open) ---
+.vs/
+.vscode/
+.idea/
+*.vsidx
+*.suo
+*.user
+
 # --- DSH agent scaffolding (local only) ---
 .dsh/
 .agents/

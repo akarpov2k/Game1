@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "kind": "actors",
+  "id": "actor_player",
+  "type": "npc",
+  "nameKey": "actor.actor_player.name",
+  "combat": {
+    "tier": 1,
+    "level": 1,
+    "health": 100,
+    "ap": 8,
+    "protection": {},
+    "ai": "passive",
+    "accuracy": 0.8
+  }
+}

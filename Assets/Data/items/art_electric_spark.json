@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "art_electric_spark",
+  "nameKey": "item.art_electric_spark.name",
+  "icon": "icons/art_electric_spark",
+  "category": "artifact",
+  "artifactType": "electric",
+  "footprint": [1, 1],
+  "maxStack": 1,
+  "tier": 4,
+  "price": { "mode": "fixed", "buy": 1400, "sell": 600 }
+}

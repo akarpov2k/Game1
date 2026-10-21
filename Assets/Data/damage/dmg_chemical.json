@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "kind": "damageTypes",
+  "id": "dmg_chemical",
+  "nameKey": "damage.dmg_chemical.name",
+  "damageKind": "anomaly",
+  "stackable": false
+}

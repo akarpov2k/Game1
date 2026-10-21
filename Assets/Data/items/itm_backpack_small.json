@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "itm_backpack_small",
+  "nameKey": "item.itm_backpack_small.name",
+  "icon": "icons/itm_backpack_small",
+  "category": "backpack",
+  "footprint": [2, 2],
+  "maxStack": 1,
+  "tier": 2,
+  "extraRows": 2,
+  "price": { "mode": "fixed", "buy": 400, "sell": 140 }
+}

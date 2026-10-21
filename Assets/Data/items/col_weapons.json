@@ -5,6 +5,8 @@
   "id": "col_weapons",
   "entries": [
     "items/wpn_ak74.json",
-    "items/wpn_akm.json"
+    "items/wpn_akm.json",
+    "items/wpn_pm.json",
+    "items/wpn_sv98.json"
   ]
 }

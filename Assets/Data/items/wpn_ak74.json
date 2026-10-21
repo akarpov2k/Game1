@@ -13,7 +13,7 @@
   "weapon": {
     "classId": "wclass_rifle",
     "damage": 12,
-    "accuracy": 0.55,
+    "accuracyCoefficient": 1.0,
     "magazine": 30,
     "ammoCaliber": "5.45x39",
     "skills": ["skill_burst", "skill_aimed"]

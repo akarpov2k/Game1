@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "kind": "damageTypes",
+  "id": "dmg_fire",
+  "nameKey": "damage.dmg_fire.name",
+  "damageKind": "anomaly",
+  "stackable": false
+}

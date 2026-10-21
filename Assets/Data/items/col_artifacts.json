@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "collection": true,
+  "id": "col_artifacts",
+  "entries": [
+    "items/art_fire_ember.json",
+    "items/art_electric_spark.json",
+    "items/art_chemical_toxin.json",
+    "items/art_gravity_lens.json"
+  ]
+}

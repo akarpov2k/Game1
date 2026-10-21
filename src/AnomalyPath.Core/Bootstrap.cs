@@ -1,8 +1,10 @@
 #nullable enable
 using AnomalyPath.Core.Abstractions;
+using AnomalyPath.Core.Combat;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Di;
-using AnomalyPath.Core.Localization;
+using AnomalyPath.Core.Equipment;
+using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Repositories;
 using AnomalyPath.Core.Services;
 using AnomalyPath.Core.Validation;
@@ -40,11 +42,52 @@ namespace AnomalyPath.Core
         public static ServiceContainer BuildServices(LoadedData data)
         {
             var items = ItemRepository.FromLoadedData(data);
+            var damageTypes = DamageTypeRepository.FromLoadedData(data);
+            var formulas = FormulaRepository.FromLoadedData(data);
+            var actors = ActorRepository.FromLoadedData(data);
+            var combatSettings = LoadCombatSettings(data);
+            var balance = LoadBalance(data);
+            var instanceIds = new SequentialInstanceIdGenerator();
+            var equipmentSettings = LoadEquipmentSettings(data);
+
+            var inventory = new InventoryService(items, instanceIds);
 
             var container = new ServiceContainer();
             container.RegisterSingleton<IItemRepository>(items);
             container.RegisterSingleton<IItemCatalogService>(new ItemCatalogService(items));
+            container.RegisterSingleton<IDamageTypeRepository>(damageTypes);
+            container.RegisterSingleton<IFormulaRepository>(formulas);
+            container.RegisterSingleton<IActorRepository>(actors);
+            container.RegisterSingleton<IInstanceIdGenerator>(instanceIds);
+            container.RegisterSingleton<IInventoryService>(inventory);
+            container.RegisterSingleton<IEquipmentSettings>(equipmentSettings);
+            var equipmentService = new EquipmentService(items, inventory);
+            container.RegisterSingleton<IEquipmentService>(equipmentService);
+            var wear = new ArmorWearService(items);
+            container.RegisterSingleton<IArmorWearService>(wear);
+            container.RegisterSingleton<ICombatRandom>(new SeededCombatRandom(1));
+            container.RegisterSingleton<ICombatService>(new CombatService(items, damageTypes, equipmentService, wear, formulas, combatSettings, balance, new SeededCombatRandom(1), inventory));
             return container;
+        }
+
+        private static CombatSettingsTemplate LoadCombatSettings(LoadedData data)
+        {
+            var records = data.All("combat");
+            return records.Count == 0 ? CombatSettingsTemplate.Default : CombatSettingsTemplate.FromJson(records[0], "combat");
+        }
+
+        private static BalanceTemplate LoadBalance(LoadedData data)
+        {
+            var records = data.All("balance");
+            return records.Count == 0 ? BalanceTemplate.Empty : BalanceTemplate.FromJson(records[0]);
+        }
+
+        private static IEquipmentSettings LoadEquipmentSettings(LoadedData data)
+        {
+            var records = data.All("equipment");
+            return records.Count == 0
+                ? EquipmentSettings.Default
+                : EquipmentSettings.FromJson(records[0], "equipment");
         }
     }
 }

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "itm_helmet_light",
+  "nameKey": "item.itm_helmet_light.name",
+  "icon": "icons/itm_helmet_light",
+  "category": "helmet",
+  "footprint": [2, 2],
+  "maxStack": 1,
+  "tier": 1,
+  "protection": { "dmg_bullet": 2, "dmg_electric": 1, "dmg_chemical": 1, "dmg_fire": 1, "dmg_rupture": 1 },
+  "durabilityMax": 25,
+  "material": "light",
+  "durabilityFactor": 1.0,
+  "quality": 1,
+  "price": { "mode": "fixed", "buy": 180, "sell": 70 }
+}

@@ -1,5 +1,4 @@
 #nullable enable
-using System.Collections.Generic;
 using AnomalyPath.Core.Di;
 
 namespace AnomalyPath.Core.Validation

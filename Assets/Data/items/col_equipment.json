@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "collection": true,
+  "id": "col_equipment",
+  "entries": [
+    "items/itm_helmet_light.json",
+    "items/itm_armor_jacket.json",
+    "items/itm_armor_plate.json",
+    "items/itm_armor_exoskeleton.json",
+    "items/itm_backpack_small.json",
+    "items/itm_belt_artifact.json"
+  ]
+}

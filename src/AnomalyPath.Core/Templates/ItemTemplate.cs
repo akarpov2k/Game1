@@ -13,35 +13,41 @@ namespace AnomalyPath.Core.Templates
         /// <summary>Создаёт блок оружия.</summary>
         /// <param name="classId">Класс оружия.</param>
         /// <param name="damage">Базовый урон.</param>
-        /// <param name="accuracy">Точность 0..1.</param>
+        /// <param name="accuracy">Коэффициент точности.</param>
+        /// <param name="ignoresDistance">Игнорировать ли штраф дистанции.</param>
         /// <param name="magazine">Патронов в магазине.</param>
         /// <param name="ammoCaliber">Калибр.</param>
         /// <param name="reloadTime">Перезарядка в ОД.</param>
         /// <param name="damageTypeId">Тип урона.</param>
         /// <param name="durabilityMax">Максимум прочности.</param>
         /// <param name="durabilityPerShot">Износ за выстрел.</param>
+        /// <param name="armorPenetration">Бронебойность.</param>
         /// <param name="skills">Скиллы оружия.</param>
         public WeaponBlock(
             string classId,
             double damage,
             double accuracy,
+            bool ignoresDistance,
             int magazine,
             string ammoCaliber,
             double reloadTime,
             string damageTypeId,
             int durabilityMax,
             double durabilityPerShot,
+            double armorPenetration,
             IReadOnlyList<string> skills)
         {
             ClassId = classId;
             Damage = damage;
-            Accuracy = accuracy;
+            AccuracyCoefficient = accuracy;
+            IgnoresDistance = ignoresDistance;
             Magazine = magazine;
             AmmoCaliber = ammoCaliber;
             ReloadTime = reloadTime;
             DamageTypeId = damageTypeId;
             DurabilityMax = durabilityMax;
             DurabilityPerShot = durabilityPerShot;
+            ArmorPenetration = armorPenetration;
             Skills = skills;
         }
 
@@ -51,8 +57,11 @@ namespace AnomalyPath.Core.Templates
         /// <summary>Базовый урон.</summary>
         public double Damage { get; }
 
-        /// <summary>Точность 0..1.</summary>
-        public double Accuracy { get; }
+        /// <summary>Коэффициент точности оружия.</summary>
+        public double AccuracyCoefficient { get; }
+
+        /// <summary>Игнорирует ли оружие штраф дальней дистанции.</summary>
+        public bool IgnoresDistance { get; }
 
         /// <summary>Патронов в магазине.</summary>
         public int Magazine { get; }
@@ -71,6 +80,9 @@ namespace AnomalyPath.Core.Templates
 
         /// <summary>Износ за выстрел.</summary>
         public double DurabilityPerShot { get; }
+
+        /// <summary>Бронебойность.</summary>
+        public double ArmorPenetration { get; }
 
         /// <summary>Скиллы оружия.</summary>
         public IReadOnlyList<string> Skills { get; }
@@ -125,7 +137,18 @@ namespace AnomalyPath.Core.Templates
             int tier,
             string icon,
             WeaponBlock? weapon,
-            PriceBlock? price)
+            PriceBlock? price,
+            System.Collections.Generic.IReadOnlyList<string> equipSlots,
+            int extraRows,
+            int artifactSlots,
+            System.Collections.Generic.IReadOnlyDictionary<string, int> protection,
+            string? artifactType,
+            int armorDurabilityMax,
+            double armorDurabilityPerHit,
+            string armorMaterial,
+            double durabilityFactor,
+            double quality,
+            string? caliber)
         {
             Id = id;
             NameKey = nameKey;
@@ -139,6 +162,16 @@ namespace AnomalyPath.Core.Templates
             Icon = icon;
             Weapon = weapon;
             Price = price;
+            EquipSlots = equipSlots;
+            ExtraRows = extraRows;
+            ArtifactSlots = artifactSlots;
+            Protection = protection;
+            ArtifactType = artifactType;
+            ArmorDurabilityMax = armorDurabilityMax;
+            ArmorMaterial = armorMaterial;
+            DurabilityFactor = durabilityFactor;
+            Quality = quality;
+            Caliber = caliber;
         }
 
         /// <summary>Идентификатор предмета.</summary>
@@ -177,6 +210,36 @@ namespace AnomalyPath.Core.Templates
         /// <summary>Блок цены.</summary>
         public PriceBlock? Price { get; }
 
+        /// <summary>Слоты экипировки, куда предмет можно надеть.</summary>
+        public System.Collections.Generic.IReadOnlyList<string> EquipSlots { get; }
+
+        /// <summary>Дополнительные строки рюкзака (для категории <c>backpack</c>).</summary>
+        public int ExtraRows { get; }
+
+        /// <summary>Сколько слотов артефактов даёт предмет (броня и пояс).</summary>
+        public int ArtifactSlots { get; }
+
+        /// <summary>Защита по типам урона (шлем и броня).</summary>
+        public System.Collections.Generic.IReadOnlyDictionary<string, int> Protection { get; }
+
+        /// <summary>Тип артефакта: <c>fire</c>, <c>electric</c>, <c>chemical</c>, <c>gravity</c>.</summary>
+        public string? ArtifactType { get; }
+
+        /// <summary>Максимум прочности брони или шлема; 0 — не изнашивается.</summary>
+        public int ArmorDurabilityMax { get; }
+
+        /// <summary>Материал брони или шлема: <c>light</c>, <c>medium</c>, <c>heavy</c>.</summary>
+        public string ArmorMaterial { get; }
+
+        /// <summary>Множитель прочности материала в формуле износа.</summary>
+        public double DurabilityFactor { get; }
+
+        /// <summary>Качество предмета: множитель износа, по умолчанию 1.</summary>
+        public double Quality { get; }
+
+        /// <summary>Калибр патронов; только для категории <c>ammo</c>.</summary>
+        public string? Caliber { get; }
+
         /// <summary>Строгое чтение: любое нарушение схемы — <see cref="DataException"/> с id и полем.</summary>
         /// <param name="value">Загруженная запись.</param>
         /// <param name="sourcePath">Путь для сообщения об ошибке.</param>
@@ -196,6 +259,25 @@ namespace AnomalyPath.Core.Templates
             }
 
             var price = value.TryGet("price", out var priceValue) ? ReadPrice(priceValue) : null;
+            var artifactType = DataMap.OptionalString(value, "artifactType");
+            var armorMaterial = DataMap.OptionalString(value, "material") ?? AnomalyPath.Core.Equipment.ArmorMaterials.Medium;
+
+            var caliber = DataMap.OptionalString(value, "caliber");
+            if (category == "ammo" && string.IsNullOrWhiteSpace(caliber))
+            {
+                throw new DataException(sourcePath, CoreErrors.MissingStringField, "caliber");
+            }
+
+            if (category == "artifact" && string.IsNullOrWhiteSpace(artifactType))
+            {
+                throw new DataException(sourcePath, CoreErrors.ArtifactWithoutType, id);
+            }
+
+            if ((category == "armor" || category == "helmet") &&
+                !AnomalyPath.Core.Equipment.ArmorMaterials.IsKnown(armorMaterial))
+            {
+                throw new DataException(sourcePath, CoreErrors.UnknownMaterial, armorMaterial);
+            }
 
             return new ItemTemplate(
                 id,
@@ -209,7 +291,64 @@ namespace AnomalyPath.Core.Templates
                 DataMap.RequireInt(value, "tier", sourcePath),
                 DataMap.RequireString(value, "icon", sourcePath),
                 weapon,
-                price);
+                price,
+                ReadEquipSlots(value, category),
+                DataMap.OptionalInt(value, "extraRows", 0),
+                DataMap.OptionalInt(value, "artifactSlots", 0),
+                ReadProtection(value, sourcePath),
+                artifactType,
+                DataMap.OptionalInt(value, "durabilityMax", 0),
+                DataMap.OptionalDouble(value, "durabilityPerHit") ?? 0,
+                armorMaterial,
+                DataMap.OptionalDouble(value, "durabilityFactor") ?? 1.0,
+                DataMap.OptionalDouble(value, "quality") ?? 1.0,
+                caliber);
+        }
+
+        /// <summary>Слоты экипировки по категории, если в данных не заданы явно.</summary>
+        /// <param name="category">Категория предмета.</param>
+        /// <returns>Список id слотов.</returns>
+        public static IReadOnlyList<string> DefaultEquipSlots(string category)
+        {
+            switch (category)
+            {
+                case "weapon": return new[] { "main" };
+                case "helmet": return new[] { "helmet" };
+                case "armor": return new[] { "armor" };
+                case "backpack": return new[] { "backpack" };
+                case "belt": return new[] { "belt" };
+                case "consumable": return new[] { "quick" };
+                default: return new string[0];
+            }
+        }
+
+        private static IReadOnlyList<string> ReadEquipSlots(JsonValue value, string category)
+        {
+            if (!value.TryGet("equipSlots", out var slots) || !slots.IsArray)
+            {
+                return DefaultEquipSlots(category);
+            }
+
+            return DataMap.OptionalStringArray(value, "equipSlots");
+        }
+
+        private static System.Collections.Generic.IReadOnlyDictionary<string, int> ReadProtection(JsonValue value, string sourcePath)
+        {
+            var protection = new System.Collections.Generic.Dictionary<string, int>(System.StringComparer.Ordinal);
+            if (!value.TryGet("protection", out var block) || !block.IsObject)
+            {
+                return protection;
+            }
+
+            foreach (var pair in block.Members)
+            {
+                if (pair.Value.Kind == JsonKind.Number)
+                {
+                    protection[pair.Key] = (int)System.Math.Round(pair.Value.Number);
+                }
+            }
+
+            return protection;
         }
 
         private static WeaponBlock ReadWeapon(JsonValue value, string itemId, string sourcePath)
@@ -222,13 +361,15 @@ namespace AnomalyPath.Core.Templates
             return new WeaponBlock(
                 DataMap.RequireString(value, "classId", sourcePath),
                 DataMap.RequireDouble(value, "damage", sourcePath),
-                DataMap.RequireDouble(value, "accuracy", sourcePath),
+                DataMap.OptionalDouble(value, "accuracyCoefficient") ?? DataMap.RequireDouble(value, "accuracy", sourcePath),
+            DataMap.OptionalBool(value, "ignoresDistance", false),
                 DataMap.RequireInt(value, "magazine", sourcePath),
                 DataMap.RequireString(value, "ammoCaliber", sourcePath),
                 DataMap.RequireDouble(value, "reloadTime", sourcePath),
                 DataMap.OptionalString(value, "damageTypeId") ?? "dmg_bullet",
                 DataMap.RequireInt(value, "durabilityMax", sourcePath),
                 DataMap.RequireDouble(value, "durabilityPerShot", sourcePath),
+            DataMap.OptionalDouble(value, "armorPenetration") ?? 0,
                 DataMap.OptionalStringArray(value, "skills"));
         }
 

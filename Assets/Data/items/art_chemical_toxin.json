@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "art_chemical_toxin",
+  "nameKey": "item.art_chemical_toxin.name",
+  "icon": "icons/art_chemical_toxin",
+  "category": "artifact",
+  "artifactType": "chemical",
+  "footprint": [1, 1],
+  "maxStack": 1,
+  "tier": 4,
+  "price": { "mode": "fixed", "buy": 1100, "sell": 450 }
+}

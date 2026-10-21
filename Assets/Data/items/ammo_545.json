@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "ammo_545",
+  "nameKey": "item.ammo_545.name",
+  "icon": "icons/ammo_545",
+  "category": "ammo",
+  "footprint": [1, 1],
+  "maxStack": 120,
+  "tier": 2,
+  "caliber": "5.45x39",
+  "price": { "mode": "fixed", "buy": 8, "sell": 3 }
+}

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "art_fire_ember",
+  "nameKey": "item.art_fire_ember.name",
+  "icon": "icons/art_fire_ember",
+  "category": "artifact",
+  "artifactType": "fire",
+  "footprint": [1, 1],
+  "maxStack": 1,
+  "tier": 4,
+  "price": { "mode": "fixed", "buy": 1200, "sell": 500 }
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "kind": "actors",
+  "id": "mutant_boar",
+  "type": "enemy",
+  "nameKey": "actor.mutant_boar.name",
+  "combat": {
+    "tier": 2,
+    "level": 2,
+    "health": 60,
+    "ap": 5,
+    "protection": { "dmg_rupture": 3 },
+    "ai": "aggressive",
+    "accuracy": 0.9
+  }
+}

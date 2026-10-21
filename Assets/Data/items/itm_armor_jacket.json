@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "itm_armor_jacket",
+  "nameKey": "item.itm_armor_jacket.name",
+  "icon": "icons/itm_armor_jacket",
+  "category": "armor",
+  "footprint": [2, 3],
+  "maxStack": 1,
+  "tier": 2,
+  "protection": { "dmg_bullet": 6, "dmg_electric": 3, "dmg_chemical": 3, "dmg_fire": 2, "dmg_rupture": 2 },
+  "artifactSlots": 1,
+  "durabilityMax": 40,
+  "material": "medium",
+  "durabilityFactor": 1.2,
+  "quality": 1,
+  "price": { "mode": "fixed", "buy": 900, "sell": 320 }
+}

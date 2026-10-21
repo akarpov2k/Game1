@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "kind": "damageTypes",
+  "id": "dmg_rupture",
+  "nameKey": "damage.dmg_rupture.name",
+  "damageKind": "physical",
+  "stackable": true
+}

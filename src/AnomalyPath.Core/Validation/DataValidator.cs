@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using AnomalyPath.Core.Abstractions;
+using AnomalyPath.Core.Combat;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Localization;
@@ -68,6 +69,8 @@ namespace AnomalyPath.Core.Validation
                 data = loader.Load();
                 var loaded = data;
                 Try(() => ItemRepository.FromLoadedData(loaded), issues);
+                Try(() => DamageTypeRepository.FromLoadedData(loaded), issues);
+                ValidateProtectionKeys(loaded, issues);
             }
             catch (DataException error)
             {
@@ -84,6 +87,108 @@ namespace AnomalyPath.Core.Validation
             }
 
             return report;
+        }
+
+        private static void ValidateProtectionKeys(LoadedData data, List<ValidationIssue> issues)
+        {
+            DamageTypeRepository damageTypes;
+            ItemRepository items;
+            try
+            {
+                damageTypes = DamageTypeRepository.FromLoadedData(data);
+                items = ItemRepository.FromLoadedData(data);
+            }
+            catch (DataException)
+            {
+                return;
+            }
+
+            foreach (var item in items.All)
+            {
+                foreach (var pair in item.Protection)
+                {
+                    if (!damageTypes.Contains(pair.Key))
+                    {
+                        issues.Add(new ValidationIssue(
+                            item.Id,
+                            CoreErrors.UnknownDamageType,
+                            CoreText.Format(CoreErrors.UnknownDamageType, pair.Key)));
+                    }
+                }
+            }
+        }
+
+        private static void ValidateCombatReferences(LoadedData data, List<ValidationIssue> issues)
+        {
+            try
+            {
+                var damageTypes = DamageTypeRepository.FromLoadedData(data);
+                var formulas = FormulaRepository.FromLoadedData(data);
+                var actors = ActorRepository.FromLoadedData(data);
+                var balanceRecords = data.All("balance");
+                var constants = balanceRecords.Count > 0
+                    ? BalanceTemplate.FromJson(balanceRecords[0]).Constants
+                    : BalanceTemplate.Empty.Constants;
+
+                foreach (var formula in formulas.All)
+                {
+                    var declared = new HashSet<string>(formula.Variables, StringComparer.Ordinal);
+                    foreach (var name in formula.UsedNames)
+                    {
+                        if (!declared.Contains(name) && !constants.ContainsKey(name))
+                        {
+                            issues.Add(new ValidationIssue(
+                                formula.Id,
+                                CoreErrors.FormulaUnknownVariable,
+                                CoreText.Format(CoreErrors.FormulaUnknownVariable, name)));
+                        }
+                    }
+                }
+
+                var combat = data.All("combat");
+                if (combat.Count > 1)
+                {
+                    issues.Add(new ValidationIssue("combat", CoreErrors.DuplicateIdFiles, "combat"));
+                }
+
+                if (combat.Count == 1)
+                {
+                    var settings = CombatSettingsTemplate.FromJson(combat[0], "combat");
+                    if (!formulas.Contains(settings.DamageFormulaId))
+                    {
+                        issues.Add(new ValidationIssue("combat", CoreErrors.FormulaNotFound, settings.DamageFormulaId));
+                    }
+
+                    if (settings.InitiativeFormulaId != null && !formulas.Contains(settings.InitiativeFormulaId))
+                    {
+                        issues.Add(new ValidationIssue("combat", CoreErrors.FormulaNotFound, settings.InitiativeFormulaId));
+                    }
+                }
+
+                foreach (var actor in actors.All)
+                {
+                    var block = actor.Combat;
+                    if (block == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var pair in block.Protection)
+                    {
+                        if (!damageTypes.Contains(pair.Key))
+                        {
+                            issues.Add(new ValidationIssue(
+                                actor.Id,
+                                CoreErrors.UnknownDamageType,
+                                CoreText.Format(CoreErrors.UnknownDamageType, pair.Key)));
+                        }
+                    }
+                }
+            }
+            catch (DataException)
+            {
+                // Ошибки схемы уже собраны отдельными проходами.
+            }
         }
 
         private List<string> ValidateEntities(DataLoader loader, List<ValidationIssue> issues)
@@ -157,6 +262,10 @@ namespace AnomalyPath.Core.Validation
                 if (kind == "items")
                 {
                     Try(() => ItemTemplate.FromJson(resolved, pair.Key), issues);
+                }
+                else if (kind == "equipment")
+                {
+                    Try(() => Equipment.EquipmentSettings.FromJson(resolved, pair.Key), issues);
                 }
             }
 

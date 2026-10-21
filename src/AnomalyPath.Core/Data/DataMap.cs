@@ -75,6 +75,16 @@ namespace AnomalyPath.Core.Data
                 ? fieldValue.Number
                 : null;
 
+        /// <summary>Читает необязательное целое поле с значением по умолчанию.</summary>
+        /// <param name="value">Объект сущности.</param>
+        /// <param name="field">Имя поля.</param>
+        /// <param name="fallback">Значение, если поля нет.</param>
+        /// <returns>Значение поля или <paramref name="fallback"/>.</returns>
+        public static int OptionalInt(JsonValue value, string field, int fallback) =>
+            value.TryGet(field, out var fieldValue) && fieldValue.Kind == JsonKind.Number
+                ? (int)System.Math.Round(fieldValue.Number)
+                : fallback;
+
         /// <summary>Читает необязательный флаг с значением по умолчанию.</summary>
         /// <param name="value">Объект сущности.</param>
         /// <param name="field">Имя поля.</param>

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "kind": "formulas",
+  "id": "formula_damage_base",
+  "expression": "max(0, damage - max(0, protection - penetration))",
+  "variables": ["damage", "penetration", "protection", "distance"],
+  "result": "int",
+  "clampMin": 0
+}

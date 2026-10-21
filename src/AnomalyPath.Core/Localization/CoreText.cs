@@ -112,6 +112,51 @@ namespace AnomalyPath.Core.Localization
         /// <summary>Циклическая зависимость сервисов.</summary>
         public const string CyclicDependency = "error.cyclic_dependency";
 
+        /// <summary>Предмет не помещается в контейнер.</summary>
+        public const string ItemDoesNotFit = "error.item_does_not_fit";
+
+        /// <summary>У артефакта не указан тип.</summary>
+        public const string ArtifactWithoutType = "error.artifact_without_type";
+
+        /// <summary>Неизвестный материал брони или шлема.</summary>
+        public const string UnknownMaterial = "error.unknown_material";
+
+        /// <summary>Неизвестный тип урона в блоке защиты.</summary>
+        public const string UnknownDamageType = "error.unknown_damage_type";
+
+        /// <summary>Пустое выражение формулы.</summary>
+        public const string FormulaEmpty = "error.formula_empty";
+
+        /// <summary>Синтаксическая ошибка в формуле.</summary>
+        public const string FormulaSyntaxError = "error.formula_syntax";
+
+        /// <summary>Формула использует неизвестное имя.</summary>
+        public const string FormulaUnknownVariable = "error.formula_unknown_variable";
+
+        /// <summary>Формула использует неизвестную функцию.</summary>
+        public const string FormulaUnknownFunction = "error.formula_unknown_function";
+
+        /// <summary>Формула должна задавать ровно одно представление.</summary>
+        public const string FormulaRepresentation = "error.formula_representation";
+
+        /// <summary>Ссылка на формулу не найдена.</summary>
+        public const string FormulaNotFound = "error.formula_not_found";
+
+        /// <summary>У актёра нет боевого блока, а он обязателен.</summary>
+        public const string ActorWithoutCombat = "error.actor_without_combat";
+
+        /// <summary>Неизвестный тип актёра.</summary>
+        public const string UnknownActorType = "error.unknown_actor_type";
+
+        /// <summary>Боевое действие невозможно: не тот ход, нет ОД или боя нет.</summary>
+        public const string CombatActionUnavailable = "error.combat_unavailable";
+
+        /// <summary>Атака невозможна: цель мертва или оружие сломано.</summary>
+        public const string CombatAttackUnavailable = "error.combat_attack_unavailable";
+
+        /// <summary>Неизвестный вид урона в поле kind.</summary>
+        public const string UnknownDamageTypeKind = "error.unknown_damage_type_kind";
+
         /// <summary>Проверка данных пройдена.</summary>
         public const string ValidationOk = "validation.ok";
 

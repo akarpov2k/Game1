@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "wpn_sv98",
+  "extends": "_base/weapon_rifle.json",
+  "include": ["_base/priced_standard.json"],
+  "nameKey": "item.wpn_sv98.name",
+  "descriptionKey": "item.wpn_sv98.desc",
+  "icon": "icons/wpn_sv98",
+  "footprint": [2, 3],
+  "tier": 3,
+  "price": { "mode": "fixed", "buy": 3000, "sell": 1200 },
+  "weapon": {
+    "classId": "wclass_sniper",
+    "damage": 30,
+    "accuracyCoefficient": 1.5,
+    "ignoresDistance": true,
+    "magazine": 10,
+    "ammoCaliber": "7.62x54",
+    "skills": ["skill_aimed"]
+  }
+}

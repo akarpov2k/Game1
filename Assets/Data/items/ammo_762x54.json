@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "ammo_762x54",
+  "nameKey": "item.ammo_762x54.name",
+  "icon": "icons/ammo_762x54",
+  "category": "ammo",
+  "footprint": [1, 1],
+  "maxStack": 60,
+  "tier": 3,
+  "caliber": "7.62x54",
+  "price": { "mode": "fixed", "buy": 14, "sell": 5 }
+}

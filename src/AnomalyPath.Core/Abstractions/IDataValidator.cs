@@ -1,6 +1,4 @@
 #nullable enable
-using System.Collections.Generic;
-
 namespace AnomalyPath.Core.Abstractions
 {
     /// <summary>Проверка всех данных до инициализации игры: собирает ошибки, а не падает на первой.</summary>

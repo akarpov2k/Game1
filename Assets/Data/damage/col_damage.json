@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "damageTypes",
+  "collection": true,
+  "id": "col_damage",
+  "entries": [
+    "damage/dmg_bullet.json",
+    "damage/dmg_electric.json",
+    "damage/dmg_chemical.json",
+    "damage/dmg_fire.json",
+    "damage/dmg_rupture.json"
+  ]
+}

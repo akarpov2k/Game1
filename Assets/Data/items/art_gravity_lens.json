@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "art_gravity_lens",
+  "nameKey": "item.art_gravity_lens.name",
+  "icon": "icons/art_gravity_lens",
+  "category": "artifact",
+  "artifactType": "gravity",
+  "footprint": [1, 1],
+  "maxStack": 1,
+  "tier": 4,
+  "price": { "mode": "fixed", "buy": 1600, "sell": 700 }
+}

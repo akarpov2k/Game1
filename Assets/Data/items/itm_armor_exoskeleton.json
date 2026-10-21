@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "itm_armor_exoskeleton",
+  "nameKey": "item.itm_armor_exoskeleton.name",
+  "icon": "icons/itm_armor_exoskeleton",
+  "category": "armor",
+  "footprint": [2, 3],
+  "maxStack": 1,
+  "tier": 4,
+  "protection": { "dmg_bullet": 12, "dmg_electric": 7, "dmg_chemical": 7, "dmg_fire": 6, "dmg_rupture": 6 },
+  "artifactSlots": 1,
+  "durabilityMax": 120,
+  "material": "exoskeleton",
+  "durabilityFactor": 1.7,
+  "quality": 1,
+  "price": { "mode": "fixed", "buy": 4000, "sell": 1500 }
+}

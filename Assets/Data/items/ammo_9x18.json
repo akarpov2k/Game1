@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "ammo_9x18",
+  "nameKey": "item.ammo_9x18.name",
+  "icon": "icons/ammo_9x18",
+  "category": "ammo",
+  "footprint": [1, 1],
+  "maxStack": 60,
+  "tier": 1,
+  "caliber": "9x18",
+  "price": { "mode": "fixed", "buy": 5, "sell": 2 }
+}

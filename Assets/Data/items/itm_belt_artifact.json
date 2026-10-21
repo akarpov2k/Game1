@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "itm_belt_artifact",
+  "nameKey": "item.itm_belt_artifact.name",
+  "icon": "icons/itm_belt_artifact",
+  "category": "belt",
+  "footprint": [2, 1],
+  "maxStack": 1,
+  "tier": 1,
+  "artifactSlots": 2,
+  "price": { "mode": "fixed", "buy": 350, "sell": 120 }
+}

@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "actors",
+  "collection": true,
+  "id": "col_actors",
+  "entries": [
+    "actors/actor_player.json",
+    "actors/enemy_bandit.json",
+    "actors/mutant_boar.json"
+  ]
+}

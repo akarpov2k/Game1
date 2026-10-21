@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "kind": "damageTypes",
+  "id": "dmg_electric",
+  "nameKey": "damage.dmg_electric.name",
+  "damageKind": "anomaly",
+  "stackable": false
+}
