@@ -1,3 +1,4 @@
+#nullable enable
 using AnomalyPath.Core.Di;
 using AnomalyPath.Core.Validation;
 

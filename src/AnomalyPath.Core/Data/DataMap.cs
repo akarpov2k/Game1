@@ -1,3 +1,4 @@
+#nullable enable
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.Json;

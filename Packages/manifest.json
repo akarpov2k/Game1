@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "com.anomalypath.core": "file:../src/AnomalyPath.Core",
+    "com.anomalypath.tests": "file:../src/AnomalyPath.Tests",
     "com.unity.2d.animation": "16.0.1",
     "com.unity.2d.aseprite": "6.0.0",
     "com.unity.2d.psdimporter": "15.0.1",

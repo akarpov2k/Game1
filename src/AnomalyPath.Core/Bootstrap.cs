@@ -1,3 +1,4 @@
+#nullable enable
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Di;

@@ -1,3 +1,4 @@
+#nullable enable
 using AnomalyPath.Core.Json;
 
 namespace AnomalyPath.Core.Data

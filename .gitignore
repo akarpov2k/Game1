@@ -115,4 +115,5 @@ crashlytics-build.properties
 .dotnet/
 .dotnet-home/
 _probe/
+.build/
 

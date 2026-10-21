@@ -1,0 +1,10 @@
+{
+  "name": "com.anomalypath.core",
+  "version": "0.1.0",
+  "displayName": "AnomalyPath Core",
+  "description": "Правила, данные, репозитории и сервисы AnomalyPath без UnityEngine.",
+  "unity": "6000.0",
+  "author": {
+    "name": "VlomInc"
+  }
+}

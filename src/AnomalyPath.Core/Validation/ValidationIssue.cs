@@ -1,3 +1,4 @@
+#nullable enable
 namespace AnomalyPath.Core.Validation
 {
     /// <summary>Одна находка валидатора: ошибка или предупреждение.</summary>
