@@ -15,9 +15,6 @@ namespace AnomalyPath.Runtime.Screens.Menu
         /// <summary>Максимальная ширина сетки.</summary>
         public const float MaxGridWidth = 1200f;
 
-        /// <summary>Сколько ячеек помещается на одной странице.</summary>
-        public const int PageSize = 6;
-
         /// <summary>Порог ширины, после которого в строке три ячейки.</summary>
         public const float ColumnsThreshold = 900f;
 

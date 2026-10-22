@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using AnomalyPath.Core.Data;
+using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Localization;
 
@@ -14,7 +15,7 @@ namespace AnomalyPath.Core.Templates
             string id,
             string nameKey,
             string? descriptionKey,
-            string category,
+            ItemCategory category,
             int footprintWidth,
             int footprintHeight,
             bool rotatable,
@@ -30,7 +31,7 @@ namespace AnomalyPath.Core.Templates
             string? artifactType,
             int armorDurabilityMax,
             double armorDurabilityPerHit,
-            string armorMaterial,
+            ArmorMaterial? armorMaterial,
             double durabilityFactor,
             double quality,
             string? caliber)
@@ -69,7 +70,7 @@ namespace AnomalyPath.Core.Templates
         public string? DescriptionKey { get; }
 
         /// <summary>Категория.</summary>
-        public string Category { get; }
+        public ItemCategory Category { get; }
 
         /// <summary>Ширина в клетках.</summary>
         public int FootprintWidth { get; }
@@ -113,8 +114,8 @@ namespace AnomalyPath.Core.Templates
         /// <summary>Максимум прочности брони или шлема; 0 — не изнашивается.</summary>
         public int ArmorDurabilityMax { get; }
 
-        /// <summary>Материал брони или шлема: <c>light</c>, <c>medium</c>, <c>heavy</c>.</summary>
-        public string ArmorMaterial { get; }
+        /// <summary>Материал брони или шлема; <c>null</c> у остальных категорий.</summary>
+        public ArmorMaterial? ArmorMaterial { get; }
 
         /// <summary>Множитель прочности материала в формуле износа.</summary>
         public double DurabilityFactor { get; }
@@ -133,35 +134,48 @@ namespace AnomalyPath.Core.Templates
         public static ItemTemplate FromJson(JsonValue value, string sourcePath)
         {
             var id = DataMap.RequireString(value, "id", sourcePath);
-            var category = DataMap.RequireString(value, "category", sourcePath);
+            var categoryCode = DataMap.RequireString(value, "category", sourcePath);
+            if (!SchemaEnum.TryParse(categoryCode, out ItemCategory category))
+            {
+                throw new DataException(sourcePath, CoreErrors.UnknownItemCategory, categoryCode);
+            }
 
             var footprint = DataMap.RequireIntPair(value, "footprint", sourcePath);
             var weapon = value.TryGet("weapon", out var weaponValue) ? ReadWeapon(weaponValue, id, sourcePath) : null;
 
-            if (category == "weapon" && weapon == null)
+            if (category == ItemCategory.Weapon && weapon == null)
             {
                 throw new DataException(sourcePath, CoreErrors.WeaponWithoutBlock, id);
             }
 
-            var price = value.TryGet("price", out var priceValue) ? ReadPrice(priceValue) : null;
+            var price = value.TryGet("price", out var priceValue) ? ReadPrice(priceValue, sourcePath) : null;
             var artifactType = DataMap.OptionalString(value, "artifactType");
-            var armorMaterial = DataMap.OptionalString(value, "material") ?? AnomalyPath.Core.Equipment.ArmorMaterials.Medium;
 
             var caliber = DataMap.OptionalString(value, "caliber");
-            if (category == "ammo" && string.IsNullOrWhiteSpace(caliber))
+            if (category == ItemCategory.Ammo && string.IsNullOrWhiteSpace(caliber))
             {
                 throw new DataException(sourcePath, CoreErrors.MissingStringField, "caliber");
             }
 
-            if (category == "artifact" && string.IsNullOrWhiteSpace(artifactType))
+            if (category == ItemCategory.Artifact && string.IsNullOrWhiteSpace(artifactType))
             {
                 throw new DataException(sourcePath, CoreErrors.ArtifactWithoutType, id);
             }
 
-            if ((category == "armor" || category == "helmet") &&
-                !AnomalyPath.Core.Equipment.ArmorMaterials.IsKnown(armorMaterial))
+            ArmorMaterial? armorMaterial = null;
+            double durabilityFactor = 0;
+            double quality = 0;
+            if (category == ItemCategory.Armor || category == ItemCategory.Helmet)
             {
-                throw new DataException(sourcePath, CoreErrors.UnknownMaterial, armorMaterial);
+                var materialCode = DataMap.RequireString(value, "material", sourcePath);
+                if (!SchemaEnum.TryParse(materialCode, out ArmorMaterial material))
+                {
+                    throw new DataException(sourcePath, CoreErrors.UnknownMaterial, materialCode);
+                }
+
+                armorMaterial = material;
+                durabilityFactor = DataMap.RequireDouble(value, "durabilityFactor", sourcePath);
+                quality = DataMap.RequireDouble(value, "quality", sourcePath);
             }
 
             return new ItemTemplate(
@@ -185,29 +199,29 @@ namespace AnomalyPath.Core.Templates
                 DataMap.OptionalInt(value, "durabilityMax", 0),
                 DataMap.OptionalDouble(value, "durabilityPerHit") ?? 0,
                 armorMaterial,
-                DataMap.OptionalDouble(value, "durabilityFactor") ?? 1.0,
-                DataMap.OptionalDouble(value, "quality") ?? 1.0,
+                durabilityFactor,
+                quality,
                 caliber);
         }
 
         /// <summary>Слоты экипировки по категории, если в данных не заданы явно.</summary>
         /// <param name="category">Категория предмета.</param>
         /// <returns>Список id слотов.</returns>
-        public static IReadOnlyList<string> DefaultEquipSlots(string category)
+        public static IReadOnlyList<string> DefaultEquipSlots(ItemCategory category)
         {
             switch (category)
             {
-                case "weapon": return new[] { "main" };
-                case "helmet": return new[] { "helmet" };
-                case "armor": return new[] { "armor" };
-                case "backpack": return new[] { "backpack" };
-                case "belt": return new[] { "belt" };
-                case "consumable": return new[] { "quick" };
-                default: return new string[0];
+                case ItemCategory.Weapon: return new[] { EquipmentSlots.Id(EquipmentSlot.Main) };
+                case ItemCategory.Helmet: return new[] { EquipmentSlots.Id(EquipmentSlot.Helmet) };
+                case ItemCategory.Armor: return new[] { EquipmentSlots.Id(EquipmentSlot.Armor) };
+                case ItemCategory.Backpack: return new[] { EquipmentSlots.Id(EquipmentSlot.Backpack) };
+                case ItemCategory.Belt: return new[] { EquipmentSlots.Id(EquipmentSlot.Belt) };
+                case ItemCategory.Consumable: return new[] { EquipmentSlots.Quick };
+                default: return Array.Empty<string>();
             }
         }
 
-        private static IReadOnlyList<string> ReadEquipSlots(JsonValue value, string category)
+        private static IReadOnlyList<string> ReadEquipSlots(JsonValue value, ItemCategory category)
         {
             if (!value.TryGet("equipSlots", out var slots) || !slots.IsArray)
             {
@@ -251,17 +265,23 @@ namespace AnomalyPath.Core.Templates
                 DataMap.RequireInt(value, "magazine", sourcePath),
                 DataMap.RequireString(value, "ammoCaliber", sourcePath),
                 DataMap.RequireDouble(value, "reloadTime", sourcePath),
-                DataMap.OptionalString(value, "damageTypeId") ?? "dmg_bullet",
+                DataMap.RequireString(value, "damageTypeId", sourcePath),
                 DataMap.RequireInt(value, "durabilityMax", sourcePath),
                 DataMap.RequireDouble(value, "durabilityPerShot", sourcePath),
-            DataMap.OptionalDouble(value, "armorPenetration") ?? 0,
+            DataMap.RequireDouble(value, "armorPenetration", sourcePath),
                 DataMap.OptionalStringArray(value, "skills"));
         }
 
-        private static PriceBlock ReadPrice(JsonValue value)
+        private static PriceBlock ReadPrice(JsonValue value, string sourcePath)
         {
+            var modeCode = DataMap.RequireString(value, "mode", sourcePath);
+            if (!SchemaEnum.TryParse(modeCode, out PriceMode mode))
+            {
+                throw new DataException(sourcePath, CoreErrors.UnknownPriceMode, modeCode);
+            }
+
             return new PriceBlock(
-                DataMap.OptionalString(value, "mode") ?? "fixed",
+                mode,
                 DataMap.OptionalDouble(value, "buy"),
                 DataMap.OptionalDouble(value, "sell"),
                 DataMap.OptionalDouble(value, "base"),

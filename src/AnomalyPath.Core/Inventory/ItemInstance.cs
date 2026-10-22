@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.Templates;
 
 namespace AnomalyPath.Core.Inventory
@@ -27,12 +28,16 @@ namespace AnomalyPath.Core.Inventory
         {
             if (string.IsNullOrWhiteSpace(instanceId))
             {
-                throw new ArgumentException("id экземпляра не задан", nameof(instanceId));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(instanceId)),
+                    nameof(instanceId));
             }
 
             if (stack < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(stack), "Количество в стопке должно быть ≥ 1");
+                throw new ArgumentOutOfRangeException(
+                    nameof(stack),
+                    CoreText.Format(CoreErrors.MinimumOne, nameof(stack)));
             }
 
             InstanceId = instanceId;

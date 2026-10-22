@@ -28,7 +28,7 @@ namespace AnomalyPath.Core.Repositories
             var records = data.All("topology");
             if (records.Count == 0)
             {
-                return new TopologyRepository(TopologyTemplate.Default);
+                throw new DataException("topology", CoreErrors.FileNotFound);
             }
 
             if (records.Count > 1)

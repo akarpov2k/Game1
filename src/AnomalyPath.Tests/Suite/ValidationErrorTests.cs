@@ -129,7 +129,7 @@ namespace AnomalyPath.Tests
                     new Dictionary<string, string>
                     {
                         ["catalog.json"] = Catalog("items/a.json"),
-                        ["items/a.json"] = "{ \"kind\":\"items\",\"id\":\"arm_wood\",\"nameKey\":\"n\",\"category\":\"armor\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"durabilityMax\":10,\"material\":\"light\",\"durabilityFactor\":1.0,\"protection\":{\"dmg_wood\":1} }",
+                        ["items/a.json"] = "{ \"kind\":\"items\",\"id\":\"arm_wood\",\"nameKey\":\"n\",\"category\":\"armor\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"durabilityMax\":10,\"material\":\"light\",\"durabilityFactor\":1.0,\"quality\":1,\"protection\":{\"dmg_wood\":1} }",
                     },
                     "Неизвестный тип урона"),
                 (

@@ -32,9 +32,9 @@ namespace AnomalyPath.Core.Services
         public WorldMap Generate(int seed)
         {
             var topology = _topology.Topology;
-            var hubs = Select("hub");
-            var sites = Select("site");
-            var routes = Select("route");
+            var hubs = Select(LocationNodeType.Hub);
+            var sites = Select(LocationNodeType.Site);
+            var routes = Select(LocationNodeType.Route);
             if (hubs.Count == 0)
             {
                 throw new DataException("world", CoreErrors.WorldNoHub);
@@ -150,7 +150,7 @@ namespace AnomalyPath.Core.Services
                 }
 
                 var interiorTemplate = _locations.Get(connection.ToId);
-                if (interiorTemplate.NodeType != "interior")
+                if (interiorTemplate.NodeType != LocationNodeType.Interior)
                 {
                     continue;
                 }
@@ -215,7 +215,7 @@ namespace AnomalyPath.Core.Services
             return "edge_" + counter.ToString("D4", CultureInfo.InvariantCulture);
         }
 
-        private List<LocationTemplate> Select(string nodeType)
+        private List<LocationTemplate> Select(LocationNodeType nodeType)
         {
             var result = new List<LocationTemplate>();
             foreach (var template in _locations.All)

@@ -14,7 +14,7 @@ namespace AnomalyPath.Tests
 
         internal const string RifleJson =
             "{\"kind\":\"items\",\"id\":\"wpn_test\",\"nameKey\":\"n\",\"category\":\"weapon\",\"footprint\":[2,3],\"maxStack\":1,\"tier\":1,\"icon\":\"i\"," +
-            "\"weapon\":{\"classId\":\"w\",\"damage\":1,\"accuracy\":0.5,\"magazine\":10,\"ammoCaliber\":\"c\",\"reloadTime\":2,\"durabilityMax\":100,\"durabilityPerShot\":0.1}}";
+            "\"weapon\":{\"classId\":\"w\",\"damageTypeId\":\"dmg_bullet\",\"damage\":1,\"accuracy\":0.5,\"magazine\":10,\"ammoCaliber\":\"c\",\"reloadTime\":2,\"armorPenetration\":0,\"durabilityMax\":100,\"durabilityPerShot\":0.1}}";
 
         internal const string AmmoJson =
             "{\"kind\":\"items\",\"id\":\"ammo_test\",\"nameKey\":\"n\",\"category\":\"ammo\",\"footprint\":[1,1],\"maxStack\":60,\"caliber\":\"c\",\"tier\":1,\"icon\":\"i\"}";
@@ -24,7 +24,7 @@ namespace AnomalyPath.Tests
 
         internal const string PartJson =
             "{\"kind\":\"items\",\"id\":\"part_test\",\"nameKey\":\"n\",\"category\":\"material\",\"footprint\":[1,1],\"maxStack\":5,\"tier\":1,\"icon\":\"i\"," +
-            "\"weapon\":{\"classId\":\"w\",\"damage\":1,\"accuracy\":0.5,\"magazine\":1,\"ammoCaliber\":\"c\",\"reloadTime\":1,\"durabilityMax\":100,\"durabilityPerShot\":0.1}}";
+            "\"weapon\":{\"classId\":\"w\",\"damageTypeId\":\"dmg_bullet\",\"damage\":1,\"accuracy\":0.5,\"magazine\":1,\"ammoCaliber\":\"c\",\"reloadTime\":1,\"armorPenetration\":0,\"durabilityMax\":100,\"durabilityPerShot\":0.1}}";
 
         /// <summary>Источник данных, считающий реальные чтения файлов.</summary>
         internal sealed class CountingSource : IDataSource

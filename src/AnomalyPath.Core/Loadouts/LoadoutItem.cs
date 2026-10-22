@@ -18,12 +18,16 @@ namespace AnomalyPath.Core.Loadouts
         {
             if (string.IsNullOrWhiteSpace(itemId))
             {
-                throw new ArgumentException("id предмета набора не задан", nameof(itemId));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(itemId)),
+                    nameof(itemId));
             }
 
             if (count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), "Количество должно быть не меньше 1");
+                throw new ArgumentOutOfRangeException(
+                    nameof(count),
+                    CoreText.Format(CoreErrors.MinimumOne, nameof(count)));
             }
 
             ItemId = itemId;

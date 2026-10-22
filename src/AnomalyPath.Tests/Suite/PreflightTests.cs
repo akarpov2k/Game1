@@ -52,7 +52,7 @@ namespace AnomalyPath.Tests
                 WithFixture(
                     new Dictionary<string, string>
                     {
-                        ["catalog.json"] = Catalog("items/a.json"),
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json"),
                         ["items/a.json"] = "{",
                         ["items/b.json"] = "[1,",
                         ["items/c.json"] = "{\"kind\":}"
@@ -98,11 +98,11 @@ namespace AnomalyPath.Tests
                 WithFixture(
                     new Dictionary<string, string>
                     {
-                        ["catalog.json"] = Catalog("items/col.json"),
+                        ["catalog.json"] = Catalog("items/col.json", "combat.json", "equipment.json", "topology.json"),
                         ["items/col.json"] = Collection("items/a.json", "items/b.json", "items/c.json", "items/missing.json"),
                         ["items/a.json"] = Weapon("wpn_dup"),
                         ["items/b.json"] = Weapon("wpn_dup"),
-                        ["items/c.json"] = "{\"kind\":\"items\",\"id\":\"wpn_c\",\"category\":\"weapon\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"weapon\":{\"classId\":\"wclass_rifle\",\"damage\":1,\"accuracy\":0.5,\"magazine\":10,\"ammoCaliber\":\"5.45x39\",\"reloadTime\":2,\"durabilityMax\":10,\"durabilityPerShot\":0.1}}"
+                        ["items/c.json"] = "{\"kind\":\"items\",\"id\":\"wpn_c\",\"category\":\"weapon\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"weapon\":{\"classId\":\"wclass_rifle\",\"damageTypeId\":\"dmg_bullet\",\"damage\":1,\"accuracy\":0.5,\"magazine\":10,\"ammoCaliber\":\"5.45x39\",\"reloadTime\":2,\"armorPenetration\":0,\"durabilityMax\":10,\"durabilityPerShot\":0.1}}"
                     },
                     root =>
                     {
@@ -138,10 +138,13 @@ namespace AnomalyPath.Tests
                 WithFixture(
                     new Dictionary<string, string>
                     {
-                        ["catalog.json"] = Catalog("items/col.json"),
+                        ["catalog.json"] = Catalog("items/col.json", "combat.json", "equipment.json", "topology.json"),
                         ["items/col.json"] = Collection("items/a.json"),
                         ["items/a.json"] = Weapon("wpn_a"),
-                        ["items/orphan.json"] = Weapon("wpn_orphan")
+                        ["items/orphan.json"] = Weapon("wpn_orphan"),
+                        ["combat.json"] = CombatJson(),
+                        ["equipment.json"] = EquipmentJson(),
+                        ["topology.json"] = TopologyJson()
                     },
                     root =>
                     {
@@ -157,6 +160,24 @@ namespace AnomalyPath.Tests
                         }
 
                         True(found, "нет предупреждения о недостижимом файле");
+                    });
+            });
+
+            Check("preflight: нет топологии — ошибка", () =>
+            {
+                WithFixture(
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json"),
+                        ["items/a.json"] = Weapon("wpn_a"),
+                        ["combat.json"] = CombatJson(),
+                        ["equipment.json"] = EquipmentJson()
+                    },
+                    root =>
+                    {
+                        var report = Preflight.Validate(root);
+                        False(report.IsValid, "без топологии мир не стартует");
+                        True(HasIssue(report, "topology", "Файл не найден"), "нет ошибки топологии");
                     });
             });
 

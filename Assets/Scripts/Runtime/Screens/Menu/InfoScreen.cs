@@ -26,7 +26,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
             _title = host.Ui.CreateTitle(column, string.Empty);
             _body = host.Ui.CreateText(column, string.Empty, 22, TextAnchor.UpperLeft);
             _body.GetComponent<LayoutElement>().preferredHeight = 500;
-            host.Ui.CreateButton(column, "Назад", () => _back());
+            host.Ui.CreateButton(column, UiText.Get(host.Texts, UiTextKey.Common_Back), () => _back());
         }
 
         /// <summary>Esc работает как «Назад»: например, из «Авторов» возвращает в меню.</summary>

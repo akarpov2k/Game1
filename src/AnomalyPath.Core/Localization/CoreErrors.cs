@@ -52,6 +52,36 @@ namespace AnomalyPath.Core.Localization
         /// <summary>Пустой путь к файлу.</summary>
         public const string EmptyPath = "error.empty_path";
 
+        /// <summary>Обязательное строковое поле не задано.</summary>
+        public const string RequiredField = "error.required_field";
+
+        /// <summary>Обязательный список пуст.</summary>
+        public const string EmptyCollection = "error.empty_collection";
+
+        /// <summary>Числовое поле меньше единицы.</summary>
+        public const string MinimumOne = "error.minimum_one";
+
+        /// <summary>Числовое поле отрицательное.</summary>
+        public const string NonNegative = "error.non_negative";
+
+        /// <summary>Значение должно быть в диапазоне 0..1.</summary>
+        public const string ChanceRange = "error.chance_range";
+
+        /// <summary>Индекс вне диапазона.</summary>
+        public const string IndexOutOfRange = "error.index_out_of_range";
+
+        /// <summary>Ник длиннее допустимого.</summary>
+        public const string NicknameLength = "error.nickname_length";
+
+        /// <summary>Верхняя граница меньше нижней.</summary>
+        public const string RangeOrder = "error.range_order";
+
+        /// <summary>Шаг должен быть положительным.</summary>
+        public const string StepPositive = "error.step_positive";
+
+        /// <summary>Значение должно быть больше нуля.</summary>
+        public const string PositiveValue = "error.positive_value";
+
         /// <summary>Путь выходит за корень данных.</summary>
         public const string PathOutsideRoot = "error.path_outside_root";
 
@@ -118,6 +148,12 @@ namespace AnomalyPath.Core.Localization
         /// <summary>Неизвестный материал брони или шлема.</summary>
         public const string UnknownMaterial = "error.unknown_material";
 
+        /// <summary>Неизвестная категория предмета.</summary>
+        public const string UnknownItemCategory = "error.unknown_item_category";
+
+        /// <summary>Неизвестный режим цены.</summary>
+        public const string UnknownPriceMode = "error.unknown_price_mode";
+
         /// <summary>Неизвестный тип урона в блоке защиты.</summary>
         public const string UnknownDamageType = "error.unknown_damage_type";
 
@@ -135,6 +171,9 @@ namespace AnomalyPath.Core.Localization
 
         /// <summary>Формула должна задавать ровно одно представление.</summary>
         public const string FormulaRepresentation = "error.formula_representation";
+
+        /// <summary>Неизвестный тип результата формулы.</summary>
+        public const string FormulaResult = "error.formula_result";
 
         /// <summary>Ссылка на формулу не найдена.</summary>
         public const string FormulaNotFound = "error.formula_not_found";
@@ -154,6 +193,12 @@ namespace AnomalyPath.Core.Localization
         /// <summary>Неизвестный вид урона в поле kind.</summary>
         public const string UnknownDamageTypeKind = "error.unknown_damage_type_kind";
 
+        /// <summary>Неизвестный режим восстановления ОД.</summary>
+        public const string UnknownApRestore = "error.unknown_ap_restore";
+
+        /// <summary>Неизвестное правило инициативы.</summary>
+        public const string UnknownInitiative = "error.unknown_initiative";
+
         /// <summary>Проверка данных пройдена.</summary>
         public const string ValidationOk = "validation.ok";
 
@@ -166,6 +211,24 @@ namespace AnomalyPath.Core.Localization
         /// <summary>Каталог текстов игры отсутствует.</summary>
         public const string GameTextsMissing = "validation.game_texts_missing";
 
+        /// <summary>Заголовок экрана ошибки данных.</summary>
+        public const string DataErrorTitle = "validation.data_error_title";
+
+        /// <summary>Данные не загружены.</summary>
+        public const string DataErrorMissing = "validation.data_missing";
+
+        /// <summary>Кнопка выхода на экране ошибки данных.</summary>
+        public const string DataErrorQuit = "validation.data_quit";
+
+        /// <summary>Строка отчёта: путь и сообщение.</summary>
+        public const string ReportLine = "log.report_line";
+
+        /// <summary>Не удалось сохранить exit_save.</summary>
+        public const string ExitSaveFailed = "log.exit_save_failed";
+
+        /// <summary>Данные не прошли проверку.</summary>
+        public const string DataCheckFailed = "log.data_check_failed";
+
         /// <summary>Файл не используется ни каталогом, ни коллекциями.</summary>
         public const string UnreachableFile = "validation.unreachable";
 
@@ -177,6 +240,12 @@ namespace AnomalyPath.Core.Localization
 
         /// <summary>Неизвестный тип локации.</summary>
         public const string WorldUnknownLocationKind = "error.world_unknown_location_kind";
+
+        /// <summary>Неизвестный тег локации.</summary>
+        public const string WorldUnknownLocationTag = "error.world_unknown_location_tag";
+
+        /// <summary>Неизвестная редкость локации.</summary>
+        public const string WorldUnknownRarity = "error.world_unknown_location_rarity";
 
         /// <summary>Неизвестный способ перехода.</summary>
         public const string WorldUnknownVia = "error.world_unknown_via";
@@ -211,9 +280,6 @@ namespace AnomalyPath.Core.Localization
         /// <summary>Переход не найден.</summary>
         public const string WorldEdgeNotFound = "error.world_edge_not_found";
 
-        /// <summary>Не хватает выносливости на переход.</summary>
-        public const string WorldNotEnoughStamina = "error.world_not_enough_stamina";
-
         /// <summary>Переход начинается не из текущей локации.</summary>
         public const string WorldWrongLocation = "error.world_wrong_location";
 
@@ -231,6 +297,9 @@ namespace AnomalyPath.Core.Localization
 
         /// <summary>Некорректное имя слота сохранения.</summary>
         public const string SaveSlotInvalid = "error.save_slot_invalid";
+
+        /// <summary>Папка сохранений не задана.</summary>
+        public const string SaveRootMissing = "error.save_root_missing";
 
         /// <summary>Слот сохранения не найден.</summary>
         public const string SaveNotFound = "error.save_not_found";

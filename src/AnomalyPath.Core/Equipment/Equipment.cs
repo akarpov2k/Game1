@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using AnomalyPath.Core.Equipment;
+using AnomalyPath.Core.Localization;
 
 namespace AnomalyPath.Core.Inventory
 {
@@ -21,12 +22,16 @@ namespace AnomalyPath.Core.Inventory
         {
             if (string.IsNullOrWhiteSpace(ownerId))
             {
-                throw new ArgumentException("id владельца не задан", nameof(ownerId));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(ownerId)),
+                    nameof(ownerId));
             }
 
             if (quickSlots < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(quickSlots), "Число быстрых слотов не может быть отрицательным");
+                throw new ArgumentOutOfRangeException(
+                    nameof(quickSlots),
+                    CoreText.Format(CoreErrors.NonNegative, nameof(quickSlots)));
             }
 
             OwnerId = ownerId;
@@ -100,7 +105,9 @@ namespace AnomalyPath.Core.Inventory
         {
             if (index < 0 || index >= _quick.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), "Индекс быстрого слота вне диапазона");
+                throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    CoreText.Format(CoreErrors.IndexOutOfRange, nameof(index)));
             }
 
             _quick[index] = item;

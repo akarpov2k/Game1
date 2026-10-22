@@ -6,6 +6,7 @@
 - Движок: **Unity 6000.6.6f1**, шаблон Universal 2D (URP 17.6, Renderer2D).
 - Геймплей и правила: [`docs/GAME_MANIFEST.md`](docs/GAME_MANIFEST.md) — источник истины.
 - Схемы данных: [`docs/DATA_SCHEMAS.md`](docs/DATA_SCHEMAS.md).
+- План работ: [`docs/ROADMAP.md`](docs/ROADMAP.md) — что сделано, что в работе, что дальше.
 - Стек, правила работы и история решений: [`AGENTS.md`](AGENTS.md).
 
 ## Структура

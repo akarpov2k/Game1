@@ -115,7 +115,12 @@ namespace AnomalyPath.Core
         private static CombatSettingsTemplate LoadCombatSettings(LoadedData data)
         {
             var records = data.All("combat");
-            return records.Count == 0 ? CombatSettingsTemplate.Default : CombatSettingsTemplate.FromJson(records[0], "combat");
+            if (records.Count == 0)
+            {
+                throw new DataException("combat", CoreErrors.FileNotFound);
+            }
+
+            return CombatSettingsTemplate.FromJson(records[0], "combat");
         }
 
         private static BalanceTemplate LoadBalance(LoadedData data)
@@ -127,9 +132,12 @@ namespace AnomalyPath.Core
         private static IEquipmentSettings LoadEquipmentSettings(LoadedData data)
         {
             var records = data.All("equipment");
-            return records.Count == 0
-                ? EquipmentSettings.Default
-                : EquipmentSettings.FromJson(records[0], "equipment");
+            if (records.Count == 0)
+            {
+                throw new DataException("equipment", CoreErrors.FileNotFound);
+            }
+
+            return EquipmentSettings.FromJson(records[0], "equipment");
         }
 
         private static INicknameGenerator LoadNicknames(LoadedData data)

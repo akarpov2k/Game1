@@ -36,9 +36,9 @@ namespace AnomalyPath.Core.Validation
                 return issues;
             }
 
-            var hubs = Find(locations, "hub");
-            var sites = Find(locations, "site");
-            var routes = Find(locations, "route");
+            var hubs = Find(locations, LocationNodeType.Hub);
+            var sites = Find(locations, LocationNodeType.Site);
+            var routes = Find(locations, LocationNodeType.Route);
             if (hubs.Count == 0)
             {
                 issues.Add(Error("world", CoreErrors.WorldNoHub));
@@ -70,8 +70,8 @@ namespace AnomalyPath.Core.Validation
                         issues.Add(Error(
                             location.Id,
                             CoreErrors.WorldTransitionForbidden,
-                            location.NodeType,
-                            target.NodeType,
+                            SchemaEnum.ToCode(location.NodeType),
+                            SchemaEnum.ToCode(target.NodeType),
                             connection.Via));
                         continue;
                     }
@@ -81,9 +81,16 @@ namespace AnomalyPath.Core.Validation
                         issues.Add(Error(location.Id, CoreErrors.WorldViaTags, connection.Via));
                     }
 
-                    if (location.NodeType == "hub" && target.NodeType == "hub" && !topology.Topology.HubFastTravel)
+                    if (location.NodeType == LocationNodeType.Hub &&
+                        target.NodeType == LocationNodeType.Hub &&
+                        !topology.Topology.HubFastTravel)
                     {
-                        issues.Add(Error(location.Id, CoreErrors.WorldTransitionForbidden, "hub", "hub", connection.Via));
+                        issues.Add(Error(
+                            location.Id,
+                            CoreErrors.WorldTransitionForbidden,
+                            SchemaEnum.ToCode(LocationNodeType.Hub),
+                            SchemaEnum.ToCode(LocationNodeType.Hub),
+                            connection.Via));
                     }
                 }
             }
@@ -163,7 +170,7 @@ namespace AnomalyPath.Core.Validation
             return false;
         }
 
-        private static List<LocationTemplate> Find(LocationRepository locations, string nodeType)
+        private static List<LocationTemplate> Find(LocationRepository locations, LocationNodeType nodeType)
         {
             var result = new List<LocationTemplate>();
             foreach (var location in locations.All)

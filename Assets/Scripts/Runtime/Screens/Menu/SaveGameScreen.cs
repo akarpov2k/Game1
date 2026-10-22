@@ -19,6 +19,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
         private const float FooterHeight = 170f;
 
         private readonly IUiHost _host;
+        private readonly int _pageSize;
         private readonly Text _title;
         private readonly Text _section;
         private readonly Transform _tilesRoot;
@@ -41,8 +42,9 @@ namespace AnomalyPath.Runtime.Screens.Menu
             : base(host, canvas, "SaveGame")
         {
             _host = host;
-            _title = host.Ui.CreateTitle(Content, "Сохранить игру");
-            _section = host.Ui.CreateText(Content, "Ячейка сохранения", 18, TextAnchor.MiddleLeft);
+            _pageSize = host.Rules.Require().SavePageSize;
+            _title = host.Ui.CreateTitle(Content, UiText.Get(host.Texts, UiTextKey.SaveGame_Title));
+            _section = host.Ui.CreateText(Content, UiText.Get(host.Texts, UiTextKey.SaveGame_Section), 18, TextAnchor.MiddleLeft);
 
             var tilesGo = new GameObject("SaveSlots", typeof(RectTransform));
             tilesGo.transform.SetParent(Content, false);
@@ -54,7 +56,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
             _tilesRoot = tilesGo.transform;
 
             _status = host.Ui.CreateText(Content, string.Empty, 18, TextAnchor.MiddleCenter, UiFactory.ToastColor);
-            _backButton = host.Ui.CreateButton(Content, "Назад", Back);
+            _backButton = host.Ui.CreateButton(Content, UiText.Get(host.Texts, UiTextKey.Common_Back), Back);
             _pager = new SaveSlotPager(host, Content, PreviousPage, NextPage);
             _dialog = new SaveNameDialog(host, Panel.transform);
             Panel.AddComponent<RectResizeWatcher>().Resized += Layout;
@@ -128,7 +130,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
 
             _newSlot = SaveSlots.Slot(next);
             _entries.Add(new KeyValuePair<string, SaveSlotInfo?>(_newSlot, null));
-            _pages = Mathf.Max(1, Mathf.CeilToInt(_entries.Count / (float)SaveSlotLayout.PageSize));
+            _pages = Mathf.Max(1, Mathf.CeilToInt(_entries.Count / (float)_pageSize));
         }
 
         private void Layout()
@@ -153,8 +155,8 @@ namespace AnomalyPath.Runtime.Screens.Menu
             }
 
             var columns = SaveSlotLayout.ColumnsForWidth(availableWidth);
-            var pageStart = _page * SaveSlotLayout.PageSize;
-            var count = Mathf.Clamp(_entries.Count - pageStart, 0, SaveSlotLayout.PageSize);
+            var pageStart = _page * _pageSize;
+            var count = Mathf.Clamp(_entries.Count - pageStart, 0, _pageSize);
             var rows = SaveSlotLayout.Rows(count, columns);
             var gridHeight = Mathf.Max(SaveSlotLayout.MinTile, height - GridTop - FooterHeight);
             var tile = SaveSlotLayout.TileSize(availableWidth, gridHeight, count, columns);
@@ -232,13 +234,13 @@ namespace AnomalyPath.Runtime.Screens.Menu
             var count = 0;
             foreach (var info in _slots.Values)
             {
-                if (info.Title.StartsWith("Новое сохранение", StringComparison.OrdinalIgnoreCase))
+                if (info.Title.StartsWith(UiText.Get(_host.Texts, UiTextKey.SaveSlot_New), StringComparison.OrdinalIgnoreCase))
                 {
                     count++;
                 }
             }
 
-            return "Новое сохранение " + (count + 1);
+            return UiText.Format(_host.Texts, UiTextKey.SaveSlot_New_Name, count + 1);
         }
 
         private void SaveTo(string slot, string name)
@@ -246,7 +248,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
             var session = _host.Session;
             if (session == null)
             {
-                _status.text = "Нет активной игры";
+                _status.text = UiText.Get(_host.Texts, UiTextKey.Common_No_Game);
                 return;
             }
 
@@ -254,11 +256,11 @@ namespace AnomalyPath.Runtime.Screens.Menu
             {
                 _host.Sessions.Save(session, slot, title: name);
                 _host.ShowGame(announce: false);
-                _host.Toast("Сохранено: " + name);
+                _host.Toast(UiText.Format(_host.Texts, UiTextKey.SaveGame_Toast_Saved, name));
             }
             catch (Exception error)
             {
-                _status.text = "Ошибка сохранения: " + error.Message;
+                _status.text = UiText.Format(_host.Texts, UiTextKey.SaveGame_Status_Error, error.Message);
             }
         }
 

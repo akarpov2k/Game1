@@ -82,9 +82,9 @@ namespace AnomalyPath.Runtime.Screens.Menu
                 button.onClick.AddListener(() => onClick());
             }
 
-            var emptyTitle = number > 0 ? "Ячейка " + number : slot;
+            var emptyTitle = number > 0 ? UiText.Format(host.Texts, UiTextKey.SaveSlot_Cell, number) : slot;
             var baseTitle = isNew
-                ? "Новое сохранение"
+                ? UiText.Get(host.Texts, UiTextKey.SaveSlot_New)
                 : info != null && info.IsReadable
                     ? string.IsNullOrWhiteSpace(info.Title)
                         ? emptyTitle
@@ -95,7 +95,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
                 host,
                 background.transform,
                 "SlotTitle",
-                (markSelected && selected ? "> " : string.Empty) + baseTitle,
+                (markSelected && selected ? UiText.Get(host.Texts, UiTextKey.Common_Selected) : string.Empty) + baseTitle,
                 SaveSlotLayout.TitleSize(tile),
                 TextAnchor.UpperCenter,
                 UiFactory.TextColor,
@@ -112,7 +112,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
                     host,
                     background.transform,
                     "SlotLevel",
-                    "Ур. " + info.Level + " · " + SaveSlotText.Money(info.Money),
+                    UiText.Format(host.Texts, UiTextKey.Common_Level_Cap, info.Level) + " · " + SaveSlotText.Money(host.Texts, info.Money),
                     SaveSlotLayout.LineSize(tile),
                     TextAnchor.MiddleCenter,
                     UiFactory.TextColor,
@@ -124,7 +124,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
                     host,
                     background.transform,
                     "SlotDay",
-                    "День " + info.Day + ", " + info.Hours.ToString("0.0") + " ч",
+                    UiText.Format(host.Texts, UiTextKey.Common_Day_Hours_Tile, info.Day, info.Hours.ToString("0.0")),
                     SaveSlotLayout.SmallSize(tile),
                     TextAnchor.MiddleCenter,
                     UiFactory.MutedTextColor,
@@ -144,7 +144,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
                     host,
                     background.transform,
                     "SlotNote",
-                    info == null ? "Пустая" : "Повреждён",
+                    info == null ? UiText.Get(host.Texts, UiTextKey.SaveSlot_Empty) : UiText.Get(host.Texts, UiTextKey.SaveSlot_Corrupted),
                     SaveSlotLayout.SmallSize(tile),
                     TextAnchor.MiddleCenter,
                     UiFactory.MutedTextColor,
@@ -182,7 +182,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
                 host,
                 delete.transform,
                 "DeleteLabel",
-                "×",
+                UiText.Get(host.Texts, UiTextKey.Common_Close),
                 size >= 36f ? 22 : 18,
                 TextAnchor.MiddleCenter,
                 UiFactory.TextColor,

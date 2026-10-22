@@ -26,17 +26,23 @@ namespace AnomalyPath.Core.World
         {
             if (string.IsNullOrWhiteSpace(toId))
             {
-                throw new System.ArgumentException("Пустой target перехода", nameof(toId));
+                throw new System.ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(toId)),
+                    nameof(toId));
             }
 
             if (!ViaRules.IsKnown(via))
             {
-                throw new System.ArgumentException("Неизвестный способ перехода", nameof(via));
+                throw new System.ArgumentException(
+                    CoreText.Format(CoreErrors.WorldUnknownVia, via),
+                    nameof(via));
             }
 
             if (length.HasValue && length.Value < 1)
             {
-                throw new System.ArgumentException("Длина ребра должна быть положительной", nameof(length));
+                throw new System.ArgumentException(
+                    CoreText.Format(CoreErrors.MinimumOne, nameof(length)),
+                    nameof(length));
             }
 
             ToId = toId;

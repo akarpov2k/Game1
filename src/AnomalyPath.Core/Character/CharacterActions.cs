@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Inventory;
+using AnomalyPath.Core.Templates;
 using EquipmentState = AnomalyPath.Core.Inventory.Equipment;
 
 namespace AnomalyPath.Core.Character
@@ -216,6 +217,25 @@ namespace AnomalyPath.Core.Character
             RemoveAnywhere(inventory, equipment, instanceId);
 
         /// <inheritdoc />
+        public CharacterActionResult Move(GridContainer inventory, string instanceId, int x, int y, bool rotated)
+        {
+            if (inventory == null)
+            {
+                throw new ArgumentNullException(nameof(inventory));
+            }
+
+            var item = FindInGrid(inventory, instanceId);
+            if (item == null)
+            {
+                return CharacterActionResult.ItemMissing;
+            }
+
+            return _inventory.TryMove(inventory, instanceId, x, y, rotated)
+                ? CharacterActionResult.Ok
+                : CharacterActionResult.NoRoom;
+        }
+
+        /// <inheritdoc />
         public EquipmentSlot? DefaultSlot(EquipmentState equipment, ItemInstance item)
         {
             if (equipment == null)
@@ -273,7 +293,7 @@ namespace AnomalyPath.Core.Character
         {
             foreach (var template in _items.All)
             {
-                if (template.Category == "ammo" && string.Equals(template.Caliber, caliber, StringComparison.Ordinal))
+                if (template.Category == ItemCategory.Ammo && string.Equals(template.Caliber, caliber, StringComparison.Ordinal))
                 {
                     return template.Id;
                 }

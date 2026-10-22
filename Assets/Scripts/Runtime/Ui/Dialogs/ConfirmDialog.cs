@@ -37,7 +37,7 @@ namespace AnomalyPath.Runtime.Ui.Dialogs
             var blocker = box.gameObject.AddComponent<Button>();
             blocker.targetGraphic = boxImage;
             blocker.onClick.AddListener(() => { });
-            _title = host.Ui.CreateTitle(box, "Подтверждение");
+            _title = host.Ui.CreateTitle(box, UiText.Get(host.Texts, UiTextKey.Common_Confirm_Title));
             _message = host.Ui.CreateText(box, string.Empty, 20, TextAnchor.MiddleCenter);
             _message.GetComponent<LayoutElement>().preferredHeight = 90;
 
@@ -51,9 +51,15 @@ namespace AnomalyPath.Runtime.Ui.Dialogs
             layout.childForceExpandHeight = false;
             row.AddComponent<LayoutElement>().preferredHeight = 54;
 
-            _confirm = host.Ui.CreateButton(row.transform, "Удалить", Confirm);
+            _confirm = host.Ui.CreateButton(
+                row.transform,
+                UiText.Get(host.Texts, UiTextKey.Common_Delete),
+                Confirm);
             _confirm.GetComponent<Image>().color = ConfirmColor;
-            host.Ui.CreateButton(row.transform, "Отмена", Cancel);
+            host.Ui.CreateButton(
+                row.transform,
+                UiText.Get(host.Texts, UiTextKey.Common_Cancel),
+                Cancel);
 
             Panel.transform.SetAsLastSibling();
             Panel.SetActive(false);

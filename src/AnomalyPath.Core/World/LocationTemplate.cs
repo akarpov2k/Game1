@@ -10,15 +10,11 @@ namespace AnomalyPath.Core.World
     /// <summary>Авторский шаблон локации: роль в цепочке, теги, переходы и шанс появления.</summary>
     public sealed class LocationTemplate
     {
-        private static readonly string[] KnownKinds = { "hub", "wild", "special" };
-        private static readonly string[] KnownNodeTypes = { "hub", "route", "site", "interior" };
-        private static readonly string[] KnownRarities = { "common", "uncommon", "rare", "unique" };
-
         /// <summary>Создаёт шаблон локации.</summary>
         /// <param name="id">Идентификатор.</param>
         /// <param name="titleKey">Ключ названия.</param>
-        /// <param name="locationKind">Тип локации: <c>hub</c>, <c>wild</c>, <c>special</c>.</param>
-        /// <param name="nodeType">Роль в цепочке: <c>hub</c>, <c>route</c>, <c>site</c>, <c>interior</c>.</param>
+        /// <param name="locationKind">Тип локации из <see cref="LocationKind"/>.</param>
+        /// <param name="nodeType">Роль в цепочке из <see cref="LocationNodeType"/>.</param>
         /// <param name="tags">Теги совместимости.</param>
         /// <param name="tier">Тир опасности.</param>
         /// <param name="backgrounds">Пул фонов.</param>
@@ -27,15 +23,16 @@ namespace AnomalyPath.Core.World
         /// <param name="connections">Авторские переходы.</param>
         /// <param name="approachLength">Сколько отрезков пути ведёт к локации; <c>null</c> — из топологии.</param>
         /// <param name="fixedEvents">События, которые появляются всегда.</param>
-        /// <param name="rarity">Редкость локации.</param>
+        /// <param name="rarity">Редкость локации из <see cref="LocationRarity"/>.</param>
         /// <param name="spawnChance">Шанс появления от 0 до 1.</param>
         /// <param name="unique">Квестовая уникальная локация.</param>
+        /// <exception cref="ArgumentException">Id пуст или значение перечисления не определено.</exception>
         public LocationTemplate(
             string id,
             string titleKey,
-            string locationKind,
-            string nodeType,
-            IReadOnlyList<string> tags,
+            LocationKind locationKind,
+            LocationNodeType nodeType,
+            IReadOnlyList<LocationTag> tags,
             int tier,
             IReadOnlyList<string> backgrounds,
             IntRange objectCount,
@@ -43,28 +40,34 @@ namespace AnomalyPath.Core.World
             IReadOnlyList<ConnectionTemplate> connections,
             IntRange? approachLength,
             IReadOnlyList<string> fixedEvents,
-            string rarity,
+            LocationRarity rarity,
             double spawnChance,
             bool unique)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                throw new ArgumentException("Пустой id локации", nameof(id));
+                throw new ArgumentException(CoreText.Format(CoreErrors.RequiredField, nameof(id)), nameof(id));
             }
 
-            if (!IsKnownKind(locationKind))
+            if (!Enum.IsDefined(typeof(LocationKind), locationKind))
             {
-                throw new ArgumentException("Неизвестный тип локации", nameof(locationKind));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.WorldUnknownLocationKind, locationKind),
+                    nameof(locationKind));
             }
 
-            if (!IsKnownNodeType(nodeType))
+            if (!Enum.IsDefined(typeof(LocationNodeType), nodeType))
             {
-                throw new ArgumentException("Неизвестная роль локации", nameof(nodeType));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.WorldUnknownNodeType, nodeType),
+                    nameof(nodeType));
             }
 
-            if (!IsKnownRarity(rarity))
+            if (!Enum.IsDefined(typeof(LocationRarity), rarity))
             {
-                throw new ArgumentException("Неизвестная редкость локации", nameof(rarity));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.WorldUnknownRarity, rarity),
+                    nameof(rarity));
             }
 
             if (tier < 0)
@@ -106,13 +109,13 @@ namespace AnomalyPath.Core.World
         public string TitleKey { get; }
 
         /// <summary>Тип локации.</summary>
-        public string LocationKind { get; }
+        public LocationKind LocationKind { get; }
 
         /// <summary>Роль в цепочке.</summary>
-        public string NodeType { get; }
+        public LocationNodeType NodeType { get; }
 
         /// <summary>Теги совместимости.</summary>
-        public IReadOnlyList<string> Tags { get; }
+        public IReadOnlyList<LocationTag> Tags { get; }
 
         /// <summary>Тир опасности.</summary>
         public int Tier { get; }
@@ -136,7 +139,7 @@ namespace AnomalyPath.Core.World
         public IReadOnlyList<string> FixedEvents { get; }
 
         /// <summary>Редкость локации.</summary>
-        public string Rarity { get; }
+        public LocationRarity Rarity { get; }
 
         /// <summary>Шанс появления от 0 до 1.</summary>
         public double SpawnChance { get; }
@@ -144,43 +147,29 @@ namespace AnomalyPath.Core.World
         /// <summary>Квестовая уникальная локация.</summary>
         public bool Unique { get; }
 
-        /// <summary>Проверяет, известен ли тип локации.</summary>
-        /// <param name="kind">Значение поля <c>locationKind</c>.</param>
-        /// <returns><c>true</c>, если тип поддерживается.</returns>
-        public static bool IsKnownKind(string kind) => Contains(KnownKinds, kind);
-
-        /// <summary>Проверяет, известна ли роль в цепочке.</summary>
-        /// <param name="nodeType">Значение поля <c>nodeType</c>.</param>
-        /// <returns><c>true</c>, если роль поддерживается.</returns>
-        public static bool IsKnownNodeType(string nodeType) => Contains(KnownNodeTypes, nodeType);
-
-        /// <summary>Проверяет, известна ли редкость локации.</summary>
-        /// <param name="rarity">Значение поля <c>rarity</c>.</param>
-        /// <returns><c>true</c>, если редкость поддерживается.</returns>
-        public static bool IsKnownRarity(string rarity) => Contains(KnownRarities, rarity);
-
         /// <summary>Читает шаблон локации из записи данных.</summary>
         /// <param name="value">Загруженная запись.</param>
         /// <param name="sourcePath">Путь для сообщения об ошибке.</param>
         /// <returns>Шаблон локации.</returns>
-        /// <exception cref="DataException">Поля отсутствуют или заданы неверно.</exception>
+        /// <exception cref="DataException">Поля отсутствуют, значения неизвестны или вне границ.</exception>
         public static LocationTemplate FromJson(JsonValue value, string sourcePath)
         {
             var id = DataMap.RequireString(value, "id", sourcePath);
             var titleKey = DataMap.RequireString(value, "titleKey", sourcePath);
-            var locationKind = DataMap.RequireString(value, "locationKind", sourcePath);
-            if (!IsKnownKind(locationKind))
+
+            var locationKindCode = DataMap.RequireString(value, "locationKind", sourcePath);
+            if (!SchemaEnum.TryParse(locationKindCode, out LocationKind locationKind))
             {
-                throw new DataException(sourcePath, CoreErrors.WorldUnknownLocationKind, locationKind);
+                throw new DataException(sourcePath, CoreErrors.WorldUnknownLocationKind, locationKindCode);
             }
 
-            var nodeType = DataMap.RequireString(value, "nodeType", sourcePath);
-            if (!IsKnownNodeType(nodeType))
+            var nodeTypeCode = DataMap.RequireString(value, "nodeType", sourcePath);
+            if (!SchemaEnum.TryParse(nodeTypeCode, out LocationNodeType nodeType))
             {
-                throw new DataException(sourcePath, CoreErrors.WorldUnknownNodeType, nodeType);
+                throw new DataException(sourcePath, CoreErrors.WorldUnknownNodeType, nodeTypeCode);
             }
 
-            var tags = DataMap.OptionalStringArray(value, "tags");
+            var tags = ReadTags(value, sourcePath);
             var backgrounds = DataMap.OptionalStringArray(value, "backgrounds");
             if (backgrounds.Count == 0)
             {
@@ -212,10 +201,12 @@ namespace AnomalyPath.Core.World
             }
 
             var fixedEvents = DataMap.OptionalStringArray(value, "fixedEvents");
-            var rarity = DataMap.OptionalString(value, "rarity") ?? "common";
-            if (!IsKnownRarity(rarity))
+
+            var rarity = LocationRarity.Common;
+            var rarityCode = DataMap.OptionalString(value, "rarity");
+            if (rarityCode != null && !SchemaEnum.TryParse(rarityCode, out rarity))
             {
-                throw new DataException(sourcePath, CoreErrors.WorldRange, "rarity");
+                throw new DataException(sourcePath, CoreErrors.WorldUnknownRarity, rarityCode);
             }
 
             var spawnChance = DataMap.OptionalDouble(value, "spawnChance") ?? 1;
@@ -225,7 +216,7 @@ namespace AnomalyPath.Core.World
             }
 
             var unique = DataMap.OptionalBool(value, "unique", false);
-            if (unique && rarity != "unique")
+            if (unique && rarity != LocationRarity.Unique)
             {
                 throw new DataException(sourcePath, CoreErrors.WorldUniqueRarity, id);
             }
@@ -248,6 +239,22 @@ namespace AnomalyPath.Core.World
                 unique);
         }
 
+        private static IReadOnlyList<LocationTag> ReadTags(JsonValue value, string sourcePath)
+        {
+            var result = new List<LocationTag>();
+            foreach (var code in DataMap.OptionalStringArray(value, "tags"))
+            {
+                if (!SchemaEnum.TryParse(code, out LocationTag tag))
+                {
+                    throw new DataException(sourcePath, CoreErrors.WorldUnknownLocationTag, code);
+                }
+
+                result.Add(tag);
+            }
+
+            return result;
+        }
+
         private static IReadOnlyList<ConnectionTemplate> ReadConnections(JsonValue value, string sourcePath)
         {
             var result = new List<ConnectionTemplate>();
@@ -267,19 +274,6 @@ namespace AnomalyPath.Core.World
             }
 
             return result;
-        }
-
-        private static bool Contains(string[] values, string candidate)
-        {
-            foreach (var value in values)
-            {
-                if (value == candidate)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

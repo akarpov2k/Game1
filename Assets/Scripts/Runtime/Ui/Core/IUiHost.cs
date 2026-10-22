@@ -32,6 +32,9 @@ namespace AnomalyPath.Runtime.Ui.Core
         /// <summary>Предметы: названия и категории для отображения.</summary>
         IItemRepository Items { get; }
 
+        /// <summary>Шаблоны локаций: названия для основного экрана и меню.</summary>
+        ILocationRepository Locations { get; }
+
         /// <summary>Экипировка: число слотов артефактов и строк инвентаря.</summary>
         IEquipmentService Equipment { get; }
 
@@ -66,9 +69,12 @@ namespace AnomalyPath.Runtime.Ui.Core
         /// <summary>Показать экран сохранения: ячейки, название и существующие сохранения.</summary>
         void ShowSave();
 
-        /// <summary>Показать игровую панель.</summary>
+        /// <summary>Показать основной игровой экран.</summary>
         /// <param name="announce">Показать сообщение о начале игры.</param>
         void ShowGame(bool announce = true);
+
+        /// <summary>Показать меню игры: продолжить, сохранить, загрузить, выйти.</summary>
+        void ShowGameMenu();
 
         /// <summary>Показать экран персонажа с экипировкой и инвентарём.</summary>
         void ShowCharacter();

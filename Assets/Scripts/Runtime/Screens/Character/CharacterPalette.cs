@@ -15,6 +15,9 @@ namespace AnomalyPath.Runtime.Screens.Character
         /// <summary>Фон клетки инвентаря.</summary>
         public static readonly Color Cell = new Color(0.10f, 0.12f, 0.13f, 1f);
 
+        /// <summary>Линии сетки инвентаря.</summary>
+        public static readonly Color GridLine = new Color(0.40f, 0.46f, 0.45f, 1f);
+
         /// <summary>Фон фигуры персонажа.</summary>
         public static readonly Color Figure = new Color(0.17f, 0.21f, 0.20f, 1f);
 

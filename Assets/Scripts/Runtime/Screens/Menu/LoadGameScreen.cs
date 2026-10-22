@@ -19,6 +19,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
         private const float FooterHeight = 170f;
 
         private readonly IUiHost _host;
+        private readonly int _pageSize;
         private readonly Text _title;
         private readonly Transform _tilesRoot;
         private readonly Text _empty;
@@ -38,7 +39,8 @@ namespace AnomalyPath.Runtime.Screens.Menu
             : base(host, canvas, "LoadGame")
         {
             _host = host;
-            _title = host.Ui.CreateTitle(Content, "Загрузить игру");
+            _pageSize = host.Rules.Require().SavePageSize;
+            _title = host.Ui.CreateTitle(Content, UiText.Get(host.Texts, UiTextKey.Load_Title));
 
             var tilesGo = new GameObject("LoadSlots", typeof(RectTransform));
             tilesGo.transform.SetParent(Content, false);
@@ -49,10 +51,10 @@ namespace AnomalyPath.Runtime.Screens.Menu
             tilesRect.offsetMax = Vector2.zero;
             _tilesRoot = tilesGo.transform;
 
-            _empty = host.Ui.CreateText(Content, "Сохранений нет", 24, TextAnchor.MiddleCenter,
+            _empty = host.Ui.CreateText(Content, UiText.Get(host.Texts, UiTextKey.Load_Empty), 24, TextAnchor.MiddleCenter,
                 UiFactory.MutedTextColor);
             _status = host.Ui.CreateText(Content, string.Empty, 18, TextAnchor.MiddleCenter, UiFactory.ToastColor);
-            _backButton = host.Ui.CreateButton(Content, "Назад", Back);
+            _backButton = host.Ui.CreateButton(Content, UiText.Get(host.Texts, UiTextKey.Common_Back), Back);
             _pager = new SaveSlotPager(host, Content, PreviousPage, NextPage);
             _confirm = new ConfirmDialog(host, Panel.transform);
             Panel.AddComponent<RectResizeWatcher>().Resized += Layout;
@@ -108,8 +110,8 @@ namespace AnomalyPath.Runtime.Screens.Menu
             }
 
             var columns = SaveSlotLayout.ColumnsForWidth(availableWidth);
-            var pageStart = _page * SaveSlotLayout.PageSize;
-            var count = Mathf.Clamp(_slots.Count - pageStart, 0, SaveSlotLayout.PageSize);
+            var pageStart = _page * _pageSize;
+            var count = Mathf.Clamp(_slots.Count - pageStart, 0, _pageSize);
             var rows = SaveSlotLayout.Rows(count, columns);
             var gridHeight = Mathf.Max(SaveSlotLayout.MinTile, height - GridTop - FooterHeight);
             var tile = SaveSlotLayout.TileSize(availableWidth, gridHeight, count, columns);
@@ -146,7 +148,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
         }
 
         private int PageCount() =>
-            Mathf.Max(1, Mathf.CeilToInt(_slots.Count / (float)SaveSlotLayout.PageSize));
+            Mathf.Max(1, Mathf.CeilToInt(_slots.Count / (float)_pageSize));
 
         private void PreviousPage()
         {
@@ -216,8 +218,8 @@ namespace AnomalyPath.Runtime.Screens.Menu
             }
 
             _confirm.Show(
-                "Удаление сохранения",
-                "Удалить «" + title + "»? Это действие нельзя отменить.",
+                UiText.Get(_host.Texts, UiTextKey.Load_Delete_Title),
+                UiText.Format(_host.Texts, UiTextKey.Load_Delete_Question, title),
                 () => DeleteSave(slot));
         }
 
@@ -229,7 +231,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
             }
             catch (Exception error)
             {
-                _status.text = "Ошибка удаления: " + error.Message;
+                _status.text = UiText.Format(_host.Texts, UiTextKey.Load_Delete_Error, error.Message);
                 return;
             }
 
@@ -242,7 +244,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
             }
 
             Layout();
-            _status.text = "Сохранение удалено";
+            _status.text = UiText.Get(_host.Texts, UiTextKey.Load_Deleted);
         }
 
         private void LoadSlot(string slot)
@@ -254,7 +256,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
             }
             catch (Exception error)
             {
-                _status.text = "Ошибка загрузки: " + error.Message;
+                _status.text = UiText.Format(_host.Texts, UiTextKey.Load_Load_Error, error.Message);
             }
         }
 

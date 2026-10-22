@@ -3,16 +3,47 @@
 Дополнение к [GAME_MANIFEST.md](GAME_MANIFEST.md). Здесь только структура данных: файлы, поля, типы, правила.
 Поведение и баланс — в манифесте. Код читает эти схемы, а не наоборот.
 
-**Статус:** черновик v0.35 (2026-10-22). Соответствует манифесту v0.56.
+**Статус:** черновик v0.36 (2026-10-23). Соответствует манифесту v0.85.
 
 ---
 
-## 0. Что нового в v0.35
+## Оглавление
 
-Наборы снаряжения: явные поля `weapon`, `secondaryWeapon`, `armor`, `helmet`, `backpack`, `belt` и `consumables`; рюкзак расширяет сетку до раскладки расходников; старые `items`/`equipment` читаются для совместимости.
+Номера строк — на 2026-10-23; при правке документа обновить таблицу или искать раздел по заголовку.
+
+| § | Раздел | Строка |
+| --- | --- | --- |
+| 0 | Что нового в v0.36 | 40 |
+| 1 | Соглашения | 71 |
+| 2 | Данные и состояние | 114 |
+| 3 | Файлы данных, каталоги, моды | 174 |
+| 4 | Item | 510 |
+| 5 | Габариты и поворот | 748 |
+| 6 | Стеки | 756 |
+| 7 | GridContainer | 769 |
+| 8 | ItemInstance (состояние) | 779 |
+| 9 | Переполнение | 811 |
+| 10 | Снаряжение и слоты | 822 |
+| 11 | Бой: классы, скиллы, статусы, эффекты | 857 |
+| 12 | Актёры: базовая сущность и наследники | 1084 |
+| 13 | События и выборы | 1194 |
+| 14 | Локации | 1244 |
+| 15 | Фракции, квесты, диалоги, открытия | 1449 |
+| 16 | Крафт и ремонт: `Recipe` | 1534 |
+| 17 | Сейв | 1553 |
+| 18 | Открытые вопросы по данным | 1678 |
+| 19 | Правила валидации | 1698 |
+| 20 | Примеры | 1888 |
+| 21 | Наборы снаряжения и новая игра | 2710 |
+| 22 | Ники для новой игры (`nicks`) | 2779 |
+
+## 0. Что нового в v0.36
+
+Правила данных ужесточены: значения схемы (`category`, `material`, `damageKind`, `type`, `rarity`, `loss`, `deathMode`, `insuranceAppliesTo`, `apRestore`, `initiative`, `result`, `price.mode`, `locationKind`, `nodeType`, `via`, `tags`) — enum-коды, а не произвольные строки; `material` у брони/шлема и `damageTypeId` у оружия обязательны; `GameRules` получил настройки новой игры (`tradeDifficulty`, `tradeDifficultyMax`, `tradeDifficultyStep`, `lootLossStep`, `nicknameMaxLength`), в коде этих чисел нет.
 
 ### Что было раньше
 
+- **v0.35:** наборы снаряжения: явные поля `weapon`, `secondaryWeapon`, `armor`, `helmet`, `backpack`, `belt` и `consumables`; рюкзак расширяет сетку до раскладки расходников; старые `items`/`equipment` читаются.
 - **v0.34:** новая игра — `Loadout`, `GameRules.playerActorId/gridWidth/needsMax`, `world.settings` (`lootLossFactor`, `tradeDifficulty`).
 
 - **v0.32:** сохранение мира (v1) — карта, выносливость, время и погода, атомарная запись.
@@ -494,7 +525,7 @@ Mods/<modName>/
 | `artifactType` | enum | у артефактов | `fire`, `electric`, `chemical`, `gravity`; обязателен для `category = artifact` |
 | `protection` | object | нет | у `armor` и `helmet`: защита по типам урона: `dmg_bullet`, `dmg_electric`, `dmg_chemical`, `dmg_fire`, `dmg_rupture` |
 | `durabilityMax` | int | нет | у `armor` и `helmet`: максимум прочности, задаётся в файле предмета |
-| `material` | enum | нет | у `armor` и `helmet`: `light`, `medium`, `heavy`; по умолчанию `medium` |
+| `material` | enum | да | у `armor` и `helmet`: `light`, `medium`, `heavy`, `exoskeleton` |
 | `durabilityFactor` | number | нет | коэффициент износа материала (`light` 1.0, `medium` 1.2, `heavy` 1.5, `exoskeleton` 1.7) |
 | `quality` | number | нет | качество предмета, по умолчанию `1` |
 | `icon` | string | да | путь к спрайту относительно корня иконок |
@@ -527,7 +558,7 @@ Mods/<modName>/
 | --- | --- | --- |
 | `classId` | string | ссылка на `WeaponClass` |
 | `damage` | number | базовый урон |
-| `damageTypeId` | string | тип урона; по умолчанию `dmg_bullet` |
+| `damageTypeId` | string | тип урона; обязателен |
 | `armorPenetration` | number | бронебойность: насколько снижается защита цели |
 | `accuracyCoefficient` | number | коэффициент точности: пистолет 0.8, автомат 1.0, снайперка 1.5 |
 | `ignoresDistance` | bool | не штрафовать за дальнюю дистанцию (снайперские винтовки); по умолчанию `false` |
@@ -1363,9 +1394,9 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `hubFastTravel` | bool | можно ли ходить между хабами напрямую |
 | `hubFastTravelCost` | `{ stamina: int, hours: number }`? | цена быстрого перехода между хабами |
 | `maxBranchDepth` | int | предел вложенности веток от хаба ⏸ |
-| `initialStamina` | int | стартовая и максимальная выносливость игрока; по умолчанию 10 |
-| `dayStartHour` | number | час начала дня, по умолчанию 6 |
-| `nightStartHour` | number | час начала ночи, по умолчанию 22 |
+| `initialStamina` | int | стартовая и максимальная выносливость игрока; обязательна |
+| `dayStartHour` | number | час начала дня; обязателен |
+| `nightStartHour` | number | час начала ночи; обязателен |
 
 `Transition`: `{ from: nodeType, to: nodeType, via: string[] }`.
 
@@ -1633,6 +1664,14 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `needsMax` | int | максимум шкал потребностей новой игры |
 | `playerActorId` | string | актёр игрока, откуда берутся стартовые здоровье, ОД и уровень |
 | `tierCount` | int | число тиров (принято 4, запас до 8–10) |
+| `startingMoney` | int | деньги на старте |
+| `tradeDifficulty` | number | усложнение торговли по умолчанию |
+| `tradeDifficultyMax` | number | максимум усложнения торговли |
+| `tradeDifficultyStep` | number | шаг изменения усложнения |
+| `lootLossStep` | number | шаг изменения потери лута |
+| `nicknameMaxLength` | int | предел длины ника |
+| `previewMaxRows` | int | предел рядов в окне предпросмотра набора |
+| `savePageSize` | int | число ячеек сохранения на странице |
 
 Правило: `GameRules` — данные, а не код; числа меняются без пересборки, а сейв хранит только выбор игрока.
 

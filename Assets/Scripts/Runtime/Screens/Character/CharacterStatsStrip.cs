@@ -37,10 +37,10 @@ namespace AnomalyPath.Runtime.Screens.Character
             var staminaMax = world?.StaminaMax ?? 1;
             var needsMax = player.Needs.Max;
 
-            AddRow(0, "Health", "Здоровье", player.Health, MaxHealth(player), CharacterPalette.Health);
-            AddRow(1, "Food", "Еда", player.Needs.Hunger, needsMax, CharacterPalette.Hunger);
-            AddRow(2, "Water", "Питьё", player.Needs.Thirst, needsMax, CharacterPalette.Thirst);
-            AddRow(3, "Stamina", "Выносливость", stamina, staminaMax, CharacterPalette.Stamina);
+            AddRow(0, "Health", UiText.Get(_host.Texts, UiTextKey.Character_Stat_Health), player.Health, MaxHealth(player), CharacterPalette.Health);
+            AddRow(1, "Food", UiText.Get(_host.Texts, UiTextKey.Character_Stat_Food), player.Needs.Hunger, needsMax, CharacterPalette.Hunger);
+            AddRow(2, "Water", UiText.Get(_host.Texts, UiTextKey.Character_Stat_Water), player.Needs.Thirst, needsMax, CharacterPalette.Thirst);
+            AddRow(3, "Stamina", UiText.Get(_host.Texts, UiTextKey.Character_Stat_Stamina), stamina, staminaMax, CharacterPalette.Stamina);
         }
 
         private void AddRow(int index, string key, string caption, int value, int max, Color color)

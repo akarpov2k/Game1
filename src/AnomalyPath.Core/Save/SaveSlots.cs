@@ -12,9 +12,6 @@ namespace AnomalyPath.Core.Save
         /// <summary>Слот принудительного сохранения при выходе.</summary>
         public const string Exit = "exit_save";
 
-        /// <summary>Число ячеек на одной странице экрана сохранения.</summary>
-        public const int SlotCount = 6;
-
         /// <summary>Имя ячейки сохранения по номеру; число ячеек не ограничено.</summary>
         /// <param name="number">Номер ячейки от 1.</param>
         /// <returns>Имя слота вида <c>save_1</c>.</returns>

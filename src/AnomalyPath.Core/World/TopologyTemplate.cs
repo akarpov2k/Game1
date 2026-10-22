@@ -37,7 +37,7 @@ namespace AnomalyPath.Core.World
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                throw new ArgumentException("Пустой id топологии", nameof(id));
+                throw new ArgumentException(CoreText.Format(CoreErrors.RequiredField, nameof(id)), nameof(id));
             }
 
             if (maxBranchDepth < 1)
@@ -101,26 +101,12 @@ namespace AnomalyPath.Core.World
         /// <summary>Час начала ночи.</summary>
         public double NightStartHour { get; }
 
-        /// <summary>Запасная топология, если данных нет.</summary>
-        public static TopologyTemplate Default { get; } = new TopologyTemplate(
-            "topology",
-            Array.Empty<TransitionRule>(),
-            new IntRange(1, 1),
-            new IntRange(1, 1),
-            new Dictionary<string, TravelCost>(StringComparer.Ordinal),
-            false,
-            null,
-            1,
-            10,
-            6,
-            22);
-
         /// <summary>Проверяет, разрешён ли переход между ролями через способ.</summary>
         /// <param name="from">Роль исходной локации.</param>
         /// <param name="to">Роль целевой локации.</param>
         /// <param name="via">Способ перехода.</param>
         /// <returns><c>true</c>, если переход разрешён.</returns>
-        public bool Allows(string from, string to, string via)
+        public bool Allows(LocationNodeType from, LocationNodeType to, string via)
         {
             foreach (var rule in Transitions)
             {
@@ -151,33 +137,33 @@ namespace AnomalyPath.Core.World
         {
             var id = DataMap.RequireString(value, "id", sourcePath);
             var transitions = ReadTransitions(value, sourcePath);
-            var routeLength = IntRange.Optional(value, "routeLength", sourcePath, new IntRange(1, 3));
+            var routeLength = IntRange.FromJson(value, "routeLength", sourcePath);
             if (routeLength.Min < 1)
             {
                 throw new DataException(sourcePath, CoreErrors.WorldRange, "routeLength");
             }
 
-            var edgeLength = IntRange.Optional(value, "edgeLength", sourcePath, new IntRange(1, 2));
+            var edgeLength = IntRange.FromJson(value, "edgeLength", sourcePath);
             if (edgeLength.Min < 1)
             {
                 throw new DataException(sourcePath, CoreErrors.WorldRange, "edgeLength");
             }
 
             var costs = ReadCosts(value, sourcePath);
-            var maxDepth = DataMap.OptionalInt(value, "maxBranchDepth", 4);
+            var maxDepth = DataMap.RequireInt(value, "maxBranchDepth", sourcePath);
             if (maxDepth < 1)
             {
                 throw new DataException(sourcePath, CoreErrors.WorldRange, "maxBranchDepth");
             }
 
-            var initialStamina = DataMap.OptionalInt(value, "initialStamina", 10);
+            var initialStamina = DataMap.RequireInt(value, "initialStamina", sourcePath);
             if (initialStamina < 0)
             {
                 throw new DataException(sourcePath, CoreErrors.WorldRange, "initialStamina");
             }
 
-            var dayStart = DataMap.OptionalDouble(value, "dayStartHour") ?? 6;
-            var nightStart = DataMap.OptionalDouble(value, "nightStartHour") ?? 22;
+            var dayStart = DataMap.RequireDouble(value, "dayStartHour", sourcePath);
+            var nightStart = DataMap.RequireDouble(value, "nightStartHour", sourcePath);
             if (dayStart < 0 || nightStart > 24 || dayStart >= nightStart)
             {
                 throw new DataException(sourcePath, CoreErrors.WorldRange, "dayStartHour");

@@ -65,7 +65,7 @@ namespace AnomalyPath.Tests
             {
                 var custom = new ItemRepository(new[]
                 {
-                    Template("{\"kind\":\"items\",\"id\":\"armor_q\",\"nameKey\":\"n\",\"category\":\"armor\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"durabilityMax\":10,\"durabilityFactor\":2.0,\"quality\":2}")
+                    Template("{\"kind\":\"items\",\"id\":\"armor_q\",\"nameKey\":\"n\",\"category\":\"armor\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"material\":\"medium\",\"durabilityMax\":10,\"durabilityFactor\":2.0,\"quality\":2}")
                 });
                 var customWear = new ArmorWearService(custom);
                 Equal(3, customWear.CalculateWear(100, new ItemInstance("i", "armor_q", 1, 10, 10)), "100/(2*2*10)");

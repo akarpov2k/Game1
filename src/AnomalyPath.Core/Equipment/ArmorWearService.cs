@@ -34,9 +34,7 @@ namespace AnomalyPath.Core.Equipment
             }
 
             var template = _items.Get(armor.ItemId);
-            var material = template.DurabilityFactor > 0 ? template.DurabilityFactor : 1.0;
-            var quality = template.Quality > 0 ? template.Quality : 1.0;
-            var wear = Math.Ceiling(damage / (material * quality * 10.0));
+            var wear = Math.Ceiling(damage / (template.DurabilityFactor * template.Quality * 10.0));
             return wear < 1 ? 1 : (int)wear;
         }
 

@@ -23,7 +23,7 @@ namespace AnomalyPath.Core.Save
         {
             if (string.IsNullOrWhiteSpace(root))
             {
-                throw new ArgumentException("Папка сохранений не задана", nameof(root));
+                throw new ArgumentException(CoreText.Get(CoreErrors.SaveRootMissing), nameof(root));
             }
 
             _root = Path.GetFullPath(root);

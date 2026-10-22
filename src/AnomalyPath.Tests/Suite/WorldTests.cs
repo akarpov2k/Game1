@@ -5,6 +5,7 @@ using AnomalyPath.Core;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Json;
+using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.World;
 
 namespace AnomalyPath.Tests
@@ -38,6 +39,23 @@ namespace AnomalyPath.Tests
 
         private void TemplateTests()
         {
+            Check("шаблон: неизвестный тег локации — ошибка схемы", () =>
+            {
+                var json = LocationJson("loc_x", "wild", "site", "[\"swamp\"]");
+                var error = Throws<DataException>(
+                    () => LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test"),
+                    "тег");
+                Equal(CoreErrors.WorldUnknownLocationTag, error.Code, "код");
+                Contains(error.Message, "swamp", "значение");
+            });
+
+            Check("схема: способы перехода читаются как enum", () =>
+            {
+                True(SchemaEnum.TryParse("tunnel", out TravelVia via) && via == TravelVia.Tunnel, "tunnel");
+                True(ViaRules.IsKnown("door"), "door известен");
+                False(ViaRules.IsKnown("teleport"), "teleport неизвестен");
+            });
+
             Check("шаблон: unique без rarity unique — ошибка", () =>
             {
                 var json = LocationJson("loc_x", "wild", "site", "[\"outdoor\"]", ",\"unique\":true");
@@ -45,9 +63,110 @@ namespace AnomalyPath.Tests
                 Equal("error.world_unique_rarity", error.Code, "код");
             });
 
+            Check("схема: коды значений читаются только канонически", () =>
+            {
+                True(SchemaEnum.TryParse("hub", out LocationKind kind) && kind == LocationKind.Hub, "тип hub");
+                True(SchemaEnum.TryParse("interior", out LocationNodeType nodeType) &&
+                     nodeType == LocationNodeType.Interior, "роль interior");
+                True(SchemaEnum.TryParse("unique", out LocationRarity rarity) &&
+                     rarity == LocationRarity.Unique, "редкость unique");
+                Equal("special", SchemaEnum.ToCode(LocationKind.Special), "код special");
+                False(SchemaEnum.TryParse("Hub", out LocationKind _), "верхний регистр");
+                False(SchemaEnum.TryParse("1", out LocationKind _), "число");
+                False(SchemaEnum.TryParse("hub,route", out LocationNodeType _), "список значений");
+                False(SchemaEnum.TryParse(string.Empty, out LocationKind _), "пустая строка");
+            });
+
+            Check("шаблон: неизвестный тип локации — ошибка схемы", () =>
+            {
+                var json = LocationJson("loc_x", "swamp", "site", "[\"outdoor\"]");
+                var error = Throws<DataException>(
+                    () => LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test"),
+                    "тип");
+                Equal(CoreErrors.WorldUnknownLocationKind, error.Code, "код");
+                Contains(error.Message, "swamp", "значение");
+            });
+
+            Check("шаблон: неизвестная роль локации — ошибка схемы", () =>
+            {
+                var json = LocationJson("loc_x", "wild", "bridge", "[\"outdoor\"]");
+                var error = Throws<DataException>(
+                    () => LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test"),
+                    "роль");
+                Equal(CoreErrors.WorldUnknownNodeType, error.Code, "код");
+                Contains(error.Message, "bridge", "значение");
+            });
+
+            Check("шаблон: неизвестная редкость локации — ошибка схемы", () =>
+            {
+                var json = LocationJson("loc_x", "wild", "site", "[\"outdoor\"]")
+                    .Replace("\"common\"", "\"legendary\"");
+                var error = Throws<DataException>(
+                    () => LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test"),
+                    "редкость");
+                Equal(CoreErrors.WorldUnknownRarity, error.Code, "код");
+                Contains(error.Message, "legendary", "значение");
+            });
+
+            Check("шаблон: редкость по умолчанию — common", () =>
+            {
+                var json = LocationJson("loc_x", "wild", "site", "[\"outdoor\"]")
+                    .Replace("\"rarity\":\"common\",", string.Empty);
+                var template = LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test");
+                Equal(LocationRarity.Common, template.Rarity, "редкость");
+            });
+
+            Check("шаблон: пустой id — текст из каталога ресурсов", () =>
+            {
+                var error = Throws<ArgumentException>(
+                    () => new LocationTemplate(
+                        string.Empty,
+                        "t",
+                        LocationKind.Wild,
+                        LocationNodeType.Site,
+                        Array.Empty<LocationTag>(),
+                        0,
+                        new[] { "bg" },
+                        new IntRange(0, 0),
+                        0,
+                        Array.Empty<ConnectionTemplate>(),
+                        null,
+                        Array.Empty<string>(),
+                        LocationRarity.Common,
+                        1,
+                        false),
+                    "id");
+                Equal("id", error.ParamName, "параметр");
+                Contains(error.Message, CoreText.Format(CoreErrors.RequiredField, "id"), "текст");
+            });
+
+            Check("шаблон: неопределённая роль — ошибка с текстом из ресурсов", () =>
+            {
+                var error = Throws<ArgumentException>(
+                    () => new LocationTemplate(
+                        "loc_x",
+                        "t",
+                        LocationKind.Wild,
+                        (LocationNodeType)42,
+                        Array.Empty<LocationTag>(),
+                        0,
+                        new[] { "bg" },
+                        new IntRange(0, 0),
+                        0,
+                        Array.Empty<ConnectionTemplate>(),
+                        null,
+                        Array.Empty<string>(),
+                        LocationRarity.Common,
+                        1,
+                        false),
+                    "роль");
+                Equal("nodeType", error.ParamName, "параметр");
+                Contains(error.Message, "42", "значение");
+            });
+
             Check("топология: для способа перехода нужна цена", () =>
             {
-                var json = TopologyJson().Replace("\"road\":{\"stamina\":2,\"hours\":1},", string.Empty);
+                var json = WorldTopologyJson().Replace("\"road\":{\"stamina\":2,\"hours\":1},", string.Empty);
                 var error = Throws<DataException>(() => TopologyTemplate.FromJson(JsonParser.Parse(json, "test"), "test"), "цена");
                 Equal("error.world_cost", error.Code, "код");
             });
@@ -86,9 +205,9 @@ namespace AnomalyPath.Tests
 
             Check("переходы: хаб соединяется с хабом дорогой", () =>
             {
-                var tags = new[] { "hub", "road", "outdoor" };
-                True(ViaRules.Allows("road", "hub", "hub", tags, tags), "дорога между хабами");
-                False(ViaRules.Allows("door", "hub", "hub", tags, tags), "дверь между хабами");
+                var tags = new[] { LocationTag.Hub, LocationTag.Road, LocationTag.Outdoor };
+                True(ViaRules.Allows("road", LocationNodeType.Hub, LocationNodeType.Hub, tags, tags), "дорога между хабами");
+                False(ViaRules.Allows("door", LocationNodeType.Hub, LocationNodeType.Hub, tags, tags), "дверь между хабами");
             });
         }
 
@@ -198,13 +317,13 @@ namespace AnomalyPath.Tests
                 var state = WorldState.Start(map);
                 Equal(map.StartLocationId, state.CurrentLocationId, "стартовая локация");
                 Equal(map.StartingStamina, state.Stamina, "выносливость");
-                True(state.CurrentLocation.NodeType == "hub", "старт в хабе");
+                True(state.CurrentLocation.NodeType == LocationNodeType.Hub, "старт в хабе");
             });
         }
 
         private void TravelTests(IWorldGenerator generator, ITravelService travel)
         {
-            Check("переход: списывает выносливость и двигает время", () =>
+            Check("переход: не списывает выносливость и двигает время", () =>
             {
                 var map = generator.Generate(42);
                 var state = WorldState.Start(map);
@@ -214,17 +333,18 @@ namespace AnomalyPath.Tests
                 var result = travel.Travel(state, edge.EdgeId);
                 True(result.Succeeded, "переход выполнен");
                 Equal(edge.ToId, state.CurrentLocationId, "новая локация");
-                Equal(stamina - edge.Cost.Stamina, state.Stamina, "выносливость");
+                Equal(stamina, state.Stamina, "выносливость не тратится");
                 Equal(hours + edge.Cost.Hours, state.Clock.Hours, "часы");
             });
 
-            Check("переход: без выносливости недоступен", () =>
+            Check("переход: доступен без выносливости", () =>
             {
                 var map = generator.Generate(42);
                 var state = new WorldState(map, map.StartLocationId, 0, map.StartingStamina, new WorldClock(1, 8, 6, 22));
                 var edge = FirstPaidEdge(map, state.CurrentLocationId);
-                Equal(TravelStatus.NotEnoughStamina, travel.Travel(state, edge.EdgeId).Status, "статус");
-                False(travel.CanTravel(state, edge.EdgeId), "CanTravel");
+                True(travel.CanTravel(state, edge.EdgeId), "CanTravel");
+                True(travel.Travel(state, edge.EdgeId).Succeeded, "переход выполнен");
+                Equal(0, state.Stamina, "выносливость осталась нулевой");
             });
 
             Check("переход: из чужой локации запрещён", () =>
@@ -367,7 +487,7 @@ namespace AnomalyPath.Tests
             new Dictionary<string, string>
             {
                 ["catalog.json"] = Catalog("topology.json", "locations/hub.json", "locations/route.json", "locations/site.json", "locations/interior.json"),
-                ["topology.json"] = TopologyJson(),
+                ["topology.json"] = WorldTopologyJson(),
                 ["locations/hub.json"] = LocationJson("loc_hub", "hub", "hub", "[\"hub\",\"outdoor\",\"road\"]"),
                 ["locations/route.json"] = LocationJson("loc_route", "wild", "route", "[\"road\",\"outdoor\"]"),
                 ["locations/site.json"] = LocationJson(
@@ -379,7 +499,7 @@ namespace AnomalyPath.Tests
                 ["locations/interior.json"] = LocationJson("loc_interior", "special", "interior", "[\"indoor\"]")
             };
 
-        private static string TopologyJson() =>
+        private static string WorldTopologyJson() =>
             "{\"schemaVersion\":1,\"kind\":\"topology\",\"id\":\"topology\"," +
             "\"transitions\":[" +
             "{\"from\":\"hub\",\"to\":\"route\",\"via\":[\"road\",\"path\"]}," +
@@ -388,7 +508,8 @@ namespace AnomalyPath.Tests
             "{\"from\":\"site\",\"to\":\"interior\",\"via\":[\"door\"]}]," +
             "\"routeLength\":[1,2],\"edgeLength\":[1,2],\"costs\":{" +
             "\"road\":{\"stamina\":2,\"hours\":1},\"path\":{\"stamina\":3,\"hours\":1.5}," +
-            "\"door\":{\"stamina\":0,\"hours\":0}},\"maxBranchDepth\":4,\"initialStamina\":10}";
+            "\"door\":{\"stamina\":0,\"hours\":0}},\"maxBranchDepth\":4,\"initialStamina\":10," +
+            "\"dayStartHour\":6,\"nightStartHour\":22}";
 
         private static string LocationJson(
             string id,
@@ -481,7 +602,7 @@ namespace AnomalyPath.Tests
             var count = 0;
             foreach (var location in path)
             {
-                if (location.NodeType == "route")
+                if (location.NodeType == LocationNodeType.Route)
                 {
                     count++;
                 }
@@ -495,7 +616,7 @@ namespace AnomalyPath.Tests
             var result = new List<string>();
             foreach (var location in path)
             {
-                if (location.NodeType == "route")
+                if (location.NodeType == LocationNodeType.Route)
                 {
                     result.Add(location.InstanceId);
                 }

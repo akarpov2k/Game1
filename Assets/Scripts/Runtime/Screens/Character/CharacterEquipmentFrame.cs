@@ -37,23 +37,23 @@ namespace AnomalyPath.Runtime.Screens.Character
             var equipment = player.Equipment;
             CharacterWidgets.Label(_host, _content, "Nickname", player.Name, 16, TextAnchor.MiddleLeft,
                 UiFactory.TextColor, 16f, 6f, 360f, 28f);
-            CharacterWidgets.Label(_host, _content, "Level", $"Ур. {player.Level}", 14, TextAnchor.MiddleRight,
+            CharacterWidgets.Label(_host, _content, "Level", UiText.Format(_host.Texts, UiTextKey.Common_Level_Cap, player.Level), 14, TextAnchor.MiddleRight,
                 UiFactory.MutedTextColor, 384f, 6f, 160f, 28f);
 
-            Slot("SlotHelmet", 16f, 40f, 160f, 120f, "Шлем", EquipmentSlot.Helmet,
+            Slot("SlotHelmet", 16f, 40f, 160f, 120f, UiText.Get(_host.Texts, UiTextKey.Character_Slot_Helmet), EquipmentSlot.Helmet,
                 equipment.Get(EquipmentSlot.Helmet));
-            Slot("SlotArmor", 16f, 172f, 160f, 180f, "Броня", EquipmentSlot.Armor,
+            Slot("SlotArmor", 16f, 172f, 160f, 180f, UiText.Get(_host.Texts, UiTextKey.Character_Slot_Armor), EquipmentSlot.Armor,
                 equipment.Get(EquipmentSlot.Armor));
-            Slot("SlotBackpack", 384f, 40f, 160f, 150f, "Рюкзак", EquipmentSlot.Backpack,
+            Slot("SlotBackpack", 384f, 40f, 160f, 150f, UiText.Get(_host.Texts, UiTextKey.Character_Slot_Backpack), EquipmentSlot.Backpack,
                 equipment.Get(EquipmentSlot.Backpack));
-            Slot("SlotBelt", 384f, 202f, 160f, 140f, "Пояс артефактов", EquipmentSlot.Belt,
+            Slot("SlotBelt", 384f, 202f, 160f, 140f, UiText.Get(_host.Texts, UiTextKey.Character_Slot_Belt), EquipmentSlot.Belt,
                 equipment.Get(EquipmentSlot.Belt));
 
             new CharacterArtifactColumn(_host, _content, _frameHost).Build(player);
 
-            Slot("SlotSecondary", 130f, 455f, 300f, 90f, "Дополнительное оружие", EquipmentSlot.Secondary,
+            Slot("SlotSecondary", 130f, 455f, 300f, 90f, UiText.Get(_host.Texts, UiTextKey.Character_Slot_Secondary), EquipmentSlot.Secondary,
                 equipment.Get(EquipmentSlot.Secondary));
-            Slot("SlotMain", 100f, 552f, 360f, 128f, "Основное оружие", EquipmentSlot.Main,
+            Slot("SlotMain", 100f, 552f, 360f, 128f, UiText.Get(_host.Texts, UiTextKey.Character_Slot_Main), EquipmentSlot.Main,
                 equipment.Get(EquipmentSlot.Main), 24);
 
             new CharacterFigure(_host, _content).Build();
@@ -82,7 +82,7 @@ namespace AnomalyPath.Runtime.Screens.Character
             CharacterWidgets.Label(_host, _content, name + "Caption", caption, 14, TextAnchor.UpperLeft,
                 UiFactory.MutedTextColor, x + 8f, y + 6f, width - 16f, 20f);
             CharacterWidgets.Label(_host, _content, name + "Value",
-                item == null ? "—" : CharacterWidgets.Describe(_host, item), valueSize, TextAnchor.MiddleCenter,
+                item == null ? UiText.Get(_host.Texts, UiTextKey.Common_Dash) : CharacterWidgets.Describe(_host, item), valueSize, TextAnchor.MiddleCenter,
                 item == null ? UiFactory.MutedTextColor : UiFactory.TextColor,
                 x + 8f, y + 28f, width - 16f, height - 36f);
         }

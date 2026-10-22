@@ -12,11 +12,11 @@ namespace AnomalyPath.Tests
 {
     public sealed class CharacterActionsTests : TestBase
     {
-        private const string ArmorJson = "{\"kind\":\"items\",\"id\":\"armor_test\",\"nameKey\":\"n\",\"category\":\"armor\",\"footprint\":[2,2],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"artifactSlots\":1,\"material\":\"light\"}";
+        private const string ArmorJson = "{\"kind\":\"items\",\"id\":\"armor_test\",\"nameKey\":\"n\",\"category\":\"armor\",\"footprint\":[2,2],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"artifactSlots\":1,\"material\":\"light\",\"durabilityFactor\":1.0,\"quality\":1}";
         private const string BeltJson = "{\"kind\":\"items\",\"id\":\"belt_test\",\"nameKey\":\"n\",\"category\":\"belt\",\"footprint\":[2,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"artifactSlots\":2}";
         private const string ArtifactJson = "{\"kind\":\"items\",\"id\":\"art_test\",\"nameKey\":\"n\",\"category\":\"artifact\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"artifactType\":\"fire\"}";
-        private const string HelmetJson = "{\"kind\":\"items\",\"id\":\"helm_test\",\"nameKey\":\"n\",\"category\":\"helmet\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"material\":\"light\"}";
-        private const string DualWeaponJson = "{\"kind\":\"items\",\"id\":\"dual_test\",\"nameKey\":\"n\",\"category\":\"weapon\",\"footprint\":[2,2],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"equipSlots\":[\"main\",\"secondary\"],\"weapon\":{\"classId\":\"w\",\"damage\":1,\"accuracy\":0.5,\"magazine\":5,\"ammoCaliber\":\"c\",\"reloadTime\":1,\"durabilityMax\":10,\"durabilityPerShot\":0.1}}";
+        private const string HelmetJson = "{\"kind\":\"items\",\"id\":\"helm_test\",\"nameKey\":\"n\",\"category\":\"helmet\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"material\":\"light\",\"durabilityFactor\":1.0,\"quality\":1}";
+        private const string DualWeaponJson = "{\"kind\":\"items\",\"id\":\"dual_test\",\"nameKey\":\"n\",\"category\":\"weapon\",\"footprint\":[2,2],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"equipSlots\":[\"main\",\"secondary\"],\"weapon\":{\"classId\":\"w\",\"damageTypeId\":\"dmg_bullet\",\"damage\":1,\"accuracy\":0.5,\"magazine\":5,\"ammoCaliber\":\"c\",\"reloadTime\":1,\"armorPenetration\":0,\"durabilityMax\":10,\"durabilityPerShot\":0.1}}";
 
         public override void Run()
         {
@@ -296,6 +296,46 @@ namespace AnomalyPath.Tests
 
                 Equal(CharacterActionResult.Ok, result, "итог");
                 True(state.Get(EquipmentSlot.Helmet) == null, "слот пуст");
+            });
+
+            Check("действия: предмет перекладывается в свободную клетку с поворотом", () =>
+            {
+                var (actions, inventory, _) = NewActions();
+                var grid = new GridContainer("g", 8, 8);
+                var rifle = Add(inventory, grid, TestData.Rifle);
+
+                var result = actions.Move(grid, rifle.InstanceId, 1, 2, rotated: true);
+
+                Equal(CharacterActionResult.Ok, result, "итог");
+                Equal(1, rifle.X, "X");
+                Equal(2, rifle.Y, "Y");
+                True(rifle.Rotated, "предмет повёрнут");
+                Equal(3, rifle.PlacedWidth, "ширина после поворота");
+                Equal(2, rifle.PlacedHeight, "высота после поворота");
+            });
+
+            Check("действия: перемещение на занятую клетку — NoRoom", () =>
+            {
+                var (actions, inventory, _) = NewActions();
+                var grid = new GridContainer("g", 8, 8);
+                Add(inventory, grid, TestData.Crate);
+                var second = Add(inventory, grid, TestData.Crate);
+                var x = second.X;
+                var y = second.Y;
+
+                var result = actions.Move(grid, second.InstanceId, 0, 0, rotated: false);
+
+                Equal(CharacterActionResult.NoRoom, result, "итог");
+                Equal(x, second.X, "X не изменился");
+                Equal(y, second.Y, "Y не изменился");
+            });
+
+            Check("действия: перемещение отсутствующего предмета — ItemMissing", () =>
+            {
+                var (actions, _, _) = NewActions();
+                var grid = new GridContainer("g", 8, 8);
+
+                Equal(CharacterActionResult.ItemMissing, actions.Move(grid, "nope", 0, 0, false), "итог");
             });
 
             Check("действия: отсутствующий предмет — ItemMissing", () =>

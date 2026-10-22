@@ -28,12 +28,16 @@ namespace AnomalyPath.Core.Loadouts
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                throw new ArgumentException("id набора не задан", nameof(id));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(id)),
+                    nameof(id));
             }
 
             if (string.IsNullOrWhiteSpace(nameKey))
             {
-                throw new ArgumentException("nameKey набора не задан", nameof(nameKey));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(nameKey)),
+                    nameof(nameKey));
             }
 
             Id = id;

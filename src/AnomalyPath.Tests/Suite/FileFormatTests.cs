@@ -155,7 +155,9 @@ namespace AnomalyPath.Tests
                         ["topology.json"] = "{\"schemaVersion\":1,\"kind\":\"topology\",\"id\":\"topology\"," +
                                             "\"transitions\":[{\"from\":\"hub\",\"to\":\"route\",\"via\":[\"road\"]}]," +
                                             "\"routeLength\":[1,2],\"edgeLength\":[1,2]," +
-                                            "\"costs\":{\"road\":{\"stamina\":2,\"hours\":1}}}"
+                                            "\"costs\":{\"road\":{\"stamina\":2,\"hours\":1}}," +
+                                            "\"maxBranchDepth\":4,\"initialStamina\":10," +
+                                            "\"dayStartHour\":6,\"nightStartHour\":22}"
                     },
                     root =>
                     {

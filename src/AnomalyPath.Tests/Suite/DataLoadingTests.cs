@@ -2,6 +2,7 @@
 using AnomalyPath.Core;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Json;
+using AnomalyPath.Core.Templates;
 
 namespace AnomalyPath.Tests
 {
@@ -85,12 +86,12 @@ namespace AnomalyPath.Tests
             Check("include: миксин цены и свои перекрытия", () =>
             {
                 var ak74 = items.Get("wpn_ak74");
-                Equal("reputation", ak74.Price!.Mode, "ak74 price.mode");
+                Equal(PriceMode.Reputation, ak74.Price!.Mode, "ak74 price.mode");
                 Equal(1200.0, ak74.Price!.Base, "ak74 price.base");
                 Equal("fct_caravan", ak74.Price!.FactionId, "ak74 price.factionId");
 
                 var akm = items.Get("wpn_akm");
-                Equal("fixed", akm.Price!.Mode, "akm price.mode");
+                Equal(PriceMode.Fixed, akm.Price!.Mode, "akm price.mode");
                 Equal(900.0, akm.Price!.Buy, "akm price.buy");
             });
 

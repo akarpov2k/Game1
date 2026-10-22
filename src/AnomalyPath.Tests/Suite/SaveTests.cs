@@ -105,6 +105,11 @@ namespace AnomalyPath.Tests
                     Equal(map.Seed, loaded.Map.Seed, "seed");
                     Equal(map.StartLocationId, loaded.Map.StartLocationId, "стартовая локация");
                     Equal(map.Locations.Count, loaded.Map.Locations.Count, "локации");
+                    for (var index = 0; index < map.Locations.Count; index++)
+                    {
+                        Equal(map.Locations[index].NodeType, loaded.Map.Locations[index].NodeType, "роль локации");
+                    }
+
                     Equal(map.Edges.Count, loaded.Map.Edges.Count, "рёбра");
                     True(loaded.CurrentLocation.Visited, "текущая локация посещена");
                     True(loaded.Map.TryGetEdge(edge.EdgeId, out var savedEdge), "ребро сохранено");
@@ -332,7 +337,7 @@ namespace AnomalyPath.Tests
             Check("сейв: ячейки экрана сохранения", () =>
             {
                 Equal("save_1", SaveSlots.Slot(1), "первая");
-                Equal("save_6", SaveSlots.Slot(SaveSlots.SlotCount), "последняя на странице");
+                Equal("save_6", SaveSlots.Slot(6), "последняя на странице");
                 Equal("save_99", SaveSlots.Slot(99), "слоты не ограничены страницей");
                 Throws<ArgumentOutOfRangeException>(() => SaveSlots.Slot(0), "ноль");
             });
@@ -405,6 +410,23 @@ namespace AnomalyPath.Tests
                     File.WriteAllText(storage.GetPath("slot_1"), text);
                     var error = Throws<DataException>(() => service.Load("slot_1"), "via");
                     Equal("error.world_unknown_via", error.Code, "код");
+                });
+            });
+
+            Check("сейв: неизвестная роль локации", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(new GameState(state, null), "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var text = File.ReadAllText(storage.GetPath("slot_1"));
+                    text = text.Replace("\"nodeType\": \"hub\"", "\"nodeType\": \"bridge\"");
+                    File.WriteAllText(storage.GetPath("slot_1"), text);
+                    var error = Throws<DataException>(() => service.Load("slot_1"), "nodeType");
+                    Equal("error.world_unknown_node_type", error.Code, "код");
                 });
             });
 

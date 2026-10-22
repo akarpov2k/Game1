@@ -97,7 +97,7 @@ namespace AnomalyPath.Tests
                 WithFixture(
                     new Dictionary<string, string>
                     {
-                        ["catalog.json"] = Catalog("items/a.json"),
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json"),
                         ["items/a.json"] = Weapon("wpn_a"),
                         ["Localization/strings.ru.json"] = "{}",
                         ["Localization/strings.en.json"] = "{\"n\":\"Name\"}"
@@ -115,8 +115,11 @@ namespace AnomalyPath.Tests
                 WithFixture(
                     new Dictionary<string, string>
                     {
-                        ["catalog.json"] = Catalog("items/a.json"),
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json"),
                         ["items/a.json"] = Weapon("wpn_a"),
+                        ["combat.json"] = CombatJson(),
+                        ["equipment.json"] = EquipmentJson(),
+                        ["topology.json"] = TopologyJson(),
                         ["Localization/strings.ru.json"] = "{\"n\":\"Название\"}",
                         ["Localization/strings.en.json"] = "{}"
                     },
@@ -133,8 +136,11 @@ namespace AnomalyPath.Tests
                 WithFixture(
                     new Dictionary<string, string>
                     {
-                        ["catalog.json"] = Catalog("items/a.json"),
-                        ["items/a.json"] = Weapon("wpn_a")
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json"),
+                        ["items/a.json"] = Weapon("wpn_a"),
+                        ["combat.json"] = CombatJson(),
+                        ["equipment.json"] = EquipmentJson(),
+                        ["topology.json"] = TopologyJson()
                     },
                     root =>
                     {

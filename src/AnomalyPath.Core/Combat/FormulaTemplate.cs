@@ -20,7 +20,7 @@ namespace AnomalyPath.Core.Combat
             FormulaExpression? expression,
             double value,
             IReadOnlyList<TablePoint> table,
-            string result,
+            FormulaResultKind result,
             double? clampMin,
             double? clampMax)
         {
@@ -45,7 +45,7 @@ namespace AnomalyPath.Core.Combat
         public IReadOnlyCollection<string> UsedNames { get; }
 
         /// <summary>Тип результата: <c>int</c> или <c>float</c>.</summary>
-        public string Result { get; }
+        public FormulaResultKind Result { get; }
 
         /// <summary>Нижняя граница результата, если задана.</summary>
         public double? ClampMin { get; }
@@ -62,7 +62,11 @@ namespace AnomalyPath.Core.Combat
         {
             var id = DataMap.RequireString(value, "id", sourcePath);
             var variables = ReadVariables(value, id);
-            var result = DataMap.OptionalString(value, "result") ?? "int";
+            var resultCode = DataMap.RequireString(value, "result", sourcePath);
+            if (!SchemaEnum.TryParse(resultCode, out FormulaResultKind result))
+            {
+                throw new DataException(sourcePath, CoreErrors.FormulaResult, resultCode);
+            }
             var clampMin = DataMap.OptionalDouble(value, "clampMin");
             var clampMax = DataMap.OptionalDouble(value, "clampMax");
 
@@ -136,7 +140,7 @@ namespace AnomalyPath.Core.Combat
                 raw = max.Value;
             }
 
-            return Result == "float" ? raw : Math.Round(raw, MidpointRounding.AwayFromZero);
+            return Result == FormulaResultKind.Float ? raw : Math.Round(raw, MidpointRounding.AwayFromZero);
         }
 
         private double Interpolate(IReadOnlyDictionary<string, double> variables, IReadOnlyDictionary<string, double> constants)

@@ -5,7 +5,7 @@ using AnomalyPath.Core.World;
 
 namespace AnomalyPath.Core.Services
 {
-    /// <summary>Переходы по сгенерированному миру: проверка выносливости и ходов.</summary>
+    /// <summary>Переходы по сгенерированному миру: проверка рёбер и движение времени.</summary>
     public sealed class TravelService : ITravelService
     {
         /// <inheritdoc />
@@ -35,7 +35,6 @@ namespace AnomalyPath.Core.Services
                 return new TravelResult(status);
             }
 
-            state.TrySpendStamina(edge.Cost.Stamina);
             state.Clock.Advance(edge.Cost.Hours);
             state.MoveTo(edge.ToId);
             return new TravelResult(TravelStatus.Success, edge);
@@ -51,11 +50,6 @@ namespace AnomalyPath.Core.Services
             if (edge.FromId != state.CurrentLocationId)
             {
                 return TravelStatus.WrongLocation;
-            }
-
-            if (state.Stamina < edge.Cost.Stamina)
-            {
-                return TravelStatus.NotEnoughStamina;
             }
 
             return TravelStatus.Success;

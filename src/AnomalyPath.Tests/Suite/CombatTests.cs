@@ -212,7 +212,7 @@ namespace AnomalyPath.Tests
             Check("перезарядка врага: пустой магазин заряжается полностью за ОД", () =>
             {
                 var shooterActor = new ActorTemplate(
-                    "shooter", "enemy", "n",
+                    "shooter", ActorType.Enemy, "n",
                     new CombatBlockTemplate(1, 1, 50, 12, new Dictionary<string, int>(), "aggressive", 0.8, 0));
                 var state = combat.Start(
                     actors.Get("actor_player"), new Equipment("player", settings.QuickSlots),
@@ -234,7 +234,7 @@ namespace AnomalyPath.Tests
             Check("перезарядка игрока: пустой магазин не заряжается сам", () =>
             {
                 var strongActor = new ActorTemplate(
-                    "strong", "npc", "n",
+                    "strong", ActorType.Npc, "n",
                     new CombatBlockTemplate(1, 1, 100, 12, new Dictionary<string, int>(), "passive", 0.8, 0));
                 var state = combat.Start(
                     strongActor, new Equipment("player", settings.QuickSlots),
@@ -253,7 +253,7 @@ namespace AnomalyPath.Tests
             {
                 var boss = new ActorTemplate(
                     "boss",
-                    "enemy",
+                    ActorType.Enemy,
                     "n",
                     new CombatBlockTemplate(1, 6, 10, 5, new Dictionary<string, int>(), "aggressive", 0.8, 0));
                 var state = combat.Start(
@@ -267,7 +267,7 @@ namespace AnomalyPath.Tests
             {
                 var boss = new ActorTemplate(
                     "boss",
-                    "enemy",
+                    ActorType.Enemy,
                     "n",
                     new CombatBlockTemplate(1, 5, 10, 5, new Dictionary<string, int>(), "aggressive", 0.8, 0));
                 var state = combat.Start(
@@ -303,11 +303,27 @@ namespace AnomalyPath.Tests
                 services.Resolve<IEquipmentService>(),
                 services.Resolve<IArmorWearService>(),
                 services.Resolve<IFormulaRepository>(),
-                CombatSettingsTemplate.Default,
+                Settings(),
                 BalanceTemplate.Empty,
                 random,
                 services.Resolve<IInventoryService>());
         }
+
+        private static CombatSettingsTemplate Settings() => new CombatSettingsTemplate(
+            "formula_damage_base",
+            0,
+            null,
+            ApRestoreKind.Full,
+            0,
+            InitiativeKind.PlayerFirst,
+            null,
+            1,
+            1,
+            1,
+            1.4,
+            1.0,
+            0.8,
+            1);
 
         private static ItemInstance Weapon(string id) => new ItemInstance("w", id, 1, 100, 100);
 

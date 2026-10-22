@@ -13,9 +13,6 @@ namespace AnomalyPath.Core.World
         /// <summary>Ребро начинается не из текущей локации.</summary>
         WrongLocation,
 
-        /// <summary>Не хватает выносливости.</summary>
-        NotEnoughStamina,
-
         /// <summary>Переход запрещён во время боя.</summary>
         InCombat
     }

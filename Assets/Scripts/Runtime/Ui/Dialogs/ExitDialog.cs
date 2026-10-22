@@ -23,15 +23,19 @@ namespace AnomalyPath.Runtime.Ui.Dialogs
             var box = host.Ui.CreateColumn(Panel.transform, 700);
             var boxImage = box.gameObject.AddComponent<Image>();
             boxImage.color = new Color(0.12f, 0.16f, 0.15f, 1f);
-            host.Ui.CreateTitle(box, "Выйти из игры?");
-            host.Ui.CreateText(box, "Игра будет сохранена в exit_save.", 20, TextAnchor.MiddleCenter);
-            host.Ui.CreateButton(box, "В меню", () =>
+            host.Ui.CreateTitle(box, UiText.Get(host.Texts, UiTextKey.Exit_Title));
+            host.Ui.CreateText(
+                box,
+                UiText.Get(host.Texts, UiTextKey.Exit_Body),
+                20,
+                TextAnchor.MiddleCenter);
+            host.Ui.CreateButton(box, UiText.Get(host.Texts, UiTextKey.Exit_To_Menu), () =>
             {
                 host.SaveExit();
                 host.HideExitDialog();
                 host.ShowMainMenu();
             });
-            host.Ui.CreateButton(box, "На рабочий стол", () =>
+            host.Ui.CreateButton(box, UiText.Get(host.Texts, UiTextKey.Exit_To_Desktop), () =>
             {
                 host.SaveExit();
                 host.HideExitDialog();

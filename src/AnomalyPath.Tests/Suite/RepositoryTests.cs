@@ -43,8 +43,8 @@ namespace AnomalyPath.Tests
 
             Check("сервис: выборка по категории", () =>
             {
-                Equal(4, catalog.ByCategory("weapon").Count, "weapon");
-                Equal(3, catalog.ByCategory("armor").Count, "armor");
+                Equal(4, catalog.ByCategory(ItemCategory.Weapon).Count, "weapon");
+                Equal(3, catalog.ByCategory(ItemCategory.Armor).Count, "armor");
             });
 
             Check("сервис: выборка по тиру", () =>

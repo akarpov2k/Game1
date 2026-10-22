@@ -8,6 +8,7 @@
   "weapon": {
     "damageTypeId": "dmg_bullet",
     "reloadTime": 2,
+    "armorPenetration": 0,
     "durabilityMax": 100,
     "durabilityPerShot": 0.5
   }

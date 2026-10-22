@@ -15,21 +15,27 @@ namespace AnomalyPath.Core.World
         /// <param name="to">Роль целевой локации.</param>
         /// <param name="via">Разрешённые способы перехода.</param>
         /// <exception cref="ArgumentException">Роль неизвестна или список пуст.</exception>
-        public TransitionRule(string from, string to, IReadOnlyList<string> via)
+        public TransitionRule(LocationNodeType from, LocationNodeType to, IReadOnlyList<string> via)
         {
-            if (!LocationTemplate.IsKnownNodeType(from))
+            if (!Enum.IsDefined(typeof(LocationNodeType), from))
             {
-                throw new ArgumentException("Неизвестная роль", nameof(from));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.WorldUnknownNodeType, from),
+                    nameof(from));
             }
 
-            if (!LocationTemplate.IsKnownNodeType(to))
+            if (!Enum.IsDefined(typeof(LocationNodeType), to))
             {
-                throw new ArgumentException("Неизвестная роль", nameof(to));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.WorldUnknownNodeType, to),
+                    nameof(to));
             }
 
             if (via == null || via.Count == 0)
             {
-                throw new ArgumentException("Пустой список способов перехода", nameof(via));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.EmptyCollection, nameof(via)),
+                    nameof(via));
             }
 
             From = from;
@@ -38,10 +44,10 @@ namespace AnomalyPath.Core.World
         }
 
         /// <summary>Роль исходной локации.</summary>
-        public string From { get; }
+        public LocationNodeType From { get; }
 
         /// <summary>Роль целевой локации.</summary>
-        public string To { get; }
+        public LocationNodeType To { get; }
 
         /// <summary>Разрешённые способы перехода.</summary>
         public IReadOnlyList<string> Via { get; }
@@ -69,16 +75,16 @@ namespace AnomalyPath.Core.World
         /// <exception cref="DataException">Поля отсутствуют или заданы неверно.</exception>
         public static TransitionRule FromJson(JsonValue value, string sourcePath)
         {
-            var from = DataMap.RequireString(value, "from", sourcePath);
-            var to = DataMap.RequireString(value, "to", sourcePath);
-            if (!LocationTemplate.IsKnownNodeType(from))
+            var fromCode = DataMap.RequireString(value, "from", sourcePath);
+            if (!SchemaEnum.TryParse(fromCode, out LocationNodeType from))
             {
-                throw new DataException(sourcePath, CoreErrors.WorldUnknownNodeType, from);
+                throw new DataException(sourcePath, CoreErrors.WorldUnknownNodeType, fromCode);
             }
 
-            if (!LocationTemplate.IsKnownNodeType(to))
+            var toCode = DataMap.RequireString(value, "to", sourcePath);
+            if (!SchemaEnum.TryParse(toCode, out LocationNodeType to))
             {
-                throw new DataException(sourcePath, CoreErrors.WorldUnknownNodeType, to);
+                throw new DataException(sourcePath, CoreErrors.WorldUnknownNodeType, toCode);
             }
 
             var via = DataMap.OptionalStringArray(value, "via");

@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using AnomalyPath.Core.Localization;
 
 namespace AnomalyPath.Core.World
 {
@@ -20,18 +21,22 @@ namespace AnomalyPath.Core.World
             string templateId,
             int seed,
             string background,
-            string nodeType,
+            LocationNodeType nodeType,
             int tier,
             double danger)
         {
             if (string.IsNullOrWhiteSpace(instanceId))
             {
-                throw new ArgumentException("Пустой id экземпляра", nameof(instanceId));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(instanceId)),
+                    nameof(instanceId));
             }
 
             if (string.IsNullOrWhiteSpace(templateId))
             {
-                throw new ArgumentException("Пустой id шаблона", nameof(templateId));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(templateId)),
+                    nameof(templateId));
             }
 
             InstanceId = instanceId;
@@ -56,7 +61,7 @@ namespace AnomalyPath.Core.World
         public string Background { get; }
 
         /// <summary>Роль в цепочке.</summary>
-        public string NodeType { get; }
+        public LocationNodeType NodeType { get; }
 
         /// <summary>Тир опасности.</summary>
         public int Tier { get; }

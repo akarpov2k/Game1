@@ -24,7 +24,7 @@ namespace AnomalyPath.Core.Save
             string templateId,
             int seed,
             string background,
-            string nodeType,
+            LocationNodeType nodeType,
             int tier,
             double danger,
             bool visited,
@@ -54,7 +54,7 @@ namespace AnomalyPath.Core.Save
         public string Background { get; }
 
         /// <summary>Роль в цепочке.</summary>
-        public string NodeType { get; }
+        public LocationNodeType NodeType { get; }
 
         /// <summary>Тир.</summary>
         public int Tier { get; }
@@ -77,7 +77,7 @@ namespace AnomalyPath.Core.Save
             value.Members["templateId"] = JsonValue.FromString(TemplateId);
             value.Members["seed"] = JsonValue.FromNumber(Seed);
             value.Members["background"] = JsonValue.FromString(Background);
-            value.Members["nodeType"] = JsonValue.FromString(NodeType);
+            value.Members["nodeType"] = JsonValue.FromString(SchemaEnum.ToCode(NodeType));
             value.Members["tier"] = JsonValue.FromNumber(Tier);
             value.Members["danger"] = JsonValue.FromNumber(Danger);
             value.Members["visited"] = JsonValue.FromBool(Visited);
@@ -96,10 +96,10 @@ namespace AnomalyPath.Core.Save
             var templateId = DataMap.RequireString(value, "templateId", sourcePath);
             var seed = DataMap.RequireInt(value, "seed", sourcePath);
             var background = DataMap.OptionalString(value, "background") ?? string.Empty;
-            var nodeType = DataMap.RequireString(value, "nodeType", sourcePath);
-            if (!LocationTemplate.IsKnownNodeType(nodeType))
+            var nodeTypeCode = DataMap.RequireString(value, "nodeType", sourcePath);
+            if (!SchemaEnum.TryParse(nodeTypeCode, out LocationNodeType nodeType))
             {
-                throw new DataException(sourcePath, CoreErrors.WorldUnknownNodeType, nodeType);
+                throw new DataException(sourcePath, CoreErrors.WorldUnknownNodeType, nodeTypeCode);
             }
             var tier = DataMap.OptionalInt(value, "tier", 0);
             var danger = DataMap.OptionalDouble(value, "danger") ?? 0;

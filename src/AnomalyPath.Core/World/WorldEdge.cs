@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using AnomalyPath.Core.Localization;
 
 namespace AnomalyPath.Core.World
 {
@@ -28,12 +29,16 @@ namespace AnomalyPath.Core.World
         {
             if (string.IsNullOrWhiteSpace(edgeId) || string.IsNullOrWhiteSpace(fromId) || string.IsNullOrWhiteSpace(toId))
             {
-                throw new ArgumentException("Пустые идентификаторы ребра", nameof(edgeId));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(edgeId)),
+                    nameof(edgeId));
             }
 
             if (!ViaRules.IsKnown(via))
             {
-                throw new ArgumentException("Неизвестный способ перехода", nameof(via));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.WorldUnknownVia, via),
+                    nameof(via));
             }
 
             if (length < 1)

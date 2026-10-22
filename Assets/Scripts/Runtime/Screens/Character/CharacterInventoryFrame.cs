@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 namespace AnomalyPath.Runtime.Screens.Character
 {
-    /// <summary>Фрейм инвентаря: сетка клеток, предметы по габаритам и строка переполнения.</summary>
+    /// <summary>Фрейм инвентаря: одинаковая сетка клеток 1×1, предметы по габаритам и строка переполнения.</summary>
     public sealed class CharacterInventoryFrame
     {
         private readonly IUiHost _host;
@@ -37,37 +37,54 @@ namespace AnomalyPath.Runtime.Screens.Character
             var frame = CharacterWidgets.Box(_host, _content, "InventoryFrame", left, 0f,
                 CharacterMetrics.InventoryWidth, CharacterMetrics.FrameHeight, CharacterPalette.Frame);
             var frameZone = frame.gameObject.AddComponent<ItemDropZone>();
-            frameZone.Configure(_frameHost.Drag, _frameHost.DropOnInventory);
+            frameZone.Configure(_frameHost.Drag, instanceId => _frameHost.DropOnInventory(instanceId, -1, -1, false));
 
-            CharacterWidgets.Label(_host, _content, "InventoryTitle", "Инвентарь", 28, TextAnchor.MiddleCenter,
+            CharacterWidgets.Label(_host, _content, "InventoryTitle", UiText.Get(_host.Texts, UiTextKey.Character_Inventory_Title), 28, TextAnchor.MiddleCenter,
                 UiFactory.TextColor, left + 20f, 12f, CharacterMetrics.InventoryWidth - 40f, 36f);
-            CharacterWidgets.Label(_host, _content, "InventoryMoney", SaveSlotText.Money(player.Money), 20,
+            CharacterWidgets.Label(_host, _content, "InventoryMoney", SaveSlotText.Money(_host.Texts, player.Money), 20,
                 TextAnchor.MiddleRight, UiFactory.MutedTextColor,
                 left + CharacterMetrics.InventoryWidth - 220f, 14f, 200f, 30f);
-            var summary = $"занято {grid.UsedCells} из {grid.Width * grid.Rows} клеток";
+            var summary = UiText.Format(_host.Texts, UiTextKey.Common_Count_Of, grid.UsedCells, grid.Width * grid.Rows);
             CharacterWidgets.Label(_host, _content, "InventorySummary", summary, 16, TextAnchor.MiddleCenter,
                 UiFactory.MutedTextColor, left + 20f, 50f, CharacterMetrics.InventoryWidth - 40f, 24f);
 
-            var gridWidth = (grid.Width * CharacterMetrics.Cell) + ((grid.Width - 1) * CharacterMetrics.CellGap);
+            var gridWidth = CharacterMetrics.GridWidth(grid.Width);
+            var gridHeight = CharacterMetrics.GridHeight(grid.Rows);
             var gridX = left + ((CharacterMetrics.InventoryWidth - gridWidth) / 2f);
             const float gridY = 86f;
+
+            var gridRoot = new GameObject("InventoryGrid", typeof(RectTransform), typeof(Image));
+            gridRoot.transform.SetParent(_content, false);
+            var gridRect = (RectTransform)gridRoot.transform;
+            UiWidgets.Place(gridRect, gridX, gridY, gridWidth, gridHeight);
+            var gridImage = gridRoot.GetComponent<Image>();
+            gridImage.color = Color.clear;
+            gridImage.raycastTarget = true;
+            var gridZone = gridRoot.AddComponent<ItemGridDropZone>();
+            gridZone.Configure(
+                _frameHost.Drag,
+                grid.Width,
+                grid.Rows,
+                CharacterMetrics.Cell,
+                CharacterMetrics.CellGap,
+                (instanceId, x, y, rotated) => CanPlace(grid, instanceId, x, y, rotated),
+                _frameHost.DropOnInventory);
 
             for (var row = 0; row < grid.Rows; row++)
             {
                 for (var column = 0; column < grid.Width; column++)
                 {
-                    var cell = CharacterWidgets.Box(_host, _content, $"Cell_{column}_{row}",
-                        gridX + (column * (CharacterMetrics.Cell + CharacterMetrics.CellGap)),
-                        gridY + (row * (CharacterMetrics.Cell + CharacterMetrics.CellGap)),
-                        CharacterMetrics.Cell, CharacterMetrics.Cell, CharacterPalette.Cell);
-                    var zone = cell.gameObject.AddComponent<ItemDropZone>();
-                    zone.Configure(_frameHost.Drag, _frameHost.DropOnInventory);
+                    var cell = CharacterWidgets.Box(_host, gridRoot.transform, $"Cell_{column}_{row}",
+                        column * CharacterMetrics.CellStep,
+                        row * CharacterMetrics.CellStep,
+                        CharacterMetrics.Cell,
+                        CharacterMetrics.Cell,
+                        CharacterPalette.Cell);
+                    cell.raycastTarget = false;
                 }
             }
 
-            var gridHeight = (grid.Rows * CharacterMetrics.Cell) +
-                             ((grid.Rows - 1) * CharacterMetrics.CellGap);
-            DrawGridLines(gridX, gridY, gridWidth, gridHeight, grid.Width, grid.Rows);
+            DrawGridLines(gridRoot.transform, gridWidth, gridHeight, grid.Width, grid.Rows);
 
             var overflow = new List<string>();
             foreach (var item in grid.Items)
@@ -78,60 +95,78 @@ namespace AnomalyPath.Runtime.Screens.Character
                     continue;
                 }
 
-                var width = (item.PlacedWidth * CharacterMetrics.Cell) +
-                            ((item.PlacedWidth - 1) * CharacterMetrics.CellGap);
-                var height = (item.PlacedHeight * CharacterMetrics.Cell) +
-                             ((item.PlacedHeight - 1) * CharacterMetrics.CellGap);
-                var x = gridX + (item.X * (CharacterMetrics.Cell + CharacterMetrics.CellGap));
-                var y = gridY + (item.Y * (CharacterMetrics.Cell + CharacterMetrics.CellGap));
-                ItemBox(item, x, y, width, height);
+                var size = CharacterMetrics.ItemSize(item.PlacedWidth, item.PlacedHeight);
+                ItemBox(
+                    item,
+                    gridRoot.transform,
+                    item.X * CharacterMetrics.CellStep,
+                    item.Y * CharacterMetrics.CellStep,
+                    size.x,
+                    size.y);
             }
 
             if (overflow.Count > 0)
             {
-                CharacterWidgets.Label(_host, _content, "Overflow", "Не помещается: " + string.Join(", ", overflow),
+                CharacterWidgets.Label(_host, _content, "Overflow", UiText.Format(_host.Texts, UiTextKey.Character_Overflow, string.Join(", ", overflow)),
                     14, TextAnchor.UpperLeft, UiFactory.ToastColor, left + 24f,
-                    gridY + ((grid.Rows * (CharacterMetrics.Cell + CharacterMetrics.CellGap)) + 8f),
+                    gridY + gridHeight + 8f,
                     CharacterMetrics.InventoryWidth - 48f, 40f);
             }
         }
 
+        private bool CanPlace(GridContainer grid, string instanceId, int x, int y, bool rotated)
+        {
+            var item = grid.Find(instanceId);
+            if (item == null || item.Overflow)
+            {
+                return false;
+            }
+
+            var template = CharacterWidgets.Template(_host, item);
+            return template != null && grid.CanPlace(template, x, y, rotated, instanceId);
+        }
+
         private void DrawGridLines(
-            float gridX,
-            float gridY,
+            Transform parent,
             float width,
             float height,
             int columns,
             int rows)
         {
-            var color = new Color(0.30f, 0.34f, 0.34f, 1f);
+            var color = CharacterPalette.GridLine;
             var cell = CharacterMetrics.Cell;
             var gap = CharacterMetrics.CellGap;
-            CharacterWidgets.Box(_host, _content, "GridTop", gridX - 1f, gridY - 1f, width + 2f, 1f, color);
-            CharacterWidgets.Box(_host, _content, "GridBottom", gridX - 1f, gridY + height, width + 2f, 1f, color);
-            CharacterWidgets.Box(_host, _content, "GridLeft", gridX - 1f, gridY - 1f, 1f, height + 2f, color);
-            CharacterWidgets.Box(_host, _content, "GridRight", gridX + width, gridY - 1f, 1f, height + 2f, color);
+            var line = CharacterMetrics.GridLine;
+            var half = line / 2f;
+            Line(parent, "GridTop", -line, -line, width + (line * 2f), line, color);
+            Line(parent, "GridBottom", -line, height, width + (line * 2f), line, color);
+            Line(parent, "GridLeft", -line, -line, line, height + (line * 2f), color);
+            Line(parent, "GridRight", width, -line, line, height + (line * 2f), color);
 
             for (var column = 1; column < columns; column++)
             {
-                var x = gridX + (column * (cell + gap)) - (gap / 2f) - 0.5f;
-                CharacterWidgets.Box(_host, _content, "GridV" + column, x, gridY, 1f, height, color);
+                var x = (column * (cell + gap)) - (gap / 2f) - half;
+                Line(parent, "GridV" + column, x, 0f, line, height, color);
             }
 
             for (var row = 1; row < rows; row++)
             {
-                var y = gridY + (row * (cell + gap)) - (gap / 2f) - 0.5f;
-                CharacterWidgets.Box(_host, _content, "GridH" + row, gridX, y, width, 1f, color);
+                var y = (row * (cell + gap)) - (gap / 2f) - half;
+                Line(parent, "GridH" + row, 0f, y, width, line, color);
             }
         }
 
-        private void ItemBox(ItemInstance item, float x, float y, float width, float height)
+        private void Line(Transform parent, string name, float x, float y, float width, float height, Color color)
         {
-            var frame = CharacterWidgets.Box(_host, _content, "Item_" + item.InstanceId, x, y, width, height,
+            var image = CharacterWidgets.Box(_host, parent, name, x, y, width, height, color);
+            image.raycastTarget = false;
+        }
+
+        private void ItemBox(ItemInstance item, Transform parent, float x, float y, float width, float height)
+        {
+            var frame = CharacterWidgets.Box(_host, parent, "Item_" + item.InstanceId, x, y, width, height,
                 CharacterWidgets.ColorFor(_host, item));
             CharacterWidgets.AttachItem(_host, _frameHost, frame, item, null, -1, DragOrigin.Inventory);
-            var zone = frame.gameObject.AddComponent<ItemDropZone>();
-            zone.Configure(_frameHost.Drag, _frameHost.DropOnInventory);
 
             var template = CharacterWidgets.Template(_host, item);
             Sprite? sprite = null;
@@ -144,7 +179,7 @@ namespace AnomalyPath.Runtime.Screens.Character
                 var side = Mathf.Min(width - 10f, iconArea);
                 if (side > 8f)
                 {
-                    CharacterWidgets.Icon(_host, _content, "ItemIcon_" + item.InstanceId, sprite!,
+                    CharacterWidgets.Icon(_host, parent, "ItemIcon_" + item.InstanceId, sprite!,
                         x + ((width - side) / 2f), y + 4f, side, side);
                 }
             }
@@ -152,7 +187,7 @@ namespace AnomalyPath.Runtime.Screens.Character
             var text = hasIcon && template != null && template.MaxStack > 1
                 ? "×" + item.Stack
                 : CharacterWidgets.Describe(_host, item);
-            var label = CharacterWidgets.Label(_host, _content, "ItemLabel_" + item.InstanceId,
+            var label = CharacterWidgets.Label(_host, parent, "ItemLabel_" + item.InstanceId,
                 text, 11,
                 hasIcon ? TextAnchor.LowerCenter : TextAnchor.MiddleCenter, UiFactory.TextColor,
                 x + 4f,

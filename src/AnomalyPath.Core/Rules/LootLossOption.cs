@@ -9,31 +9,26 @@ namespace AnomalyPath.Core.Rules
     /// <summary>Вариант потери лута: идентификатор, ключ названия, вид потери и доля.</summary>
     public sealed class LootLossOption
     {
-        /// <summary>Лут не теряется.</summary>
-        public const string LossNone = "none";
-
-        /// <summary>Теряется только доля лута.</summary>
-        public const string LossPartial = "partial";
-
-        /// <summary>Теряется весь лут.</summary>
-        public const string LossAll = "all";
-
         /// <summary>Создаёт вариант потери лута.</summary>
         /// <param name="id">Идентификатор варианта.</param>
         /// <param name="titleKey">Ключ названия для интерфейса.</param>
-        /// <param name="loss">Вид потери: <c>none</c>, <c>partial</c> или <c>all</c>.</param>
-        /// <param name="share">Доля теряемого для <c>partial</c>, от 0 до 1.</param>
+        /// <param name="loss">Вид потери.</param>
+        /// <param name="share">Доля теряемого для <see cref="LootLossKind.Partial"/>, от 0 до 1.</param>
         /// <exception cref="ArgumentException">Идентификатор или ключ названия пуст.</exception>
-        public LootLossOption(string id, string titleKey, string loss, double share)
+        public LootLossOption(string id, string titleKey, LootLossKind loss, double share)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                throw new ArgumentException("id варианта потери лута не задан", nameof(id));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(id)),
+                    nameof(id));
             }
 
             if (string.IsNullOrWhiteSpace(titleKey))
             {
-                throw new ArgumentException("titleKey варианта потери лута не задан", nameof(titleKey));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(titleKey)),
+                    nameof(titleKey));
             }
 
             Id = id;
@@ -48,17 +43,11 @@ namespace AnomalyPath.Core.Rules
         /// <summary>Ключ названия для интерфейса.</summary>
         public string TitleKey { get; }
 
-        /// <summary>Вид потери: <c>none</c>, <c>partial</c> или <c>all</c>.</summary>
-        public string Loss { get; }
+        /// <summary>Вид потери.</summary>
+        public LootLossKind Loss { get; }
 
-        /// <summary>Доля теряемого для <c>partial</c>.</summary>
+        /// <summary>Доля теряемого для <see cref="LootLossKind.Partial"/>.</summary>
         public double Share { get; }
-
-        /// <summary>Проверяет, известен ли вид потери.</summary>
-        /// <param name="loss">Значение поля <c>loss</c>.</param>
-        /// <returns><c>true</c>, если вид поддерживается.</returns>
-        public static bool IsKnownLoss(string loss) =>
-            loss is LossNone or LossPartial or LossAll;
 
         /// <summary>Читает вариант из записи данных.</summary>
         /// <param name="value">Запись варианта.</param>
@@ -69,10 +58,10 @@ namespace AnomalyPath.Core.Rules
         {
             var id = DataMap.RequireString(value, "id", path);
             var titleKey = DataMap.RequireString(value, "titleKey", path);
-            var loss = DataMap.RequireString(value, "loss", path);
-            if (!IsKnownLoss(loss))
+            var lossCode = DataMap.RequireString(value, "loss", path);
+            if (!SchemaEnum.TryParse(lossCode, out LootLossKind loss))
             {
-                throw new DataException(path, CoreErrors.RulesUnknownLootLoss, loss);
+                throw new DataException(path, CoreErrors.RulesUnknownLootLoss, lossCode);
             }
 
             var share = DataMap.RequireDouble(value, "share", path);

@@ -22,17 +22,23 @@ namespace AnomalyPath.Core.Inventory
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                throw new ArgumentException("id контейнера не задан", nameof(id));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(id)),
+                    nameof(id));
             }
 
             if (width < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(width), "Ширина должна быть ≥ 1");
+                throw new ArgumentOutOfRangeException(
+                    nameof(width),
+                    CoreText.Format(CoreErrors.MinimumOne, nameof(width)));
             }
 
             if (rows < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(rows), "Высота должна быть ≥ 1");
+                throw new ArgumentOutOfRangeException(
+                    nameof(rows),
+                    CoreText.Format(CoreErrors.MinimumOne, nameof(rows)));
             }
 
             Id = id;
@@ -59,7 +65,9 @@ namespace AnomalyPath.Core.Inventory
         {
             if (rows < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(rows), "Высота должна быть ≥ 1");
+                throw new ArgumentOutOfRangeException(
+                    nameof(rows),
+                    CoreText.Format(CoreErrors.MinimumOne, nameof(rows)));
             }
 
             Rows = rows;

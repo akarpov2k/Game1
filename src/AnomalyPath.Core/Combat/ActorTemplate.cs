@@ -15,7 +15,7 @@ namespace AnomalyPath.Core.Combat
         /// <param name="type">Тип: <c>npc</c>, <c>trader</c>, <c>enemy</c>.</param>
         /// <param name="nameKey">Ключ имени.</param>
         /// <param name="combat">Боевой блок, если есть.</param>
-        public ActorTemplate(string id, string type, string nameKey, CombatBlockTemplate? combat)
+        public ActorTemplate(string id, ActorType type, string nameKey, CombatBlockTemplate? combat)
         {
             Id = id;
             Type = type;
@@ -27,18 +27,13 @@ namespace AnomalyPath.Core.Combat
         public string Id { get; }
 
         /// <summary>Тип актёра.</summary>
-        public string Type { get; }
+        public ActorType Type { get; }
 
         /// <summary>Ключ имени.</summary>
         public string NameKey { get; }
 
         /// <summary>Боевой блок; у NPC и торговца может отсутствовать.</summary>
         public CombatBlockTemplate? Combat { get; }
-
-        /// <summary>Проверяет, известен ли тип актёра.</summary>
-        /// <param name="type">Значение поля <c>type</c>.</param>
-        /// <returns><c>true</c>, если тип поддерживается.</returns>
-        public static bool IsKnownType(string type) => type is "npc" or "trader" or "enemy";
 
         /// <summary>Читает актёра из записи данных.</summary>
         /// <param name="value">Загруженная запись.</param>
@@ -48,10 +43,10 @@ namespace AnomalyPath.Core.Combat
         public static ActorTemplate FromJson(JsonValue value, string sourcePath)
         {
             var id = DataMap.RequireString(value, "id", sourcePath);
-            var type = DataMap.RequireString(value, "type", sourcePath);
-            if (!IsKnownType(type))
+            var typeCode = DataMap.RequireString(value, "type", sourcePath);
+            if (!SchemaEnum.TryParse(typeCode, out ActorType type))
             {
-                throw new DataException(sourcePath, CoreErrors.UnknownActorType, type);
+                throw new DataException(sourcePath, CoreErrors.UnknownActorType, typeCode);
             }
 
             var nameKey = DataMap.RequireString(value, "nameKey", sourcePath);
@@ -59,11 +54,11 @@ namespace AnomalyPath.Core.Combat
             return new ActorTemplate(id, type, nameKey, combat);
         }
 
-        private static CombatBlockTemplate? ReadCombat(JsonValue value, string type, string id, string sourcePath)
+        private static CombatBlockTemplate? ReadCombat(JsonValue value, ActorType type, string id, string sourcePath)
         {
             if (!value.TryGet("combat", out var block) || !block.IsObject)
             {
-                if (type == "enemy")
+                if (type == ActorType.Enemy)
                 {
                     throw new DataException(sourcePath, CoreErrors.ActorWithoutCombat, id);
                 }
@@ -71,8 +66,8 @@ namespace AnomalyPath.Core.Combat
                 return null;
             }
 
-            var tier = DataMap.OptionalInt(block, "tier", 1);
-            var level = DataMap.OptionalInt(block, "level", 1);
+            var tier = DataMap.RequireInt(block, "tier", sourcePath);
+            var level = DataMap.RequireInt(block, "level", sourcePath);
             var health = DataMap.RequireInt(block, "health", sourcePath);
             var ap = DataMap.RequireInt(block, "ap", sourcePath);
             if (health <= 0 || ap < 0)
@@ -94,8 +89,8 @@ namespace AnomalyPath.Core.Combat
                 }
             }
 
-            var ai = DataMap.OptionalString(block, "ai") ?? "aggressive";
-            var accuracy = DataMap.OptionalDouble(block, "accuracy") ?? 0.8;
+            var ai = DataMap.RequireString(block, "ai", sourcePath);
+            var accuracy = DataMap.RequireDouble(block, "accuracy", sourcePath);
             var accuracyBonus = DataMap.OptionalDouble(block, "accuracyBonus") ?? 0;
             return new CombatBlockTemplate(tier, level, health, ap, protection, ai, accuracy, accuracyBonus);
         }

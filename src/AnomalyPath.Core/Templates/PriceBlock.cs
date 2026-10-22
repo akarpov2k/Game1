@@ -5,12 +5,12 @@ namespace AnomalyPath.Core.Templates
     public sealed class PriceBlock
     {
         /// <summary>Создаёт блок цены.</summary>
-        /// <param name="mode">Режим: <c>fixed</c> или <c>reputation</c>.</param>
+        /// <param name="mode">Режим цены.</param>
         /// <param name="buy">Цена покупки игроком.</param>
         /// <param name="sell">Цена продажи игроком.</param>
         /// <param name="basePrice">Базовая цена для режима репутации.</param>
         /// <param name="factionId">Фракция, чья репутация влияет.</param>
-        public PriceBlock(string mode, double? buy, double? sell, double? basePrice, string? factionId)
+        public PriceBlock(PriceMode mode, double? buy, double? sell, double? basePrice, string? factionId)
         {
             Mode = mode;
             Buy = buy;
@@ -20,7 +20,7 @@ namespace AnomalyPath.Core.Templates
         }
 
         /// <summary>Режим цены.</summary>
-        public string Mode { get; }
+        public PriceMode Mode { get; }
 
         /// <summary>Цена покупки игроком.</summary>
         public double? Buy { get; }

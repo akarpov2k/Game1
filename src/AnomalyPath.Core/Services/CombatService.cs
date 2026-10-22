@@ -80,7 +80,7 @@ namespace AnomalyPath.Core.Services
             var player = new Combatant(playerActor, playerEquipment);
             var opponent = new Combatant(enemy);
             var first = player;
-            if (_settings.Initiative == "formula" && _settings.InitiativeFormulaId != null)
+            if (_settings.Initiative == InitiativeKind.Formula && _settings.InitiativeFormulaId != null)
             {
                 var variables = new Dictionary<string, double>(StringComparer.Ordinal)
                 {
@@ -131,7 +131,7 @@ namespace AnomalyPath.Core.Services
             var magazine = weapon.EnsureMagazine(template.Weapon.Magazine);
             if (magazine <= 0)
             {
-                if (attacker.Template.Type != "enemy" || attacker.Ap < _settings.ReloadApCost)
+                if (attacker.Template.Type != ActorType.Enemy || attacker.Ap < _settings.ReloadApCost)
                 {
                     return false;
                 }
@@ -152,7 +152,7 @@ namespace AnomalyPath.Core.Services
                 var type = template.Weapon.DamageTypeId;
                 if (!_damageTypes.Contains(type))
                 {
-                    type = DamageTypes.Bullet;
+                    throw new DataException(template.Id, CoreErrors.UnknownDamageType, type);
                 }
 
                 var protection = ProtectionOf(defender, type);
@@ -344,8 +344,8 @@ namespace AnomalyPath.Core.Services
 
         private int RestoreAp(Combatant combatant) => _settings.ApRestore switch
         {
-            "none" => combatant.Ap,
-            "partial" => Math.Min(combatant.MaxAp, combatant.Ap + _settings.ApPerTurn),
+            ApRestoreKind.None => combatant.Ap,
+            ApRestoreKind.Partial => Math.Min(combatant.MaxAp, combatant.Ap + _settings.ApPerTurn),
             _ => combatant.MaxAp
         };
 

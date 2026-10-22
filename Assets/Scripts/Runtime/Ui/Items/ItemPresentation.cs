@@ -50,13 +50,13 @@ namespace AnomalyPath.Runtime.Ui.Items
 
             return template.Category switch
             {
-                "weapon" => ItemPalette.Weapon,
-                "ammo" => ItemPalette.Ammo,
-                "armor" => ItemPalette.Armor,
-                "helmet" => ItemPalette.Armor,
-                "backpack" => ItemPalette.Armor,
-                "belt" => ItemPalette.Armor,
-                "artifact" => ItemPalette.Artifact,
+                ItemCategory.Weapon => ItemPalette.Weapon,
+                ItemCategory.Ammo => ItemPalette.Ammo,
+                ItemCategory.Armor => ItemPalette.Armor,
+                ItemCategory.Helmet => ItemPalette.Armor,
+                ItemCategory.Backpack => ItemPalette.Armor,
+                ItemCategory.Belt => ItemPalette.Armor,
+                ItemCategory.Artifact => ItemPalette.Artifact,
                 _ => ItemPalette.Other,
             };
         }

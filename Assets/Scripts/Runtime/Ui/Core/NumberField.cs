@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Globalization;
+using AnomalyPath.Core.Localization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -68,12 +69,12 @@ namespace AnomalyPath.Runtime.Ui.Core
 
             if (max < min)
             {
-                throw new ArgumentOutOfRangeException(nameof(max), "Максимум меньше минимума");
+                throw new ArgumentOutOfRangeException(nameof(max), CoreText.Get(CoreErrors.RangeOrder));
             }
 
             if (step <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(step), "Шаг должен быть больше нуля");
+                throw new ArgumentOutOfRangeException(nameof(step), CoreText.Get(CoreErrors.StepPositive));
             }
 
             _input = input;

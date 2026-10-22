@@ -26,6 +26,6 @@
   "hubFastTravelCost": { "stamina": 5, "hours": 6 },
   "maxBranchDepth": 4,
   "initialStamina": 10,
-  "dayStartHour": 6,
+  "dayStartHour": 10,
   "nightStartHour": 22
 }

@@ -19,12 +19,12 @@ namespace AnomalyPath.Core.Services
         }
 
         /// <inheritdoc />
-        public IReadOnlyList<ItemTemplate> ByCategory(string category)
+        public IReadOnlyList<ItemTemplate> ByCategory(ItemCategory category)
         {
             var result = new List<ItemTemplate>();
             foreach (var item in _repository.All)
             {
-                if (string.Equals(item.Category, category, StringComparison.Ordinal))
+                if (item.Category == category)
                 {
                     result.Add(item);
                 }

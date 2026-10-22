@@ -2,6 +2,8 @@
 using System;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Inventory;
+using AnomalyPath.Core.Localization;
+using AnomalyPath.Core.Templates;
 using EquipmentState = AnomalyPath.Core.Inventory.Equipment;
 
 namespace AnomalyPath.Core.Equipment
@@ -153,7 +155,7 @@ namespace AnomalyPath.Core.Equipment
             }
 
             var template = _items.Get(item.ItemId);
-            return template.Category == "weapon" || template.Category == "consumable";
+            return template.Category == ItemCategory.Weapon || template.Category == ItemCategory.Consumable;
         }
 
         /// <inheritdoc />
@@ -170,7 +172,9 @@ namespace AnomalyPath.Core.Equipment
 
             if (index < 0 || index >= equipment.QuickSlotCount)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), "Индекс быстрого слота вне диапазона");
+                throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    CoreText.Format(CoreErrors.IndexOutOfRange, nameof(index)));
             }
 
             replaced = equipment.GetQuick(index);
@@ -193,7 +197,9 @@ namespace AnomalyPath.Core.Equipment
 
             if (index < 0 || index >= equipment.QuickSlotCount)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), "Индекс быстрого слота вне диапазона");
+                throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    CoreText.Format(CoreErrors.IndexOutOfRange, nameof(index)));
             }
 
             var item = equipment.GetQuick(index);
@@ -251,7 +257,9 @@ namespace AnomalyPath.Core.Equipment
 
             if (index < 0 || index >= equipment.Artifacts.Count)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), "Индекс артефакта вне диапазона");
+                throw new ArgumentOutOfRangeException(
+                    nameof(index),
+                    CoreText.Format(CoreErrors.IndexOutOfRange, nameof(index)));
             }
 
             var artifact = equipment.Artifacts[index];

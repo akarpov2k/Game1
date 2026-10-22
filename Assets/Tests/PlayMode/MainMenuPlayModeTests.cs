@@ -1,8 +1,11 @@
 #nullable enable
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using AnomalyPath.Core.Save;
+using AnomalyPath.Core.World;
 using AnomalyPath.Runtime;
+using AnomalyPath.Runtime.Screens.Game;
 using AnomalyPath.Runtime.Screens.Menu;
 using AnomalyPath.Runtime.Ui.Core;
 using AnomalyPath.Runtime.Ui.Items;
@@ -12,6 +15,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace AnomalyPath.Tests.PlayMode
 {
@@ -43,6 +47,8 @@ namespace AnomalyPath.Tests.PlayMode
             Click("Новая игра");
             yield return null;
             Click("Начать");
+            yield return null;
+            Click("Gear");
             yield return null;
             Click("Выйти");
             yield return null;
@@ -114,7 +120,7 @@ namespace AnomalyPath.Tests.PlayMode
             yield return null;
             Click("Начать");
             yield return null;
-            Click("Персонаж");
+            Click("Backpack");
             yield return null;
 
             var character = GameObject.Find("Character");
@@ -136,6 +142,176 @@ namespace AnomalyPath.Tests.PlayMode
 
             Assert.IsTrue(GameObject.Find("InGame").activeSelf, "Игровая панель не вернулась");
             Assert.IsFalse(character.activeSelf, "Панель персонажа осталась активной");
+        }
+
+        /// <summary>Шестерёнка открывает меню без кнопки персонажа, рюкзак — экран персонажа.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator PlayScreen_GearAndBackpack_OpenMenuAndCharacter()
+        {
+            yield return LoadMain();
+
+            Click("Новая игра");
+            yield return null;
+            Click("Начать");
+            yield return null;
+            Assert.IsTrue(GameObject.Find("InGame").activeSelf, "Основной экран не открылся");
+
+            Click("Gear");
+            yield return null;
+            var menu = GameObject.Find("GameMenu");
+            Assert.IsNotNull(menu, "Шестерёнка не открыла меню игры");
+            Assert.IsTrue(menu.activeSelf, "Меню игры не активно");
+            Assert.IsNull(GameObject.Find("Персонаж"), "В меню не должно быть кнопки персонажа");
+            Assert.IsNotNull(GameObject.Find("Продолжить"), "В меню нет кнопки «Продолжить»");
+
+            Click("Продолжить");
+            yield return null;
+            Assert.IsTrue(GameObject.Find("InGame").activeSelf, "Меню не вернуло в игру");
+
+            Click("Backpack");
+            yield return null;
+            Assert.IsTrue(GameObject.Find("Character").activeSelf, "Рюкзак не открыл экран персонажа");
+        }
+
+        /// <summary>Основной экран берёт непрозрачный фон локации и показывает действия перехода.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator PlayScreen_ShowsLocationBackgroundAndTravelActions()
+        {
+            yield return LoadMain();
+
+            Click("Новая игра");
+            yield return null;
+            Click("Начать");
+            yield return null;
+
+            var backdrop = BackdropOf("InGame");
+            Assert.IsNotNull(backdrop.sprite, "У основного экрана нет фона локации");
+            StringAssert.StartsWith("bg_", backdrop.sprite!.name, "Фон должен быть картинкой локации");
+            Assert.AreEqual(1f, backdrop.color.a, 0.01f, "Фон основного экрана должен быть непрозрачным");
+
+            var summary = GameObject.Find("LocationSummary");
+            Assert.IsNotNull(summary, "На экране нет сведений о локации");
+            StringAssert.Contains("Тип:", summary!.GetComponent<Text>().text, "Сведения о локации не выведены");
+            StringAssert.DoesNotContain("Посещена", summary.GetComponent<Text>().text, "Характеристика посещения не должна выводиться");
+
+            Assert.IsNotNull(GameObject.Find("Clock"), "На экране нет часов");
+            Assert.IsNotNull(GameObject.Find("ClockFace"), "У часов нет циферблата");
+            Assert.IsNotNull(GameObject.Find("ClockHand"), "У часов нет стрелки");
+            var clockLabel = GameObject.Find("Clock")!.transform.Find("Text");
+            Assert.IsNotNull(clockLabel, "У часов нет численного времени");
+            StringAssert.Contains("10:00", clockLabel!.GetComponent<Text>().text, "Часы не показывают время начала игры");
+            Assert.AreEqual(0f, GameObject.Find("ClockHand")!.GetComponent<RectTransform>().localEulerAngles.z, 0.01f,
+                "В начале дня стрелка должна стоять на верхней границе дневной половины");
+
+            Assert.IsNull(GameObject.Find("Меню"), "У шестерёнки не должно быть подписи");
+            Assert.IsNull(GameObject.Find("Персонаж"), "У рюкзака не должно быть подписи");
+            Assert.IsNull(GameObject.Find("LocationObject"), "Объект не должен рисоваться без данных локации");
+
+            var hasObjectStructure = false;
+            foreach (var transform in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+            {
+                if (transform.name == "LocationObject")
+                {
+                    hasObjectStructure = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(hasObjectStructure, "Структура объекта должна оставаться в коде экрана");
+            Assert.IsNotNull(FindAction("Travel_"), "На основном экране нет действий перехода");
+        }
+
+        /// <summary>Кнопка перехода перемещает игрока в другую локацию и перестраивает экран.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator PlayScreen_Travel_MovesToAnotherLocation()
+        {
+            yield return LoadMain();
+
+            Click("Новая игра");
+            yield return null;
+            Click("Начать");
+            yield return null;
+
+            var screen = Object.FindAnyObjectByType<GameScreen>();
+            Assert.IsNotNull(screen, "GameScreen не найден в сцене Main");
+            var before = screen.Session!.State.World.CurrentLocationId;
+            var travel = FindAction("Travel_");
+            Assert.IsNotNull(travel, "Нет кнопки перехода");
+            travel!.onClick.Invoke();
+            yield return null;
+
+            Assert.AreNotEqual(before, screen.Session!.State.World.CurrentLocationId, "Переход не сменил локацию");
+            Assert.IsTrue(GameObject.Find("InGame").activeSelf, "После перехода пропал основной экран");
+        }
+
+        /// <summary>Пять и больше действий уходят в прокрутку, колесо мыши двигает список.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator PlayActions_MoreThanFour_ScrollsWithWheel()
+        {
+            yield return LoadMain();
+
+            var screen = Object.FindAnyObjectByType<GameScreen>();
+            Assert.IsNotNull(screen, "GameScreen не найден в сцене Main");
+            var canvas = GameObject.Find("Canvas");
+            Assert.IsNotNull(canvas, "Нет канваса");
+
+            var go = new GameObject("ActionListTest", typeof(RectTransform));
+            go.transform.SetParent(canvas.transform, false);
+            var list = new PlayActionList(screen, go.transform);
+            list.Root.anchorMin = new Vector2(0.5f, 0.5f);
+            list.Root.anchorMax = new Vector2(0.5f, 0.5f);
+            list.Root.sizeDelta = new Vector2(600f, PlayMetrics.ActionViewportHeight);
+
+            var actions = new List<PlayAction>();
+            for (var index = 0; index < 6; index++)
+            {
+                var number = index;
+                actions.Add(new PlayAction("Action_" + number, "Действие " + number, () => { }));
+            }
+
+            list.SetActions(actions, "Нет действий");
+            Canvas.ForceUpdateCanvases();
+            yield return null;
+            yield return null;
+
+            var scroll = go.GetComponentInChildren<ScrollRect>(true);
+            Assert.IsNotNull(scroll, "Нет вертикальной прокрутки действий");
+            Assert.IsTrue(scroll!.vertical, "Прокрутка действий должна быть вертикальной");
+            Assert.IsFalse(scroll.horizontal, "Горизонтальная прокрутка действий не нужна");
+            Assert.Greater(scroll.content.rect.height, scroll.viewport.rect.height,
+                "При шести действиях контент должен быть выше видимой части");
+            Assert.IsTrue(scroll.verticalScrollbar.gameObject.activeSelf, "Полоса прокрутки не включилась");
+
+            var catcher = scroll.viewport.GetComponent<Graphic>();
+            Assert.IsNotNull(catcher, "Без Graphic область действий не получит колесо мыши");
+            Assert.IsTrue(catcher.raycastTarget, "Область действий не ловит события указателя");
+
+            scroll.verticalNormalizedPosition = 0.5f;
+            Canvas.ForceUpdateCanvases();
+            yield return null;
+            var before = scroll.content.anchoredPosition.y;
+            scroll.OnScroll(new PointerEventData(EventSystem.current) { scrollDelta = new Vector2(0f, -5f) });
+            yield return null;
+            Assert.AreNotEqual(before, scroll.content.anchoredPosition.y, "Колесо мыши не прокручивает действия");
+
+            Object.Destroy(go);
+        }
+
+        private static Button? FindAction(string prefix)
+        {
+            foreach (var button in Object.FindObjectsByType<Button>(FindObjectsInactive.Exclude))
+            {
+                if (button.name.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    return button!;
+                }
+            }
+
+            return null;
         }
 
         private static int CountChildren(GameObject root, string prefix)
@@ -163,7 +339,7 @@ namespace AnomalyPath.Tests.PlayMode
             yield return null;
             Click("Начать");
             yield return null;
-            Click("Персонаж");
+            Click("Backpack");
             yield return null;
 
             var slot = GameObject.Find("SlotHelmet");
@@ -194,7 +370,7 @@ namespace AnomalyPath.Tests.PlayMode
             yield return null;
             Click("Начать");
             yield return null;
-            Click("Персонаж");
+            Click("Backpack");
             yield return null;
 
             var slot = GameObject.Find("SlotMain");
@@ -253,7 +429,7 @@ namespace AnomalyPath.Tests.PlayMode
             yield return null;
             Click("Начать");
             yield return null;
-            Click("Персонаж");
+            Click("Backpack");
             yield return null;
 
             Assert.IsNotNull(GameObject.Find("Nickname"), "Нет ника на экране персонажа");
@@ -294,7 +470,7 @@ namespace AnomalyPath.Tests.PlayMode
             yield return null;
             Assert.IsNotNull(BackdropOf("InGame").sprite, "У игровой панели нет задника");
 
-            Click("Персонаж");
+            Click("Backpack");
             yield return null;
             var character = BackdropOf("Character");
             Assert.IsNotNull(character.sprite, "У экрана персонажа нет задника локации");
@@ -327,9 +503,48 @@ namespace AnomalyPath.Tests.PlayMode
             yield return null;
             Click("Начать");
             yield return null;
-            Assert.IsFalse(screen.HandleEscape(), "Esc не должен срабатывать на игровой панели");
-            Assert.IsNotNull(screen.Router.Current, "Нет активного экрана");
-            Assert.AreEqual("InGame", screen.Router.Current!.name, "Экран сменился по Esc в игре");
+            Assert.IsTrue(screen.HandleEscape(), "Esc на игровой панели не открыл меню");
+            yield return null;
+            Assert.IsTrue(GameObject.Find("GameMenu").activeSelf, "Esc не открыл меню игры");
+            Assert.IsNull(GameObject.Find("InGame"), "Игровая панель осталась поверх меню");
+
+            Assert.IsTrue(screen.HandleEscape(), "Esc в меню игры не обработан");
+            yield return null;
+            Assert.IsTrue(GameObject.Find("InGame").activeSelf, "Esc не вернул из меню в игру");
+        }
+
+        /// <summary>Esc на экране персонажа возвращает в игровое поле.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator Escape_Character_ReturnsToGame()
+        {
+            yield return LoadMain();
+
+            var screen = Object.FindAnyObjectByType<GameScreen>();
+            Assert.IsNotNull(screen, "GameScreen не найден в сцене Main");
+
+            Click("Новая игра");
+            yield return null;
+            Click("Начать");
+            yield return null;
+            Click("Backpack");
+            yield return null;
+            Assert.IsTrue(GameObject.Find("Character").activeSelf, "Экран персонажа не открылся");
+
+            Assert.IsTrue(screen.HandleEscape(), "Esc на экране персонажа не обработан");
+            yield return null;
+            Assert.IsTrue(GameObject.Find("InGame").activeSelf, "Esc не вернул из персонажа в игру");
+            Assert.IsNull(GameObject.Find("Character"), "Экран персонажа остался активным");
+        }
+
+        /// <summary>Стрелка часов идёт по дневной и ночной половинам и совпадает с временем.</summary>
+        [Test]
+        public void PlayClock_AngleFollowsDayAndNight()
+        {
+            Assert.AreEqual(0f, PlayClock.Angle(new WorldClock(1, 10, 10, 22)), 0.01f, "начало дня");
+            Assert.AreEqual(300f, PlayClock.Angle(new WorldClock(1, 14, 10, 22)), 0.01f, "2 часа дня");
+            Assert.AreEqual(180f, PlayClock.Angle(new WorldClock(1, 22, 10, 22)), 0.01f, "конец дня, начало ночи");
+            Assert.AreEqual(120f, PlayClock.Angle(new WorldClock(1, 2, 10, 22)), 0.01f, "2 часа ночи");
         }
 
         /// <summary>Esc закрывает окно загрузки и модальный диалог выхода.</summary>
@@ -353,6 +568,8 @@ namespace AnomalyPath.Tests.PlayMode
             yield return null;
             Click("Начать");
             yield return null;
+            Click("Gear");
+            yield return null;
             Click("Выйти");
             yield return null;
 
@@ -363,7 +580,10 @@ namespace AnomalyPath.Tests.PlayMode
             yield return null;
 
             Assert.IsFalse(dialog.activeSelf, "Esc не закрыл диалог выхода");
-            Assert.IsTrue(GameObject.Find("InGame").activeSelf, "Игровая панель пропала после закрытия диалога");
+            Assert.IsTrue(GameObject.Find("GameMenu").activeSelf, "Меню игры пропало после закрытия диалога");
+            Assert.IsTrue(screen.HandleEscape(), "Esc в меню игры не обработан");
+            yield return null;
+            Assert.IsTrue(GameObject.Find("InGame").activeSelf, "Esc не вернул из меню в игру");
         }
 
         /// <summary>Экран сохранения пишет сейв с названием и показывает уровень и деньги в списке загрузки.</summary>
@@ -391,6 +611,8 @@ namespace AnomalyPath.Tests.PlayMode
             Click("Новая игра");
             yield return null;
             Click("Начать");
+            yield return null;
+            Click("Gear");
             yield return null;
             Click("Сохранить игру");
             yield return null;
@@ -489,6 +711,8 @@ namespace AnomalyPath.Tests.PlayMode
             Assert.AreEqual(player.Money, saved.Money, "Деньги в сохранении");
             Assert.Greater(saved.Money, 0, "Деньги должны быть заданы условно");
 
+            Click("Gear");
+            yield return null;
             Click("Загрузить игру");
             yield return null;
 
@@ -554,6 +778,8 @@ namespace AnomalyPath.Tests.PlayMode
             Click("Начать");
             yield return null;
             screen.Sessions.Save(screen.Session!, slot, title: "Удаляемый");
+            Click("Gear");
+            yield return null;
             Click("Загрузить игру");
             yield return null;
 
@@ -610,11 +836,15 @@ namespace AnomalyPath.Tests.PlayMode
                 screen.Sessions.Save(screen.Session!, SaveSlots.Slot(number), title: "Сейв " + number);
             }
 
+            Click("Gear");
+            yield return null;
             Click("Сохранить игру");
             yield return null;
             AssertPageNavigation("сохранения");
 
             Click("Назад");
+            yield return null;
+            Click("Gear");
             yield return null;
             Click("Загрузить игру");
             yield return null;
@@ -678,6 +908,8 @@ namespace AnomalyPath.Tests.PlayMode
                 screen.Sessions.Save(screen.Session!, SaveSlots.Slot(number), title: "Сейв " + number);
             }
 
+            Click("Gear");
+            yield return null;
             Click("Сохранить игру");
             yield return null;
 

@@ -17,7 +17,6 @@ namespace AnomalyPath.Core.Services
     {
         private const string PlayerContainerId = "player";
         private const string DisplayContainerId = "loadout_preview";
-        private const int MaxDisplayRows = 32;
 
         private readonly IGameRulesRepository _rules;
         private readonly ILoadoutRepository _loadouts;
@@ -92,7 +91,7 @@ namespace AnomalyPath.Core.Services
                 }
             }
 
-            var display = BuildDisplay(loadout, grid.Width, grid.Rows, out var displayOverflow);
+            var display = BuildDisplay(loadout, grid.Width, grid.Rows, rules.PreviewMaxRows, out var displayOverflow);
             return new LoadoutPreview(loadout, grid, equipment, overflow, rejected, display, displayOverflow);
         }
 
@@ -104,10 +103,11 @@ namespace AnomalyPath.Core.Services
             LoadoutTemplate loadout,
             int width,
             int startRows,
+            int maxRows,
             out List<ItemInstance> overflow)
         {
             var rows = Math.Max(1, startRows);
-            for (var attempt = 0; attempt < MaxDisplayRows; attempt++)
+            for (var attempt = 0; attempt < maxRows; attempt++)
             {
                 var display = new GridContainer(DisplayContainerId, width, rows);
                 var rest = new List<ItemInstance>();
@@ -127,7 +127,7 @@ namespace AnomalyPath.Core.Services
                     rest.AddRange(itemsRest);
                 }
 
-                if (rest.Count == 0 || rows >= MaxDisplayRows)
+                if (rest.Count == 0 || rows >= maxRows)
                 {
                     overflow = rest;
                     return display;

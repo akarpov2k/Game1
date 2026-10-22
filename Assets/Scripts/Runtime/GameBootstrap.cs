@@ -1,7 +1,9 @@
+#nullable enable
 using System.IO;
 using AnomalyPath.Core;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Di;
+using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.Save;
 using AnomalyPath.Core.Services;
 using AnomalyPath.Core.Validation;
@@ -35,10 +37,10 @@ namespace AnomalyPath.Runtime
 
             if (!Preflight.CanStart)
             {
-                Debug.LogError($"AnomalyPath: данные не прошли проверку. {Preflight.Report.Summary}");
+                Debug.LogError(CoreText.Format(CoreErrors.DataCheckFailed, Preflight.Report.Summary));
                 foreach (var issue in Preflight.Report.Errors)
                 {
-                    Debug.LogError($"{issue.Path}: {issue.Message}");
+                    Debug.LogError(CoreText.Format(CoreErrors.ReportLine, issue.Path, issue.Message));
                 }
 
                 enabled = false;

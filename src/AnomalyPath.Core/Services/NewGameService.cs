@@ -51,6 +51,12 @@ namespace AnomalyPath.Core.Services
             }
 
             var rules = _rules.Require();
+            if (!string.IsNullOrWhiteSpace(settings.Nickname) &&
+                settings.Nickname.Length > rules.NicknameMaxLength)
+            {
+                throw new DataException("player", CoreErrors.NicknameLength, rules.NicknameMaxLength);
+            }
+
             var preview = _previews.Build(loadoutId);
             RequireCompleteLoadout(preview);
 

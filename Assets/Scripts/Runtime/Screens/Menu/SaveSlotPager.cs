@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Runtime.Ui.Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,9 +18,11 @@ namespace AnomalyPath.Runtime.Screens.Menu
         private readonly Button _previous;
         private readonly Button _next;
         private readonly Text _label;
+        private readonly IGameTexts _texts;
 
         public SaveSlotPager(IUiHost host, Transform parent, Action onPrevious, Action onNext)
         {
+            _texts = host.Texts;
             _root = new GameObject("SlotPager", typeof(RectTransform));
             _root.transform.SetParent(parent, false);
             var rect = (RectTransform)_root.transform;
@@ -61,7 +64,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
 
             _previous.gameObject.SetActive(page > 0);
             _next.gameObject.SetActive(page < pageCount - 1);
-            _label.text = (page + 1) + " / " + pageCount;
+            _label.text = UiText.Format(_texts, UiTextKey.SaveSlot_Pager, page + 1, pageCount);
         }
     }
 }

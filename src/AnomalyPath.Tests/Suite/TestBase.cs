@@ -239,8 +239,11 @@ namespace AnomalyPath.Tests
 
             return new Dictionary<string, string>
             {
-                ["catalog.json"] = Catalog("items/a.json"),
+                ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json"),
                 ["items/a.json"] = Weapon("wpn_a"),
+                ["combat.json"] = CombatJson(),
+                ["equipment.json"] = EquipmentJson(),
+                ["topology.json"] = TopologyJson(),
                 ["Localization/errors.ru.json"] = ru,
                 ["Localization/errors.en.json"] = enWithExtra,
                 ["Localization/strings.ru.json"] = "{\"n\":\"Название\"}",
@@ -278,6 +281,20 @@ namespace AnomalyPath.Tests
             return $"{{\"schemaVersion\":1,\"id\":\"core\",\"files\":[{list}]}}";
         }
 
+        protected string CombatJson() =>
+            "{\"schemaVersion\":1,\"kind\":\"combat\",\"id\":\"combat\",\"damageFormulaId\":\"formula_damage_base\"," +
+            "\"clampMin\":0,\"apRestore\":\"full\",\"initiative\":\"playerFirst\"," +
+            "\"zoneShiftFree\":1,\"zoneShiftApCost\":1,\"attackApCost\":1," +
+            "\"accuracyClose\":1.4,\"accuracyMid\":1.0,\"accuracyFar\":0.8,\"reloadApCost\":1}";
+
+        protected string EquipmentJson() =>
+            "{\"schemaVersion\":1,\"kind\":\"equipment\",\"id\":\"equipment\",\"quickSlots\":4}";
+
+        protected string TopologyJson() =>
+            "{\"schemaVersion\":1,\"kind\":\"topology\",\"id\":\"topology\",\"transitions\":[]," +
+            "\"routeLength\":[1,2],\"edgeLength\":[1,2],\"costs\":{}," +
+            "\"maxBranchDepth\":4,\"initialStamina\":10,\"dayStartHour\":6,\"nightStartHour\":22}";
+
         protected string Collection(params string[] entries)
         {
             var list = string.Join(",", Array.ConvertAll(entries, e => $"\"{e}\""));
@@ -290,7 +307,7 @@ namespace AnomalyPath.Tests
             var extraPart = string.IsNullOrWhiteSpace(extra)
                 ? string.Empty
                 : extra.Trim().TrimStart(',').TrimEnd(',') + ",";
-            return $"{{\"schemaVersion\":1,\"kind\":\"items\",\"id\":\"{id}\",{extendsPart}\"nameKey\":\"n\",\"category\":\"weapon\",\"footprint\":[2,3],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",{extraPart}\"weapon\":{{\"classId\":\"wclass_rifle\",\"damage\":1,\"accuracy\":0.5,\"magazine\":10,\"ammoCaliber\":\"5.45x39\",\"reloadTime\":2,\"durabilityMax\":10,\"durabilityPerShot\":0.1}}}}";
+            return $"{{\"schemaVersion\":1,\"kind\":\"items\",\"id\":\"{id}\",{extendsPart}\"nameKey\":\"n\",\"category\":\"weapon\",\"footprint\":[2,3],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",{extraPart}\"weapon\":{{\"classId\":\"wclass_rifle\",\"damageTypeId\":\"dmg_bullet\",\"damage\":1,\"accuracy\":0.5,\"magazine\":10,\"ammoCaliber\":\"5.45x39\",\"reloadTime\":2,\"armorPenetration\":0,\"durabilityMax\":10,\"durabilityPerShot\":0.1}}}}";
         }
 
         protected void WithFixture(Dictionary<string, string> files, Action<string> body)

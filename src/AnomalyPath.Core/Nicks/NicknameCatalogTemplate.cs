@@ -18,7 +18,9 @@ namespace AnomalyPath.Core.Nicks
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                throw new ArgumentException("id каталога ников не задан", nameof(id));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(id)),
+                    nameof(id));
             }
 
             Id = id;

@@ -16,5 +16,12 @@
   "needsMax": 100,
   "playerActorId": "actor_player",
   "startingMoney": 1000,
+  "tradeDifficulty": 1,
+  "tradeDifficultyMax": 3,
+  "tradeDifficultyStep": 0.1,
+  "lootLossStep": 0.1,
+  "nicknameMaxLength": 24,
+  "previewMaxRows": 32,
+  "savePageSize": 6,
   "tierCount": 4
 }

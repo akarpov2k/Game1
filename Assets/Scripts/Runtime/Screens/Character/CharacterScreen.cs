@@ -34,7 +34,7 @@ namespace AnomalyPath.Runtime.Screens.Character
         {
             _host = host;
 
-            var title = host.Ui.CreateTitle(Content, "Персонаж");
+            var title = host.Ui.CreateTitle(Content, UiText.Get(host.Texts, UiTextKey.Character_Title));
             var titleRect = title.rectTransform;
             titleRect.anchorMin = new Vector2(0.5f, 1f);
             titleRect.anchorMax = new Vector2(0.5f, 1f);
@@ -44,7 +44,7 @@ namespace AnomalyPath.Runtime.Screens.Character
 
             _content = CreateContent(Content);
 
-            var back = host.Ui.CreateButton(Content, "Назад", () => host.ShowGame(announce: false));
+            var back = host.Ui.CreateButton(Content, UiText.Get(host.Texts, UiTextKey.Common_Back), () => host.ShowGame(announce: false));
             var backRect = (RectTransform)back.transform;
             backRect.anchorMin = new Vector2(0.5f, 0f);
             backRect.anchorMax = new Vector2(0.5f, 0f);
@@ -75,10 +75,20 @@ namespace AnomalyPath.Runtime.Screens.Character
         /// <inheritdoc />
         public Text Ghost => _ghost;
 
+        /// <summary>Esc возвращает из персонажа в игровое поле.</summary>
+        /// <returns><c>true</c>, если Esc обработан.</returns>
+        public override bool HandleEscape()
+        {
+            _host.ShowGame(announce: false);
+            return true;
+        }
+
         /// <summary>Перестраивает содержимое по текущему состоянию игрока.</summary>
         public void Show()
         {
             _menu.Close();
+            _drag.End();
+            _ghost.gameObject.SetActive(false);
             ApplyTheme();
             foreach (Transform child in _content)
             {
@@ -94,7 +104,7 @@ namespace AnomalyPath.Runtime.Screens.Character
                 CharacterWidgets.Box(_host, _content, "InventoryFrame",
                     CharacterMetrics.FrameWidth + CharacterMetrics.Gap, 0f,
                     CharacterMetrics.InventoryWidth, CharacterMetrics.FrameHeight, CharacterPalette.Frame);
-                CharacterWidgets.Label(_host, _content, "NoGame", "Нет активной игры", 20, TextAnchor.MiddleCenter,
+                CharacterWidgets.Label(_host, _content, "NoGame", UiText.Get(_host.Texts, UiTextKey.Common_No_Game), 20, TextAnchor.MiddleCenter,
                     UiFactory.MutedTextColor, CharacterMetrics.FrameWidth + CharacterMetrics.Gap + 20f, 20f,
                     CharacterMetrics.InventoryWidth - 40f, 40f);
                 _host.Router.Show(Panel);
@@ -138,27 +148,27 @@ namespace AnomalyPath.Runtime.Screens.Character
             if (slot.HasValue)
             {
                 var captured = slot.Value;
-                entries.Add(new KeyValuePair<string, Action>("Снять", () => _presenter.Unequip(captured)));
+                entries.Add(new KeyValuePair<string, Action>(UiText.Get(_host.Texts, UiTextKey.Character_Menu_Unequip), () => _presenter.Unequip(captured)));
             }
             else if (artifactIndex >= 0)
             {
                 var capturedIndex = artifactIndex;
-                entries.Add(new KeyValuePair<string, Action>("Снять", () => _presenter.UnequipArtifact(capturedIndex)));
+                entries.Add(new KeyValuePair<string, Action>(UiText.Get(_host.Texts, UiTextKey.Character_Menu_Unequip), () => _presenter.UnequipArtifact(capturedIndex)));
             }
             else if (CanEquip(item))
             {
                 var id = item.InstanceId;
-                entries.Add(new KeyValuePair<string, Action>("Одеть", () => _presenter.EquipAuto(id)));
+                entries.Add(new KeyValuePair<string, Action>(UiText.Get(_host.Texts, UiTextKey.Character_Menu_Equip), () => _presenter.EquipAuto(id)));
             }
 
             if (CharacterWidgets.Template(_host, item)?.Weapon != null)
             {
                 var id = item.InstanceId;
-                entries.Add(new KeyValuePair<string, Action>("Разрядить", () => _presenter.Unload(id)));
+                entries.Add(new KeyValuePair<string, Action>(UiText.Get(_host.Texts, UiTextKey.Character_Menu_Unload), () => _presenter.Unload(id)));
             }
 
-            entries.Add(new KeyValuePair<string, Action>("Разобрать", () => _presenter.Disassemble(item.InstanceId)));
-            entries.Add(new KeyValuePair<string, Action>("Выбросить", () => _presenter.Discard(item.InstanceId)));
+            entries.Add(new KeyValuePair<string, Action>(UiText.Get(_host.Texts, UiTextKey.Character_Menu_Disassemble), () => _presenter.Disassemble(item.InstanceId)));
+            entries.Add(new KeyValuePair<string, Action>(UiText.Get(_host.Texts, UiTextKey.Character_Menu_Discard), () => _presenter.Discard(item.InstanceId)));
 
             _menu.Open(position, entries);
         }
@@ -182,11 +192,21 @@ namespace AnomalyPath.Runtime.Screens.Character
         }
 
         /// <inheritdoc />
-        public void DropOnInventory(string instanceId)
+        public void DropOnInventory(string instanceId, int x, int y, bool rotated)
         {
             var player = Player;
-            if (player == null || _drag.Origin == DragOrigin.Inventory)
+            if (player == null)
             {
+                return;
+            }
+
+            if (_drag.Origin == DragOrigin.Inventory)
+            {
+                if (x >= 0 && y >= 0)
+                {
+                    _presenter.Move(instanceId, x, y, rotated);
+                }
+
                 return;
             }
 

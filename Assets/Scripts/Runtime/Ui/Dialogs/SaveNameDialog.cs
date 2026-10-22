@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Runtime.Ui.Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,6 +17,7 @@ namespace AnomalyPath.Runtime.Ui.Dialogs
 
         private readonly TextInputField _name;
         private readonly Text _error;
+        private readonly IGameTexts _texts;
         private Action<string>? _onSave;
 
         /// <summary>Создаёт диалог и прячет его.</summary>
@@ -23,6 +25,7 @@ namespace AnomalyPath.Runtime.Ui.Dialogs
         /// <param name="parent">Родитель, обычно панель экрана сохранения.</param>
         public SaveNameDialog(IUiHost host, Transform parent)
         {
+            _texts = host.Texts;
             Panel = host.Ui.CreatePanel("SaveNameDialog", parent);
             var overlay = Panel.GetComponent<Image>();
             overlay.color = new Color(0f, 0f, 0f, 0.7f);
@@ -36,9 +39,18 @@ namespace AnomalyPath.Runtime.Ui.Dialogs
             var blocker = box.gameObject.AddComponent<Button>();
             blocker.targetGraphic = boxImage;
             blocker.onClick.AddListener(() => { });
-            host.Ui.CreateTitle(box, "Сохранить игру");
-            host.Ui.CreateText(box, "Название сохранения", 18, TextAnchor.MiddleLeft);
-            _name = host.Ui.CreateInputField(box, "Введите название", string.Empty, 32, "SaveDialogName");
+            host.Ui.CreateTitle(box, UiText.Get(_texts, UiTextKey.SaveDialog_Title));
+            host.Ui.CreateText(
+                box,
+                UiText.Get(_texts, UiTextKey.SaveDialog_Name_Label),
+                18,
+                TextAnchor.MiddleLeft);
+            _name = host.Ui.CreateInputField(
+                box,
+                UiText.Get(_texts, UiTextKey.SaveDialog_Name_Placeholder),
+                string.Empty,
+                32,
+                "SaveDialogName");
             _name.ConsumeEscape = false;
             _error = host.Ui.CreateText(box, string.Empty, 16, TextAnchor.MiddleCenter, UiFactory.ToastColor);
 
@@ -52,9 +64,12 @@ namespace AnomalyPath.Runtime.Ui.Dialogs
             layout.childForceExpandHeight = false;
             row.AddComponent<LayoutElement>().preferredHeight = 54;
 
-            var save = host.Ui.CreateButton(row.transform, "Сохранить", Confirm);
+            var save = host.Ui.CreateButton(
+                row.transform,
+                UiText.Get(_texts, UiTextKey.SaveDialog_Save),
+                Confirm);
             save.GetComponent<Image>().color = SaveColor;
-            host.Ui.CreateButton(row.transform, "Отмена", Cancel);
+            host.Ui.CreateButton(row.transform, UiText.Get(_texts, UiTextKey.Common_Cancel), Cancel);
 
             Panel.transform.SetAsLastSibling();
             Panel.SetActive(false);
@@ -97,7 +112,7 @@ namespace AnomalyPath.Runtime.Ui.Dialogs
             var name = _name.Text.Trim();
             if (name.Length == 0)
             {
-                _error.text = "Введите название сохранения";
+                _error.text = UiText.Get(_texts, UiTextKey.SaveDialog_Empty_Name);
                 return;
             }
 

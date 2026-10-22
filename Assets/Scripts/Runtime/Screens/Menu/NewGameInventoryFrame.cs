@@ -107,18 +107,18 @@ namespace AnomalyPath.Runtime.Screens.Menu
             var width = size.x <= 1f ? MenuMetrics.PreviewMinWidth : size.x;
             var height = size.y <= 1f ? MenuMetrics.PreviewMinHeight : size.y;
 
-            Label("PreviewTitle", "Инвентарь набора", 26, TextAnchor.MiddleCenter, UiFactory.TextColor,
+            Label("PreviewTitle", UiText.Get(_host.Texts, UiTextKey.NewGame_Preview_Title), 26, TextAnchor.MiddleCenter, UiFactory.TextColor,
                 0f, TitleTop, width, TitleHeight);
 
             if (_money > 0)
             {
-                Label("PreviewMoney", SaveSlotText.Money(_money), 18, TextAnchor.MiddleRight,
+                Label("PreviewMoney", UiText.Format(_host.Texts, UiTextKey.Common_Money, _money), 18, TextAnchor.MiddleRight,
                     UiFactory.MutedTextColor, width - MenuMetrics.PreviewPadding - 180f, TitleTop, 180f, TitleHeight);
             }
 
             if (_preview == null)
             {
-                Label("PreviewEmpty", _error ?? "Набор не выбран", 18, TextAnchor.MiddleCenter,
+                Label("PreviewEmpty", _error ?? UiText.Get(_host.Texts, UiTextKey.NewGame_Preview_Empty), 18, TextAnchor.MiddleCenter,
                     UiFactory.ToastColor, MenuMetrics.PreviewPadding, 120f,
                     width - (2f * MenuMetrics.PreviewPadding), 80f);
                 return;
@@ -171,7 +171,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
             if (hidden > 0 || preview.Rejected.Count > 0)
             {
                 Label("PreviewNote",
-                    $"Не поместилось: {hidden}, не надето: {preview.Rejected.Count}", 13, TextAnchor.UpperLeft,
+                    UiText.Format(_host.Texts, UiTextKey.Common_Not_Placed, hidden, preview.Rejected.Count), 13, TextAnchor.UpperLeft,
                     UiFactory.ToastColor, padding, gridY + gridHeight + 8f, availableWidth, 44f);
             }
 

@@ -1,6 +1,7 @@
 #nullable enable
 using AnomalyPath.Core;
 using AnomalyPath.Core.Abstractions;
+using AnomalyPath.Core.Templates;
 
 namespace AnomalyPath.Tests
 {
@@ -26,19 +27,19 @@ namespace AnomalyPath.Tests
 
             Check("типы урона: пули — bullet", () =>
             {
-                Equal("bullet", damageTypes.Get("dmg_bullet").Kind, "вид");
+                Equal(DamageKind.Bullet, damageTypes.Get("dmg_bullet").Kind, "вид");
             });
 
             Check("типы урона: аномалии — anomaly", () =>
             {
-                Equal("anomaly", damageTypes.Get("dmg_electric").Kind, "электро");
-                Equal("anomaly", damageTypes.Get("dmg_chemical").Kind, "химия");
-                Equal("anomaly", damageTypes.Get("dmg_fire").Kind, "огонь");
+                Equal(DamageKind.Anomaly, damageTypes.Get("dmg_electric").Kind, "электро");
+                Equal(DamageKind.Anomaly, damageTypes.Get("dmg_chemical").Kind, "химия");
+                Equal(DamageKind.Anomaly, damageTypes.Get("dmg_fire").Kind, "огонь");
             });
 
             Check("типы урона: разрыв — physical", () =>
             {
-                Equal("physical", damageTypes.Get("dmg_rupture").Kind, "вид");
+                Equal(DamageKind.Physical, damageTypes.Get("dmg_rupture").Kind, "вид");
             });
 
             Check("типы урона: все ключи защиты существуют", () =>

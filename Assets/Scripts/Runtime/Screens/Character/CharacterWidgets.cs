@@ -117,8 +117,25 @@ namespace AnomalyPath.Runtime.Screens.Character
             int artifactIndex,
             DragOrigin origin)
         {
+            var template = Template(host, item);
+            var width = template != null
+                ? template.FootprintWidth
+                : item.Rotated ? Mathf.Max(1, item.PlacedHeight) : Mathf.Max(1, item.PlacedWidth);
+            var height = template != null
+                ? template.FootprintHeight
+                : item.Rotated ? Mathf.Max(1, item.PlacedWidth) : Mathf.Max(1, item.PlacedHeight);
+
             var source = target.gameObject.AddComponent<ItemDragSource>();
-            source.Configure(frameHost.Drag, frameHost.Ghost, item.InstanceId, Describe(host, item), origin);
+            source.Configure(
+                frameHost.Drag,
+                frameHost.Ghost,
+                item.InstanceId,
+                Describe(host, item),
+                origin,
+                width,
+                height,
+                template?.Rotatable ?? false,
+                item.Rotated);
 
             var trigger = target.gameObject.AddComponent<ItemMenuTrigger>();
             trigger.Configure(position => frameHost.OpenItemMenu(position, item, slot, artifactIndex));

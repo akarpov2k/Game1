@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using AnomalyPath.Core.Abstractions;
+using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.Templates;
 
 namespace AnomalyPath.Core.Inventory
@@ -44,7 +45,9 @@ namespace AnomalyPath.Core.Inventory
 
             if (count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), "Количество должно быть ≥ 1");
+                throw new ArgumentOutOfRangeException(
+                    nameof(count),
+                    CoreText.Format(CoreErrors.MinimumOne, nameof(count)));
             }
 
             var template = _items.Get(itemId);
@@ -164,7 +167,7 @@ namespace AnomalyPath.Core.Inventory
                 }
 
                 var template = _items.Get(item.ItemId);
-                if (template.Category != "ammo" || !string.Equals(template.Caliber, caliber, StringComparison.Ordinal))
+                if (template.Category != ItemCategory.Ammo || !string.Equals(template.Caliber, caliber, StringComparison.Ordinal))
                 {
                     continue;
                 }

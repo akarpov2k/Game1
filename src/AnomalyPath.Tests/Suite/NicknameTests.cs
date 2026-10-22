@@ -68,7 +68,7 @@ namespace AnomalyPath.Tests
                 var settings = new NewGameSettings(0.5, 1, " Тихий ");
                 Equal("Тихий", settings.Nickname, "ник");
                 Throws<ArgumentOutOfRangeException>(
-                    () => new NewGameSettings(0.5, 1, new string('x', NewGameSettings.MaxNicknameLength + 1)),
+                    () => new NewGameSettings(0.5, 1, new string('x', 25), 24),
                     "слишком длинный ник");
             });
 

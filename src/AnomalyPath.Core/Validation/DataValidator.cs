@@ -78,6 +78,7 @@ namespace AnomalyPath.Core.Validation
                 ValidateProtectionKeys(loaded, issues);
                 ValidateRules(loaded, issues);
                 ValidateLoadouts(loaded, issues);
+                ValidateSettings(loaded, issues);
                 AddWorldIssues(loaded, issues);
             }
             catch (DataException error)
@@ -98,8 +99,31 @@ namespace AnomalyPath.Core.Validation
             return report;
         }
 
-        private static void ValidateProtectionKeys(LoadedData data, List<ValidationIssue> issues)
+        private static void ValidateSettings(LoadedData data, List<ValidationIssue> issues)
         {
+            var combat = data.All("combat");
+            if (combat.Count == 0)
+            {
+                issues.Add(new ValidationIssue("combat", CoreErrors.FileNotFound, CoreText.Get(CoreErrors.FileNotFound)));
+            }
+            else
+            {
+                Try(() => CombatSettingsTemplate.FromJson(combat[0], "combat"), issues);
+            }
+
+            var equipment = data.All("equipment");
+            if (equipment.Count == 0)
+            {
+                issues.Add(new ValidationIssue("equipment", CoreErrors.FileNotFound, CoreText.Get(CoreErrors.FileNotFound)));
+            }
+
+            if (data.All("topology").Count == 0)
+            {
+                issues.Add(new ValidationIssue("topology", CoreErrors.FileNotFound, CoreText.Get(CoreErrors.FileNotFound)));
+            }
+        }
+
+        private static void ValidateProtectionKeys(LoadedData data, List<ValidationIssue> issues)        {
             DamageTypeRepository damageTypes;
             ItemRepository items;
             try

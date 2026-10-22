@@ -63,6 +63,15 @@ namespace AnomalyPath.Core.Abstractions
         /// <returns>Итог действия.</returns>
         CharacterActionResult Discard(GridContainer inventory, EquipmentState equipment, string instanceId);
 
+        /// <summary>Перекладывает предмет инвентаря в указанную клетку, при необходимости поворачивая его.</summary>
+        /// <param name="inventory">Сетка инвентаря.</param>
+        /// <param name="instanceId">Id экземпляра.</param>
+        /// <param name="x">Колонка левого верхнего угла.</param>
+        /// <param name="y">Строка левого верхнего угла.</param>
+        /// <param name="rotated">Повернуть предмет на 90°.</param>
+        /// <returns>Итог действия; при ошибке позиция и поворот не меняются.</returns>
+        CharacterActionResult Move(GridContainer inventory, string instanceId, int x, int y, bool rotated);
+
         /// <summary>Подбирает слот для кнопки «Одеть»: первый свободный из разрешённых, иначе первый разрешённый.</summary>
         /// <param name="equipment">Экипировка.</param>
         /// <param name="item">Экземпляр предмета.</param>

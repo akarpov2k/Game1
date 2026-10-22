@@ -50,5 +50,13 @@ namespace AnomalyPath.Runtime.Ui.Core
             backgroundId == null
                 ? Default
                 : new ScreenTheme(backgroundId, new Color(1f, 1f, 1f, 0.55f), DefaultTop, DefaultBottom, 0.55f);
+
+        /// <summary>Тема с фоном локации без приглушения: основной игровой экран.</summary>
+        /// <param name="backgroundId">Id фона локации; пусто — тема по умолчанию.</param>
+        /// <returns>Тема с картинкой локации во всю яркость.</returns>
+        public static ScreenTheme LocationFull(string? backgroundId) =>
+            string.IsNullOrEmpty(backgroundId)
+                ? Default
+                : new ScreenTheme(backgroundId, Color.white, DefaultTop, DefaultBottom, 1f);
     }
 }

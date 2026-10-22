@@ -20,5 +20,11 @@ namespace AnomalyPath.Runtime.Ui.Items
 
         /// <summary>Остальные предметы.</summary>
         public static readonly Color Other = new Color(0.26f, 0.26f, 0.24f, 1f);
+
+        /// <summary>Подсветка свободной цели перетаскивания.</summary>
+        public static readonly Color DropAllowed = new Color(0.45f, 0.85f, 0.55f, 0.28f);
+
+        /// <summary>Подсветка занятой или запрещённой цели перетаскивания.</summary>
+        public static readonly Color DropDenied = new Color(0.95f, 0.45f, 0.40f, 0.25f);
     }
 }

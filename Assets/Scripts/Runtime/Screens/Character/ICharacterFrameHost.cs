@@ -39,6 +39,9 @@ namespace AnomalyPath.Runtime.Screens.Character
 
         /// <summary>Обрабатывает сброс предмета в область инвентаря.</summary>
         /// <param name="instanceId">Id экземпляра.</param>
-        void DropOnInventory(string instanceId);
+        /// <param name="x">Колонка цели или −1, если место подбирается автоматически.</param>
+        /// <param name="y">Строка цели или −1, если место подбирается автоматически.</param>
+        /// <param name="rotated">Нужно ли повернуть предмет при сбросе.</param>
+        void DropOnInventory(string instanceId, int x, int y, bool rotated);
     }
 }

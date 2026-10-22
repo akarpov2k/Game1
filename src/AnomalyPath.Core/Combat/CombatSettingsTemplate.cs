@@ -27,9 +27,9 @@ namespace AnomalyPath.Core.Combat
             string damageFormulaId,
             double? clampMin,
             double? clampMax,
-            string apRestore,
+            ApRestoreKind apRestore,
             int apPerTurn,
-            string initiative,
+            InitiativeKind initiative,
             string? initiativeFormulaId,
             int zoneShiftFree,
             int zoneShiftApCost,
@@ -76,14 +76,14 @@ namespace AnomalyPath.Core.Combat
         /// <summary>Верхняя граница результата по умолчанию.</summary>
         public double? ClampMax { get; }
 
-        /// <summary>Режим восстановления ОД: <c>full</c>, <c>partial</c>, <c>none</c>.</summary>
-        public string ApRestore { get; }
+        /// <summary>Режим восстановления ОД.</summary>
+        public ApRestoreKind ApRestore { get; }
 
         /// <summary>Сколько ОД восстанавливается при частичном режиме.</summary>
         public int ApPerTurn { get; }
 
-        /// <summary>Правило инициативы: <c>playerFirst</c> или <c>formula</c>.</summary>
-        public string Initiative { get; }
+        /// <summary>Правило инициативы.</summary>
+        public InitiativeKind Initiative { get; }
 
         /// <summary>Формула инициативы.</summary>
         public string? InitiativeFormulaId { get; }
@@ -97,10 +97,6 @@ namespace AnomalyPath.Core.Combat
         /// <summary>Цена атаки в ОД.</summary>
         public int AttackApCost { get; }
 
-        /// <summary>Настройки по умолчанию, если файла нет.</summary>
-        public static CombatSettingsTemplate Default { get; } = new CombatSettingsTemplate(
-            "formula_damage_base", 0, null, "full", 0, "playerFirst", null, 1, 1, 1, 1.4, 1.0, 0.8, 1);
-
         /// <summary>Читает настройки боя из записи.</summary>
         /// <param name="value">Загруженная запись.</param>
         /// <param name="sourcePath">Путь для сообщения об ошибке.</param>
@@ -108,17 +104,18 @@ namespace AnomalyPath.Core.Combat
         /// <exception cref="DataException">Поля заданы неверно.</exception>
         public static CombatSettingsTemplate FromJson(JsonValue value, string sourcePath)
         {
-            var damageFormulaId = DataMap.OptionalString(value, "damageFormulaId") ?? "formula_damage_base";
-            var apRestore = DataMap.OptionalString(value, "apRestore") ?? "full";
-            if (apRestore is not ("full" or "partial" or "none"))
+            var damageFormulaId = DataMap.RequireString(value, "damageFormulaId", sourcePath);
+
+            var apRestoreCode = DataMap.RequireString(value, "apRestore", sourcePath);
+            if (!SchemaEnum.TryParse(apRestoreCode, out ApRestoreKind apRestore))
             {
-                throw new DataException(sourcePath, CoreErrors.MissingStringField, "apRestore");
+                throw new DataException(sourcePath, CoreErrors.UnknownApRestore, apRestoreCode);
             }
 
-            var initiative = DataMap.OptionalString(value, "initiative") ?? "playerFirst";
-            if (initiative is not ("playerFirst" or "formula"))
+            var initiativeCode = DataMap.RequireString(value, "initiative", sourcePath);
+            if (!InitiativeCodec.TryParse(initiativeCode, out InitiativeKind initiative))
             {
-                throw new DataException(sourcePath, CoreErrors.MissingStringField, "initiative");
+                throw new DataException(sourcePath, CoreErrors.UnknownInitiative, initiativeCode);
             }
 
             return new CombatSettingsTemplate(
@@ -129,13 +126,13 @@ namespace AnomalyPath.Core.Combat
                 DataMap.OptionalInt(value, "apPerTurn", 0),
                 initiative,
                 DataMap.OptionalString(value, "initiativeFormulaId"),
-                DataMap.OptionalInt(value, "zoneShiftFree", 1),
-                DataMap.OptionalInt(value, "zoneShiftApCost", 1),
-                DataMap.OptionalInt(value, "attackApCost", 1),
-                DataMap.OptionalDouble(value, "accuracyClose") ?? 1.4,
-                DataMap.OptionalDouble(value, "accuracyMid") ?? 1.0,
-                DataMap.OptionalDouble(value, "accuracyFar") ?? 0.8,
-                DataMap.OptionalInt(value, "reloadApCost", 1));
+                DataMap.RequireInt(value, "zoneShiftFree", sourcePath),
+                DataMap.RequireInt(value, "zoneShiftApCost", sourcePath),
+                DataMap.RequireInt(value, "attackApCost", sourcePath),
+                DataMap.RequireDouble(value, "accuracyClose", sourcePath),
+                DataMap.RequireDouble(value, "accuracyMid", sourcePath),
+                DataMap.RequireDouble(value, "accuracyFar", sourcePath),
+                DataMap.RequireInt(value, "reloadApCost", sourcePath));
         }
     }
 }

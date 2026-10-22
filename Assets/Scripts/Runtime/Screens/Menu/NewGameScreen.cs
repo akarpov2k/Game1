@@ -19,11 +19,6 @@ namespace AnomalyPath.Runtime.Screens.Menu
     /// </summary>
     public sealed class NewGameScreen : ScreenBase
     {
-        private const float DefaultLootShare = 0.5f;
-        private const double LootStep = 0.1;
-        private const double TradeStep = 0.1;
-        private const double TradeMax = 3;
-
         private readonly IUiHost _host;
         private readonly List<Button> _loadoutButtons = new List<Button>();
         private readonly List<string> _loadoutIds = new List<string>();
@@ -35,6 +30,11 @@ namespace AnomalyPath.Runtime.Screens.Menu
         private readonly NumberField _lootLoss;
         private readonly NumberField _tradeDifficulty;
         private readonly NewGameInventoryFrame _preview;
+        private int _nicknameMax;
+        private double _tradeDefault;
+        private double _tradeMax;
+        private double _tradeStep;
+        private double _lootStep;
         private bool _layingOut;
         private string _selectedLoadout = string.Empty;
 
@@ -45,8 +45,14 @@ namespace AnomalyPath.Runtime.Screens.Menu
             : base(host, canvas, "NewGame")
         {
             _host = host;
+            var rules = host.Rules.Require();
+            _nicknameMax = rules.NicknameMaxLength;
+            _tradeDefault = rules.TradeDifficulty;
+            _tradeMax = rules.TradeDifficultyMax;
+            _tradeStep = rules.TradeDifficultyStep;
+            _lootStep = rules.LootLossStep;
 
-            var title = host.Ui.CreateTitle(Content, "Новая игра");
+            var title = host.Ui.CreateTitle(Content, UiText.Get(host.Texts, UiTextKey.NewGame_Title));
             var titleRect = title.rectTransform;
             titleRect.anchorMin = new Vector2(0.5f, 1f);
             titleRect.anchorMax = new Vector2(0.5f, 1f);
@@ -73,10 +79,10 @@ namespace AnomalyPath.Runtime.Screens.Menu
             _settings.pivot = new Vector2(0f, 1f);
             _settings.anchoredPosition = Vector2.zero;
 
-            host.Ui.CreateText(column, "Имя персонажа", 18, TextAnchor.MiddleLeft);
-            _nickname = host.Ui.CreateInputField(column, "Введите имя", string.Empty);
-            host.Ui.CreateButton(column, "Случайное имя", GenerateNickname);
-            host.Ui.CreateText(column, "Выберите набор снаряжения", 22, TextAnchor.MiddleCenter);
+            host.Ui.CreateText(column, UiText.Get(host.Texts, UiTextKey.NewGame_Name_Label), 18, TextAnchor.MiddleLeft);
+            _nickname = host.Ui.CreateInputField(column, UiText.Get(host.Texts, UiTextKey.NewGame_Name_Placeholder), string.Empty);
+            host.Ui.CreateButton(column, UiText.Get(host.Texts, UiTextKey.NewGame_Random_Name), GenerateNickname);
+            host.Ui.CreateText(column, UiText.Get(host.Texts, UiTextKey.NewGame_Loadout_Label), 22, TextAnchor.MiddleCenter);
 
             var loadouts = SortedLoadouts(host.Loadouts);
             foreach (var loadout in loadouts)
@@ -88,19 +94,19 @@ namespace AnomalyPath.Runtime.Screens.Menu
             }
 
             _status = host.Ui.CreateText(column, string.Empty, 18, TextAnchor.MiddleCenter);
-            host.Ui.CreateText(column, "Потеря лута при смерти", 18, TextAnchor.MiddleLeft);
-            _lootLoss = host.Ui.CreateNumberField(column, "LootLossField", 0, 1, DefaultLootShare, LootStep);
-            host.Ui.CreateText(column, "Усложнение торговли", 18, TextAnchor.MiddleLeft);
+            host.Ui.CreateText(column, UiText.Get(host.Texts, UiTextKey.NewGame_Loot_Loss_Label), 18, TextAnchor.MiddleLeft);
+            _lootLoss = host.Ui.CreateNumberField(column, "LootLossField", 0, 1, 0, _lootStep);
+            host.Ui.CreateText(column, UiText.Get(host.Texts, UiTextKey.NewGame_Trade_Label), 18, TextAnchor.MiddleLeft);
             _tradeDifficulty = host.Ui.CreateNumberField(
                 column,
                 "TradeDifficultyField",
                 0,
-                TradeMax,
-                NewGameSettings.DefaultTradeDifficulty,
-                TradeStep);
+                _tradeMax,
+                _tradeDefault,
+                _tradeStep);
 
-            host.Ui.CreateButton(column, "Начать", StartGame);
-            host.Ui.CreateButton(column, "Назад", host.ShowMainMenu);
+            host.Ui.CreateButton(column, UiText.Get(host.Texts, UiTextKey.NewGame_Start), StartGame);
+            host.Ui.CreateButton(column, UiText.Get(host.Texts, UiTextKey.Common_Back), host.ShowMainMenu);
 
             _preview = new NewGameInventoryFrame(host, _scroll.Content);
         }
@@ -141,7 +147,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
 
         private void ResetDifficulty()
         {
-            _lootLoss.SetValue(DefaultLootShare);
+            _lootLoss.SetValue(0);
             var rules = _host.Rules.Rules;
             if (rules != null)
             {
@@ -155,7 +161,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
                 }
             }
 
-            _tradeDifficulty.SetValue(NewGameSettings.DefaultTradeDifficulty);
+            _tradeDifficulty.SetValue(_tradeDefault);
         }
 
         private void Select(string id)
@@ -226,7 +232,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
         {
             if (string.IsNullOrEmpty(_selectedLoadout))
             {
-                _preview.Show(null, "Нет доступных наборов", StartingMoney());
+                _preview.Show(null, UiText.Get(_host.Texts, UiTextKey.NewGame_No_Loadouts), StartingMoney());
                 return;
             }
 
@@ -236,11 +242,11 @@ namespace AnomalyPath.Runtime.Screens.Menu
             }
             catch (Exception error)
             {
-                _preview.Show(null, "Набор не удалось показать: " + error.Message, StartingMoney());
+                _preview.Show(null, UiText.Format(_host.Texts, UiTextKey.NewGame_Preview_Failed, error.Message), StartingMoney());
             }
         }
 
-        private int StartingMoney() => _host.Rules.Rules?.StartingMoney ?? 0;
+        private int StartingMoney() => _host.Rules.Require().StartingMoney;
 
         private void UpdateButtons()
         {
@@ -257,33 +263,33 @@ namespace AnomalyPath.Runtime.Screens.Menu
         {
             if (string.IsNullOrEmpty(_selectedLoadout))
             {
-                _status.text = "Нет доступных наборов";
+                _status.text = UiText.Get(_host.Texts, UiTextKey.NewGame_Status_No_Sets);
                 return;
             }
 
             var nickname = _nickname.Text.Trim();
             if (nickname.Length == 0)
             {
-                _status.text = "Введите имя или нажмите «Случайное имя»";
+                _status.text = UiText.Get(_host.Texts, UiTextKey.NewGame_Status_Enter_Name);
                 return;
             }
 
-            if (nickname.Length > NewGameSettings.MaxNicknameLength)
+            if (nickname.Length > _nicknameMax)
             {
-                _status.text = "Имя не длиннее " + NewGameSettings.MaxNicknameLength + " символов";
+                _status.text = UiText.Format(_host.Texts, UiTextKey.NewGame_Status_Name_Too_Long, _nicknameMax);
                 return;
             }
 
             try
             {
                 var seed = unchecked((int)DateTime.UtcNow.Ticks);
-                var settings = new NewGameSettings(_lootLoss.Value, _tradeDifficulty.Value, nickname);
+                var settings = new NewGameSettings(_lootLoss.Value, _tradeDifficulty.Value, nickname, _nicknameMax);
                 _host.Session = _host.Sessions.StartNew(seed, _selectedLoadout, settings);
                 _host.ShowGame();
             }
             catch (Exception error)
             {
-                _status.text = "Ошибка: " + error.Message;
+                _status.text = UiText.Format(_host.Texts, UiTextKey.NewGame_Status_Error, error.Message);
             }
         }
 

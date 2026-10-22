@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using AnomalyPath.Core.Inventory;
+using AnomalyPath.Core.Localization;
 using InventoryEquipment = AnomalyPath.Core.Inventory.Equipment;
 
 namespace AnomalyPath.Core.Player
@@ -38,7 +39,9 @@ namespace AnomalyPath.Core.Player
         {
             if (string.IsNullOrWhiteSpace(id))
             {
-                throw new ArgumentException("id игрока не задан", nameof(id));
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.RequiredField, nameof(id)),
+                    nameof(id));
             }
 
             if (level < 1 || xp < 0 || health < 0 || apMax < 0 || money < 0)

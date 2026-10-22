@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using AnomalyPath.Core.Abstractions;
+using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.Save;
 using AnomalyPath.Core.Session;
 using AnomalyPath.Runtime.Screens;
@@ -36,6 +37,7 @@ namespace AnomalyPath.Runtime
         private LoadGameScreen _load = null!;
         private SaveGameScreen _saveGame = null!;
         private InfoScreen _info = null!;
+        private PlayScreen _play = null!;
         private GamePanelScreen _gamePanel = null!;
         private CharacterScreen _character = null!;
         private ExitDialog _exitDialog = null!;
@@ -66,6 +68,9 @@ namespace AnomalyPath.Runtime
 
         /// <inheritdoc />
         public IEquipmentService Equipment { get; private set; } = null!;
+
+        /// <inheritdoc />
+        public ILocationRepository Locations { get; private set; } = null!;
 
         /// <inheritdoc />
         public ICharacterActions Actions { get; private set; } = null!;
@@ -106,6 +111,7 @@ namespace AnomalyPath.Runtime
             LoadoutPreviews = services.Resolve<ILoadoutPreviewService>();
             Items = services.Resolve<IItemRepository>();
             Equipment = services.Resolve<IEquipmentService>();
+            Locations = services.Resolve<ILocationRepository>();
             Actions = services.Resolve<ICharacterActions>();
             Actors = services.Resolve<IActorRepository>();
             Nicknames = services.Resolve<INicknameGenerator>();
@@ -117,6 +123,7 @@ namespace AnomalyPath.Runtime
             _load = new LoadGameScreen(this, canvas);
             _saveGame = new SaveGameScreen(this, canvas);
             _info = new InfoScreen(this, canvas);
+            _play = new PlayScreen(this, canvas);
             _gamePanel = new GamePanelScreen(this, canvas);
             _character = new CharacterScreen(this, canvas);
             Router.Add(_mainMenu.Panel);
@@ -124,6 +131,7 @@ namespace AnomalyPath.Runtime
             Router.Add(_load.Panel);
             Router.Add(_saveGame.Panel);
             Router.Add(_info.Panel);
+            Router.Add(_play.Panel);
             Router.Add(_gamePanel.Panel);
             Router.Add(_character.Panel);
             _screens.Add(_mainMenu);
@@ -131,6 +139,7 @@ namespace AnomalyPath.Runtime
             _screens.Add(_load);
             _screens.Add(_saveGame);
             _screens.Add(_info);
+            _screens.Add(_play);
             _screens.Add(_gamePanel);
             _screens.Add(_character);
 
@@ -138,7 +147,7 @@ namespace AnomalyPath.Runtime
             ShowMainMenu();
         }
 
-        /// <summary>Esc: диалог выхода закрывается, остальные окна решают сами; игра Esc не обрабатывает.</summary>
+        /// <summary>Esc: диалог выхода закрывается, меню игры возвращает в игру, игровой экран открывает меню, персонаж — обратно в игру.</summary>
         /// <returns><c>true</c>, если Esc обработан.</returns>
         public bool HandleEscape()
         {
@@ -211,12 +220,18 @@ namespace AnomalyPath.Runtime
         public void ShowGame(bool announce = true)
         {
             _exitDialog.Hide();
-            Router.Show(_gamePanel.Panel);
-            _gamePanel.Refresh();
+            _play.Show();
             if (announce)
             {
-                Toast("Игра начата");
+                Toast(UiText.Get(Texts, UiTextKey.Game_Started));
             }
+        }
+
+        /// <inheritdoc />
+        public void ShowGameMenu()
+        {
+            _exitDialog.Hide();
+            _gamePanel.Show();
         }
 
         /// <inheritdoc />
@@ -240,7 +255,7 @@ namespace AnomalyPath.Runtime
         public void HideExitDialog() => _exitDialog.Hide();
 
         /// <inheritdoc />
-        public void Toast(string text) => _gamePanel?.ShowToast(text);
+        public void Toast(string text) => _play?.ShowToast(text);
 
         /// <inheritdoc />
         public void SaveExit()
@@ -256,7 +271,7 @@ namespace AnomalyPath.Runtime
             }
             catch (Exception error)
             {
-                Debug.LogError("AnomalyPath: не удалось сохранить exit_save: " + error.Message);
+                Debug.LogError(CoreText.Format(CoreErrors.ExitSaveFailed, error.Message));
             }
         }
 
@@ -300,6 +315,7 @@ namespace AnomalyPath.Runtime
             var go = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = go.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.pixelPerfect = true;
             var scaler = go.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
@@ -311,10 +327,10 @@ namespace AnomalyPath.Runtime
         {
             var panel = Ui.CreatePanel("DataError", canvas);
             var column = Ui.CreateColumn(panel.transform, 900);
-            Ui.CreateTitle(column, "Ошибка данных");
-            var text = Ui.CreateText(column, _bootstrap.Preflight?.Report.Summary ?? "Данные не загружены", 20, TextAnchor.UpperLeft);
+            Ui.CreateTitle(column, CoreText.Get(CoreErrors.DataErrorTitle));
+            var text = Ui.CreateText(column, _bootstrap.Preflight?.Report.Summary ?? CoreText.Get(CoreErrors.DataErrorMissing), 20, TextAnchor.UpperLeft);
             text.GetComponent<LayoutElement>().preferredHeight = 400;
-            Ui.CreateButton(column, "Выход", Quit);
+            Ui.CreateButton(column, CoreText.Get(CoreErrors.DataErrorQuit), Quit);
             panel.SetActive(true);
         }
     }
