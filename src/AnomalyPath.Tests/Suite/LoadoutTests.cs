@@ -48,6 +48,8 @@ namespace AnomalyPath.Tests
                 Equal("wpn_pm", scout.Equipment[EquipmentSlot.Main], "main");
                 Equal("itm_armor_jacket", scout.Equipment[EquipmentSlot.Armor], "armor");
                 Equal("itm_helmet_light", scout.Equipment[EquipmentSlot.Helmet], "helmet");
+                Equal("itm_backpack_small", scout.Equipment[EquipmentSlot.Backpack], "backpack");
+                Equal("itm_belt_artifact", scout.Equipment[EquipmentSlot.Belt], "belt");
                 Equal(2, scout.Items.Count, "предметы");
             });
         }
@@ -63,11 +65,13 @@ namespace AnomalyPath.Tests
                 True(state.Player != null, "игрок");
                 var player = state.Player!;
                 Equal(8, player.Inventory.Width, "ширина сетки");
-                Equal(4, player.Inventory.Rows, "строки");
+                Equal(6, player.Inventory.Rows, "строки");
                 Equal(100, player.Needs.Max, "потребности");
                 Equal("wpn_pm", player.Equipment.Get(EquipmentSlot.Main)?.ItemId, "оружие");
                 Equal("itm_armor_jacket", player.Equipment.Get(EquipmentSlot.Armor)?.ItemId, "броня");
                 Equal("itm_helmet_light", player.Equipment.Get(EquipmentSlot.Helmet)?.ItemId, "шлем");
+                Equal("itm_backpack_small", player.Equipment.Get(EquipmentSlot.Backpack)?.ItemId, "рюкзак");
+                Equal("itm_belt_artifact", player.Equipment.Get(EquipmentSlot.Belt)?.ItemId, "пояс");
                 Equal(60, inventory.Count(player.Inventory, "ammo_9x18"), "патроны 9x18");
                 Equal(30, inventory.Count(player.Inventory, "ammo_545"), "патроны 5.45");
                 True(state.Settings != null, "настройки");
@@ -93,7 +97,9 @@ namespace AnomalyPath.Tests
                 var state = newGame.Create(42, "loadout_rifleman", new NewGameSettings(0.5, 1));
 
                 Equal("wpn_ak74", state.Player!.Equipment.Get(EquipmentSlot.Main)?.ItemId, "оружие");
+                Equal("wpn_pm", state.Player.Equipment.Get(EquipmentSlot.Secondary)?.ItemId, "второе оружие");
                 Equal("itm_armor_plate", state.Player.Equipment.Get(EquipmentSlot.Armor)?.ItemId, "броня");
+                Equal(6, state.Player.Inventory.Rows, "строки с рюкзаком");
             });
 
             Check("набор: переполнение стартового инвентаря — ошибка", () =>
@@ -146,6 +152,23 @@ namespace AnomalyPath.Tests
 
         private void ParsingTests()
         {
+            Check("набор: явные поля слотов и расходников", () =>
+            {
+                var json = "{\"schemaVersion\":1,\"kind\":\"loadouts\",\"id\":\"loadout_x\",\"nameKey\":\"n\"," +
+                           "\"weapon\":\"wpn_pm\",\"secondaryWeapon\":\"wpn_pm\",\"armor\":\"itm_armor_jacket\"," +
+                           "\"helmet\":\"itm_helmet_light\",\"backpack\":\"itm_backpack_small\"," +
+                           "\"belt\":\"itm_belt_artifact\",\"consumables\":[{\"itemId\":\"ammo_9x18\",\"count\":1}]}";
+                var loadout = LoadoutTemplate.FromJson(JsonParser.Parse(json, "loadout_x"), "loadout_x");
+
+                Equal("wpn_pm", loadout.Equipment[EquipmentSlot.Main], "main");
+                Equal("wpn_pm", loadout.Equipment[EquipmentSlot.Secondary], "secondary");
+                Equal("itm_armor_jacket", loadout.Equipment[EquipmentSlot.Armor], "armor");
+                Equal("itm_helmet_light", loadout.Equipment[EquipmentSlot.Helmet], "helmet");
+                Equal("itm_backpack_small", loadout.Equipment[EquipmentSlot.Backpack], "backpack");
+                Equal("itm_belt_artifact", loadout.Equipment[EquipmentSlot.Belt], "belt");
+                Equal(1, loadout.Items.Count, "consumables");
+            });
+
             Check("набор: неизвестный слот — ошибка", () =>
             {
                 var json = "{\"schemaVersion\":1,\"kind\":\"loadouts\",\"id\":\"loadout_bad\",\"nameKey\":\"n\",\"items\":[],\"equipment\":{\"head\":\"wpn_pm\"}}";

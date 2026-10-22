@@ -3,15 +3,17 @@
 Дополнение к [GAME_MANIFEST.md](GAME_MANIFEST.md). Здесь только структура данных: файлы, поля, типы, правила.
 Поведение и баланс — в манифесте. Код читает эти схемы, а не наоборот.
 
-**Статус:** черновик v0.34 (2026-10-22). Соответствует манифесту v0.53.
+**Статус:** черновик v0.35 (2026-10-22). Соответствует манифесту v0.56.
 
 ---
 
-## 0. Что нового в v0.34
+## 0. Что нового в v0.35
 
-Новая игра: сущность `Loadout` (наборы снаряжения `loadouts/*.json`), поля `GameRules.playerActorId` / `gridWidth` / `needsMax`, настройки `world.settings` (`lootLossFactor`, `tradeDifficulty`).
+Наборы снаряжения: явные поля `weapon`, `secondaryWeapon`, `armor`, `helmet`, `backpack`, `belt` и `consumables`; рюкзак расширяет сетку до раскладки расходников; старые `items`/`equipment` читаются для совместимости.
 
 ### Что было раньше
+
+- **v0.34:** новая игра — `Loadout`, `GameRules.playerActorId/gridWidth/needsMax`, `world.settings` (`lootLossFactor`, `tradeDifficulty`).
 
 - **v0.32:** сохранение мира (v1) — карта, выносливость, время и погода, атомарная запись.
 - **v0.31:** слой мира — `locationKind`, `Topology.edgeLength`, `initialStamina`, день/ночь, независимый маршрут на каждый `site`.
@@ -1835,6 +1837,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - Строк сетки в сейве нет: `rows` вычисляется из `GameRules.baseRows` и рюкзака.
 - `player.needs` — все шкалы 0..`max`; `max ≥ 1`.
 - `world.time.hours` ∈ 0..24; `settings` соответствует `GameRules`.
+- Служебные слоты: `manual_save` — ручное сохранение, `exit_save` — принудительное сохранение при выходе.
 - `schemaVersion` сейва выше поддерживаемой — отказ с сообщением, а не тихая потеря.
 
 ## 20. Примеры
@@ -2671,19 +2674,25 @@ Mods/hardcore_loot/
 | `kind` | string | всегда `loadouts` |
 | `nameKey` | string | ключ названия набора |
 | `descriptionKey` | string? | ключ описания |
-| `items` | LoadoutItem[] | предметы, которые кладутся в инвентарь |
-| `equipment` | `{ [slotId]: itemId }` | предметы, которые сразу надеваются |
+| `weapon` | string? | основное оружие |
+| `secondaryWeapon` | string? | дополнительное оружие |
+| `armor` | string? | броня |
+| `helmet` | string? | шлем |
+| `backpack` | string? | рюкзак; добавляет строки сетке |
+| `belt` | string? | пояс артефактов |
+| `consumables` | LoadoutItem[] | расходники, которые кладутся в инвентарь |
 
 `LoadoutItem`: `{ itemId, count }`, `count ≥ 1`.
 
-Слоты в `equipment`: `main`, `secondary`, `helmet`, `armor`, `backpack`, `belt`. Предмет обязан допускать этот слот через своё поле `equipSlots` (раздел 10). Предметы из `equipment` в инвентарь не кладутся.
+Предмет из полей экипировки обязан допускать свой слот через `equipSlots` (раздел 10). Он не кладётся в инвентарь. Рюкзак применяется **до** раскладки расходников: сетка получает `baseRows + backpack.extraRows`.
 
 Правила:
 
-- `itemId` из `items` и `equipment` существуют в данных; иначе preflight не проходит.
+- `itemId` из экипировки и `consumables` существуют в данных; иначе preflight не проходит.
 - `count ≥ 1`; неизвестный слот — ошибка загрузки.
-- Стартовые предметы обязаны помещаться в сетку `gridWidth × baseRows`; если не помещаются — ошибка данных, а не переполнение.
+- Стартовые расходники обязаны помещаться в сетку `gridWidth × (baseRows + backpack.extraRows)`; если не помещаются — ошибка данных, а не переполнение.
 - Набор — контент: состав меняется файлом, код не содержит имён предметов.
+- Для совместимости старый формат с `items` и `equipment` (`{ "main": ..., "armor": ... }`) продолжает читаться; новые поля имеют приоритет.
 
 Пример:
 
@@ -2694,15 +2703,16 @@ Mods/hardcore_loot/
   "id": "loadout_scout",
   "nameKey": "loadout.loadout_scout.name",
   "descriptionKey": "loadout.loadout_scout.description",
-  "items": [
+  "weapon": "wpn_pm",
+  "secondaryWeapon": null,
+  "armor": "itm_armor_jacket",
+  "helmet": "itm_helmet_light",
+  "backpack": "itm_backpack_small",
+  "belt": "itm_belt_artifact",
+  "consumables": [
     { "itemId": "ammo_9x18", "count": 60 },
     { "itemId": "ammo_545", "count": 30 }
-  ],
-  "equipment": {
-    "main": "wpn_pm",
-    "armor": "itm_armor_jacket",
-    "helmet": "itm_helmet_light"
-  }
+  ]
 }
 ```
 

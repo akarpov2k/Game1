@@ -36,9 +36,19 @@ namespace AnomalyPath.Tests
             var generator = services.Resolve<IWorldGenerator>();
             var travel = services.Resolve<ITravelService>();
             var items = services.Resolve<IItemRepository>();
+            SlotNameTests();
             RoundTripTests(generator, travel, items);
             PlayerTests(generator, items);
             StorageTests(generator, items);
+        }
+
+        private void SlotNameTests()
+        {
+            Check("сейв: имена служебных слотов", () =>
+            {
+                Equal("manual_save", SaveSlots.Manual, "ручной слот");
+                Equal("exit_save", SaveSlots.Exit, "слот выхода");
+            });
         }
 
         private void JsonWriterTests()

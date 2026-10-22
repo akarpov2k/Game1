@@ -4,13 +4,14 @@
   "id": "loadout_scout",
   "nameKey": "loadout.loadout_scout.name",
   "descriptionKey": "loadout.loadout_scout.description",
-  "items": [
+  "weapon": "wpn_pm",
+  "secondaryWeapon": null,
+  "armor": "itm_armor_jacket",
+  "helmet": "itm_helmet_light",
+  "backpack": "itm_backpack_small",
+  "belt": "itm_belt_artifact",
+  "consumables": [
     { "itemId": "ammo_9x18", "count": 60 },
     { "itemId": "ammo_545", "count": 30 }
-  ],
-  "equipment": {
-    "main": "wpn_pm",
-    "armor": "itm_armor_jacket",
-    "helmet": "itm_helmet_light"
-  }
+  ]
 }

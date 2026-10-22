@@ -2,7 +2,9 @@
   "name": "AnomalyPath.Runtime",
   "rootNamespace": "AnomalyPath.Runtime",
   "references": [
-    "AnomalyPath.Core"
+    "AnomalyPath.Core",
+    "Unity.InputSystem",
+    "UnityEngine.UI"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

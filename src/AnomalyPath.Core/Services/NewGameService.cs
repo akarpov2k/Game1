@@ -88,15 +88,6 @@ namespace AnomalyPath.Core.Services
                 new string[0],
                 needs);
 
-            foreach (var item in loadout.Items)
-            {
-                _inventory.TryAdd(grid, item.ItemId, item.Count, out var overflow);
-                if (overflow.Count > 0)
-                {
-                    throw new DataException(loadout.Id, CoreErrors.LoadoutOverflow, item.ItemId);
-                }
-            }
-
             foreach (var pair in loadout.Equipment)
             {
                 var template = _items.Get(pair.Value);
@@ -111,6 +102,21 @@ namespace AnomalyPath.Core.Services
                         CoreErrors.LoadoutSlotMismatch,
                         pair.Value,
                         EquipmentSlots.Id(pair.Key));
+                }
+            }
+
+            var rows = _equipment.InventoryRows(equipment, rules.BaseRows);
+            if (rows != grid.Rows)
+            {
+                grid.Resize(rows);
+            }
+
+            foreach (var item in loadout.Items)
+            {
+                _inventory.TryAdd(grid, item.ItemId, item.Count, out var overflow);
+                if (overflow.Count > 0)
+                {
+                    throw new DataException(loadout.Id, CoreErrors.LoadoutOverflow, item.ItemId);
                 }
             }
 

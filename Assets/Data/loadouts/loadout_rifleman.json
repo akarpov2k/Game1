@@ -4,13 +4,14 @@
   "id": "loadout_rifleman",
   "nameKey": "loadout.loadout_rifleman.name",
   "descriptionKey": "loadout.loadout_rifleman.description",
-  "items": [
+  "weapon": "wpn_ak74",
+  "secondaryWeapon": "wpn_pm",
+  "armor": "itm_armor_plate",
+  "helmet": "itm_helmet_light",
+  "backpack": "itm_backpack_small",
+  "belt": "itm_belt_artifact",
+  "consumables": [
     { "itemId": "ammo_545", "count": 120 },
     { "itemId": "ammo_9x18", "count": 30 }
-  ],
-  "equipment": {
-    "main": "wpn_ak74",
-    "armor": "itm_armor_plate",
-    "helmet": "itm_helmet_light"
-  }
+  ]
 }

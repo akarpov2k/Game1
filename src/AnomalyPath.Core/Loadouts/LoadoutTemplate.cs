@@ -75,9 +75,15 @@ namespace AnomalyPath.Core.Loadouts
 
         private static IReadOnlyList<LoadoutItem> ReadItems(JsonValue value, string path)
         {
-            if (!value.TryGet("items", out var itemsValue) || !itemsValue.IsArray)
+            var field = value.TryGet("consumables", out var consumables) ? "consumables" : "items";
+            if (!value.TryGet(field, out var itemsValue))
             {
-                throw new DataException(path, CoreErrors.MissingArrayField, "items");
+                return new List<LoadoutItem>();
+            }
+
+            if (!itemsValue.IsArray)
+            {
+                throw new DataException(path, CoreErrors.MissingArrayField, field);
             }
 
             var result = new List<LoadoutItem>();
@@ -85,7 +91,7 @@ namespace AnomalyPath.Core.Loadouts
             {
                 if (!item.IsObject)
                 {
-                    throw new DataException(path, CoreErrors.JsonNotObject, "items");
+                    throw new DataException(path, CoreErrors.JsonNotObject, field);
                 }
 
                 result.Add(LoadoutItem.FromJson(item, path));
@@ -96,28 +102,57 @@ namespace AnomalyPath.Core.Loadouts
 
         private static IReadOnlyDictionary<EquipmentSlot, string> ReadEquipment(JsonValue value, string path)
         {
-            if (!value.TryGet("equipment", out var equipmentValue) || !equipmentValue.IsObject)
-            {
-                throw new DataException(path, CoreErrors.LoadoutEquipment, "equipment");
-            }
-
             var result = new Dictionary<EquipmentSlot, string>();
-            foreach (var pair in equipmentValue.Members)
+            if (value.TryGet("equipment", out var equipmentValue))
             {
-                if (!EquipmentSlots.TryParse(pair.Key, out var slot))
+                if (!equipmentValue.IsObject)
                 {
-                    throw new DataException(path, CoreErrors.LoadoutSlot, pair.Key);
+                    throw new DataException(path, CoreErrors.LoadoutEquipment, "equipment");
                 }
 
-                if (pair.Value.Kind != JsonKind.String || string.IsNullOrWhiteSpace(pair.Value.Text))
+                foreach (var pair in equipmentValue.Members)
                 {
-                    throw new DataException(path, CoreErrors.MissingStringField, "equipment");
-                }
+                    if (!EquipmentSlots.TryParse(pair.Key, out var slot))
+                    {
+                        throw new DataException(path, CoreErrors.LoadoutSlot, pair.Key);
+                    }
 
-                result[slot] = pair.Value.Text;
+                    if (pair.Value.Kind != JsonKind.String || string.IsNullOrWhiteSpace(pair.Value.Text))
+                    {
+                        throw new DataException(path, CoreErrors.MissingStringField, "equipment");
+                    }
+
+                    result[slot] = pair.Value.Text;
+                }
             }
 
+            ReadSlot(value, "weapon", EquipmentSlot.Main, result, path);
+            ReadSlot(value, "secondaryWeapon", EquipmentSlot.Secondary, result, path);
+            ReadSlot(value, "armor", EquipmentSlot.Armor, result, path);
+            ReadSlot(value, "helmet", EquipmentSlot.Helmet, result, path);
+            ReadSlot(value, "backpack", EquipmentSlot.Backpack, result, path);
+            ReadSlot(value, "belt", EquipmentSlot.Belt, result, path);
             return result;
+        }
+
+        private static void ReadSlot(
+            JsonValue value,
+            string field,
+            EquipmentSlot slot,
+            Dictionary<EquipmentSlot, string> result,
+            string path)
+        {
+            if (!value.TryGet(field, out var item) || item.Kind == JsonKind.Null)
+            {
+                return;
+            }
+
+            if (item.Kind != JsonKind.String || string.IsNullOrWhiteSpace(item.Text))
+            {
+                throw new DataException(path, CoreErrors.MissingStringField, field);
+            }
+
+            result[slot] = item.Text;
         }
     }
 }

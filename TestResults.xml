@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<test-run id="2" testcasecount="1" result="Passed" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-10-22 10:47:50Z" end-time="2026-10-22 10:47:51Z" duration="0,5865207">
-  <test-suite type="TestSuite" id="1000" name="AnomalyPath" fullname="AnomalyPath" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-22 10:47:50Z" end-time="2026-10-22 10:47:51Z" duration="0.586521" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+<test-run id="2" testcasecount="1" result="Passed" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-10-22 12:05:08Z" end-time="2026-10-22 12:05:08Z" duration="0,5636858">
+  <test-suite type="TestSuite" id="1000" name="AnomalyPath" fullname="AnomalyPath" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-22 12:05:08Z" end-time="2026-10-22 12:05:08Z" duration="0.563686" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
     <properties>
       <property name="platform" value="EditMode" />
     </properties>
-    <test-suite type="Assembly" id="1003" name="AnomalyPath.Tests.EditMode.dll" fullname="D:/Projects/Game1/Library/ScriptAssemblies/AnomalyPath.Tests.EditMode.dll" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-22 10:47:50Z" end-time="2026-10-22 10:47:51Z" duration="0.581391" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <test-suite type="Assembly" id="1003" name="AnomalyPath.Tests.EditMode.dll" fullname="D:/Projects/Game1/Library/ScriptAssemblies/AnomalyPath.Tests.EditMode.dll" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-22 12:05:08Z" end-time="2026-10-22 12:05:08Z" duration="0.558469" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
       <properties>
-        <property name="_PID" value="29820" />
+        <property name="_PID" value="23108" />
         <property name="_APPDOMAIN" value="Unity Child Domain" />
         <property name="platform" value="EditMode" />
         <property name="EditorOnly" value="True" />
       </properties>
-      <test-suite type="TestSuite" id="1004" name="AnomalyPath" fullname="AnomalyPath" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-22 10:47:50Z" end-time="2026-10-22 10:47:51Z" duration="0.581144" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <test-suite type="TestSuite" id="1004" name="AnomalyPath" fullname="AnomalyPath" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-22 12:05:08Z" end-time="2026-10-22 12:05:08Z" duration="0.558237" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
         <properties />
-        <test-suite type="TestSuite" id="1005" name="Tests" fullname="AnomalyPath.Tests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-22 10:47:50Z" end-time="2026-10-22 10:47:51Z" duration="0.577907" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <test-suite type="TestSuite" id="1005" name="Tests" fullname="AnomalyPath.Tests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-22 12:05:08Z" end-time="2026-10-22 12:05:08Z" duration="0.558113" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
           <properties />
-          <test-suite type="TestFixture" id="1001" name="UnityEditModeTests" fullname="AnomalyPath.Tests.UnityEditModeTests" classname="AnomalyPath.Tests.UnityEditModeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-22 10:47:50Z" end-time="2026-10-22 10:47:51Z" duration="0.577162" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <test-suite type="TestFixture" id="1001" name="UnityEditModeTests" fullname="AnomalyPath.Tests.UnityEditModeTests" classname="AnomalyPath.Tests.UnityEditModeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-10-22 12:05:08Z" end-time="2026-10-22 12:05:08Z" duration="0.557405" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
             <properties />
-            <test-case id="1002" name="CoreSuite_ProjectData_AllChecksPass" fullname="AnomalyPath.Tests.UnityEditModeTests.CoreSuite_ProjectData_AllChecksPass" methodname="CoreSuite_ProjectData_AllChecksPass" classname="AnomalyPath.Tests.UnityEditModeTests" runstate="Runnable" seed="1919564411" result="Passed" start-time="2026-10-22 10:47:50Z" end-time="2026-10-22 10:47:51Z" duration="0.566378" asserts="0">
+            <test-case id="1002" name="CoreSuite_ProjectData_AllChecksPass" fullname="AnomalyPath.Tests.UnityEditModeTests.CoreSuite_ProjectData_AllChecksPass" methodname="CoreSuite_ProjectData_AllChecksPass" classname="AnomalyPath.Tests.UnityEditModeTests" runstate="Runnable" seed="1712114620" result="Passed" start-time="2026-10-22 12:05:08Z" end-time="2026-10-22 12:05:08Z" duration="0.546555" asserts="0">
               <properties>
                 <property name="retryIteration" value="0" />
                 <property name="repeatIteration" value="0" />
@@ -104,6 +104,8 @@ OK   набор: неизвестный набор — ошибка
 OK   набор: неизвестный набор — ошибка
 OK   набор: настройки обязательны
 OK   набор: настройки обязательны
+OK   набор: явные поля слотов и расходников
+OK   набор: явные поля слотов и расходников
 OK   набор: неизвестный слот — ошибка
 OK   набор: неизвестный слот — ошибка
 OK   набор: количество меньше 1 — ошибка
@@ -390,6 +392,8 @@ OK   json-писатель: ключи сортируются, строки эк
 OK   json-писатель: ключи сортируются, строки экранируются
 OK   json-писатель: массив и вложенность
 OK   json-писатель: массив и вложенность
+OK   сейв: имена служебных слотов
+OK   сейв: имена служебных слотов
 OK   сейв: мир и состояние восстанавливаются
 OK   сейв: мир и состояние восстанавливаются
 OK   сейв: список слотов читает метаданные
@@ -580,8 +584,8 @@ OK   исходники: UTF-8 без битых символов
 OK   исходники: UTF-8 без битых символов
 OK   исходники: каждый файл начинается с #nullable enable
 OK   исходники: каждый файл начинается с #nullable enable
-Итого: 279 прошло, 0 упало
-Итого: 279 прошло, 0 упало
+Итого: 281 прошло, 0 упало
+Итого: 281 прошло, 0 упало
 Saving results to: C:/Users/andre/AppData/LocalLow/VlomInc/AnomalyPath\TestResults.xml
 Saving results to: C:/Users/andre/AppData/LocalLow/VlomInc/AnomalyPath\TestResults.xml
 ]]></output>

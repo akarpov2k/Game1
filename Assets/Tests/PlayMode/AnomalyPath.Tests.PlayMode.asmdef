@@ -1,0 +1,20 @@
+{
+  "name": "AnomalyPath.Tests.PlayMode",
+  "rootNamespace": "AnomalyPath.Tests.PlayMode",
+  "references": [
+    "AnomalyPath.Core",
+    "AnomalyPath.Runtime"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

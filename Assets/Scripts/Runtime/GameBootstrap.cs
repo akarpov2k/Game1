@@ -28,6 +28,9 @@ namespace AnomalyPath.Runtime
         private void Awake()
         {
             var dataRoot = Path.Combine(Application.dataPath, "Data");
+#if !UNITY_EDITOR
+            dataRoot = Path.Combine(Application.streamingAssetsPath, "Data");
+#endif
             Preflight = Core.Preflight.Run(dataRoot);
 
             if (!Preflight.CanStart)
