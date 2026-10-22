@@ -127,6 +127,44 @@ namespace AnomalyPath.Tests
                     });
             });
 
+            Check("формат: локация грузится как сущность locations", () =>
+            {
+                WithFixture(
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("locations/loc_x.json"),
+                        ["locations/loc_x.json"] = "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_x\"," +
+                                                   "\"titleKey\":\"t\",\"locationKind\":\"wild\",\"nodeType\":\"route\"," +
+                                                   "\"tags\":[\"road\",\"outdoor\"],\"tier\":0,\"backgrounds\":[\"bg\"]," +
+                                                   "\"objectCount\":[1,2],\"danger\":0.2,\"connections\":[]}"
+                    },
+                    root =>
+                    {
+                        var data = new DataLoader(new FileSystemDataSource(root)).Load();
+                        Equal(1, data.All("locations").Count, "locations");
+                        Equal("route", data.OfKind("locations")["loc_x"].Get("nodeType").Text, "роль");
+                    });
+            });
+
+            Check("формат: топология грузится как сущность topology", () =>
+            {
+                WithFixture(
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("topology.json"),
+                        ["topology.json"] = "{\"schemaVersion\":1,\"kind\":\"topology\",\"id\":\"topology\"," +
+                                            "\"transitions\":[{\"from\":\"hub\",\"to\":\"route\",\"via\":[\"road\"]}]," +
+                                            "\"routeLength\":[1,2],\"edgeLength\":[1,2]," +
+                                            "\"costs\":{\"road\":{\"stamina\":2,\"hours\":1}}}"
+                    },
+                    root =>
+                    {
+                        var data = new DataLoader(new FileSystemDataSource(root)).Load();
+                        Equal(1, data.All("topology").Count, "topology");
+                        Equal(2, data.OfKind("topology")["topology"].Get("edgeLength").Items[1].Number, "edgeLength");
+                    });
+            });
+
             Check("формат: повторная коллекция — ошибка", () =>
             {
                 WithFixture(

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "locations",
+  "id": "loc_site_house",
+  "titleKey": "location.site.house.title",
+  "locationKind": "wild",
+  "nodeType": "site",
+  "tags": ["outdoor", "indoor", "house"],
+  "tier": 1,
+  "backgrounds": ["bg_site_house"],
+  "objectCount": [1, 2],
+  "danger": 0.2,
+  "connections": [
+    { "toId": "loc_interior_room", "via": "door" }
+  ],
+  "approachLength": [1, 2],
+  "rarity": "common",
+  "spawnChance": 1,
+  "unique": false
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "locations",
+  "id": "loc_hub_settlement",
+  "titleKey": "location.hub.settlement.title",
+  "locationKind": "hub",
+  "nodeType": "hub",
+  "tags": ["hub", "outdoor", "road"],
+  "tier": 0,
+  "backgrounds": ["bg_hub_settlement"],
+  "objectCount": [0, 0],
+  "danger": 0,
+  "connections": [],
+  "rarity": "common",
+  "spawnChance": 1,
+  "unique": false
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "locations",
+  "collection": true,
+  "id": "col_locations_core",
+  "entries": [
+    "locations/loc_hub_settlement.json",
+    "locations/loc_route_highway.json",
+    "locations/loc_route_forest.json",
+    "locations/loc_site_house.json",
+    "locations/loc_site_anomaly.json",
+    "locations/loc_interior_room.json"
+  ]
+}

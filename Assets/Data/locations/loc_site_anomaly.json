@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "locations",
+  "id": "loc_site_anomaly",
+  "titleKey": "location.site.anomaly.title",
+  "locationKind": "wild",
+  "nodeType": "site",
+  "tags": ["outdoor", "anomaly"],
+  "tier": 2,
+  "backgrounds": ["bg_site_anomaly"],
+  "objectCount": [2, 3],
+  "danger": 0.8,
+  "connections": [],
+  "approachLength": [2, 3],
+  "rarity": "uncommon",
+  "spawnChance": 1,
+  "unique": false
+}

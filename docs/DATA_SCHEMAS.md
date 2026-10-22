@@ -3,31 +3,20 @@
 Дополнение к [GAME_MANIFEST.md](GAME_MANIFEST.md). Здесь только структура данных: файлы, поля, типы, правила.
 Поведение и баланс — в манифесте. Код читает эти схемы, а не наоборот.
 
-**Статус:** черновик v0.29 (2026-10-22). Соответствует манифесту v0.44.
+**Статус:** черновик v0.31 (2026-10-22). Соответствует манифесту v0.48.
 
 ---
 
-## 0. Что нового в v0.29
+## 0. Что нового в v0.31
 
-Магазин и перезарядка за ОД, патроны из инвентаря, уровень актёра в меткости, прогрессивный рандом.
+Слой мира: тип локации переименован в `locationKind` (поле `kind` занято видом сущности), у `Topology` появились `edgeLength`, `initialStamina`, `dayStartHour` и `nightStartHour`.
 
-Меткость: коэффициент точности оружия, множители дистанции и бонус талантов; детерминированный бросок попадания.
-
-Боевой расчёт: вычислитель формул, актёры, боевые настройки; урон, защита, износ, ОД, дистанция и ходы работают из данных.
-
-Типы урона переехали в данные: сущности `DamageType` (`damage/*.json`), `protection` проверяется по ним.
-
-Защита брони от аномалий: единая формула по типам урона (`dmg_bullet`, `dmg_electric`, `dmg_chemical`, `dmg_fire`, `dmg_rupture`).
-
-Износ брони: `ceil(урон / (durabilityFactor × quality × 10))`, минимум 1 — чем прочнее материал и выше качество, тем меньше износ. Пулестойкость влияет на здоровье, а не на износ; `wearFactor` удалён.
-
-| Раздел | Изменение |
-| --- | --- |
-| 4 | поля `material`, `durabilityFactor`, `quality` |
-| 10 | формула `ceil(урон / (durabilityFactor × quality × 10))`, минимум 1 |
+Маршрут строится на каждую точку интереса отдельно: своя цепочка `route`, свои рёбра. Длина ребра случайна в `edgeLength`, если `Connection.length` не задан.
 
 ### Что было раньше
 
+- **v0.30:** `stamina` вместо `travel`, погода `clear`/`rain`/`fog`, `repeat.cooldownDays`, `EconomySettings.currency`, модификатор `stamina`, прокачка на четыре характеристики.
+- **v0.29:** магазин и перезарядка за ОД, патроны из инвентаря, уровень актёра в меткости, прогрессивный рандом; коэффициент точности оружия, множители дистанции и детерминированный бросок; боевой расчёт из данных; типы урона как сущности; износ брони `ceil(урон / (durabilityFactor × quality × 10))`, `wearFactor` удалён.
 - **v0.21:** износ делил на пулестойкость, материал, качество и запас прочности; `wearFactor` в `equipment.json`.
 - **v0.20:** формула износа брони и шлема, поле `quality` (по умолчанию 1).
 - **v0.19:** артефакты четырёх типов, занимают слоты пояса; прочность брони в данных.
@@ -631,6 +620,7 @@ Mods/<modName>/
 | `id` | string | всегда `economy` |
 | `rounding` | enum | `round`, `floor`, `ceil` |
 | `minPrice` | int | нижняя граница цены |
+| `currency` | string | ключ валюты, одна на игру: `currency.rub` (рубли) |
 | `defaultSellRatio` | number | доля продажи по умолчанию |
 
 ### 4.11. `Rarity` (вид `rarities`)
@@ -881,7 +871,7 @@ Mods/<modName>/
 
 | Поле | Тип | Смысл |
 | --- | --- | --- |
-| `stat` | enum | `healthMax`, `apMax`, `accuracy`, `damage`, `movePoints`, `protection` |
+| `stat` | enum | `healthMax`, `apMax`, `accuracy`, `damage`, `stamina`, `protection` |
 | `damageTypeId` | string | обязателен при `stat = protection`: какой тип урона меняется |
 | `mode` | enum | `add`, `multiply`, `max`, `diminishing` |
 | `value` | number | величина |
@@ -972,7 +962,7 @@ max(0, damage - max(0, protection - penetration))
 | `formula_spawn_chance` | `baseChance`, `tier` | шанс появления локации по редкости |
 | `formula_rarity_weight` | `baseWeight`, `rarityOrder`, `locationTier`, `danger`, `enemyTier`, `playerLevel` | вес редкости при выпадении: чем выше тир локации и врага, тем вероятнее редкое |
 | `formula_route_length` | `danger`, `tier`, `locationTier` | сколько отрезков пути до точки интереса |
-| `formula_travel_cost` | `baseTravel`, `baseHours`, `length`, `danger` | стоимость перехода: очки и часы |
+| `formula_travel_cost` | `baseStamina`, `baseHours`, `length`, `danger` | стоимость перехода: выносливость и часы |
 | `formula_price` | `base`, `reputation`, `traderModifier` | цена с репутацией (раздел 4.9) |
 
 Правило: если правило содержит арифметику и его захочется подкрутить, оно становится `Formula`, а не полем с коэффициентом. Список переменных каждой формулы фиксируется в её `variables`; код передаёт значения по этим именам.
@@ -1003,7 +993,7 @@ max(0, damage - max(0, protection - penetration))
 Правила:
 
 - `CombatSettings` не содержит чисел баланса — только ссылки на формулы, режимы и границы, чтобы смена правила была правкой одного поля.
-- При `initiative = formula` шанс засады считает `formula_ambush_chance` от факторов (сложность локации, уровень игрока, тир, время суток, погода); список переменных открыт. Как именно засада применяется (один бросок на бой, на ход или на противника) — `❓`.
+- При `initiative = formula` шанс засады считает `formula_ambush_chance` от факторов (сложность локации, уровень игрока, тир, время суток, погода); список переменных открыт. Как именно засада применяется (один бросок на бой, на ход или на противника) — открытый вопрос реализации (манифест §13).
 - Зоны дистанции — те же, что у `Skill.range` (`melee`, `close`, `mid`, `far`), отдельных настроек не требуют.
 - Сдвиг по зонам: `zoneShiftFree` зон за ход бесплатно, дальше — по `zoneShiftApCost`. Это правило боя, а не структура: меняется здесь, в данных.
 
@@ -1112,7 +1102,7 @@ Actor                      (общие поля, раздел 12.1)
 
 Правило: **неагрессивный по умолчанию.** `Npc` не начинает бой сам; если `combat` задан, `ai` должен быть `passive` или `cautious`. Агрессивное поведение по умолчанию — только у `enemy`.
 
-**Враждебность — состояние, а не тип.** Неагрессивный персонаж может стать врагом: по сценарию квеста или из-за репутации (ниже порога — враждебна фракция целиком). `type` при этом остаётся `npc`; текущее состояние хранится в сейве (`WorldState.actorStates`, раздел 17), потому что это изменяемое значение, а не описание. Атака игрока как отдельный повод — `❓` (раздел 18).
+**Враждебность — состояние, а не тип.** Неагрессивный персонаж может стать врагом: по сценарию квеста, из-за репутации (ниже порога — враждебна фракция целиком) или из-за удара игрока: первый удар делает NPC врагом и снижает репутацию его фракции, свидетели тоже враждебны. `type` при этом остаётся `npc`; текущее состояние хранится в сейве (`WorldState.actorStates`, раздел 17), потому что это изменяемое значение, а не описание.
 
 ### 12.4. `Trader` (`type = trader`)
 
@@ -1219,7 +1209,7 @@ Actor                      (общие поля, раздел 12.1)
 | --- | --- | --- |
 | `id` | string | `loc_road_01` |
 | `titleKey` | string | «Разбитая трасса» |
-| `kind` | enum | `hub`, `wild`, `special` |
+| `locationKind` | enum | `hub`, `wild`, `special`; поле `kind` занято видом сущности загрузчика (`locations`) |
 | `nodeType` | enum | `hub`, `route`, `site`, `interior` — роль в связной цепочке |
 | `tags` | string[] | словарь тегов манифеста |
 | `tier` | int | 0..N |
@@ -1268,8 +1258,8 @@ Actor                      (общие поля, раздел 12.1)
 
 | `via` | Обязательные теги | Из роли | В роль |
 | --- | --- | --- | --- |
-| `road` | обе стороны: `road`, `outdoor` | `hub`, `route` | `route`, `site` |
-| `path` | обе стороны: `outdoor` | `hub`, `route`, `site` | `route`, `site` |
+| `road` | обе стороны: `road`, `outdoor` | `hub`, `route` | `hub`, `route`, `site` |
+| `path` | обе стороны: `outdoor` | `hub`, `route`, `site` | `hub`, `route`, `site` |
 | `door` | назначение: `indoor`; источник: `indoor` или `outdoor` | `site`, `interior` | `interior` |
 | `gate` | обе стороны: `outdoor` | `site` | `site` |
 | `stairs` | обе стороны: `indoor` | `site`, `interior` | `interior` |
@@ -1281,19 +1271,19 @@ Actor                      (общие поля, раздел 12.1)
 
 ### 14.1.2. Стоимость перехода
 
-Переход стоит ресурсов: очков перемещения и времени мира. Стоимость — данные, а не константа в коде.
+Переход стоит ресурсов: выносливости и времени мира. Стоимость — данные, а не константа в коде.
 
 | Поле в `Connection` | Тип | Смысл |
 | --- | --- | --- |
-| `cost` | `{ travel: int, hours: number }`? | переопределение стоимости ребра |
+| `cost` | `{ stamina: int, hours: number }`? | переопределение стоимости ребра |
 
 Правила:
 
 - Базовая стоимость — по типу пути (`Topology.costs[via]`), например `road` дешевле `path`, а `tunnel` дороже обоих.
-- Итог = `cost[via] × length`, если `length` задан; иначе просто `cost[via]`. Может считаться формулой `formula_travel_cost` (переменные `baseTravel`, `baseHours`, `length`, `danger`).
-- `travel` списывается с `player.travel.current`, `hours` прибавляется к `world.time`.
-- Если очков перемещения меньше стоимости, переход недоступен: кнопка неактивна, а не «переход в минус».
-- Внутри одной локации (дверь, коридор) стоимость обычно нулевая: `cost = { travel: 0, hours: 0 }`.
+- Итог = `cost[via] × length`, если `length` задан; иначе просто `cost[via]`. Может считаться формулой `formula_travel_cost` (переменные `baseStamina`, `baseHours`, `length`, `danger`).
+- `stamina` списывается с `player.stamina.current`, `hours` прибавляется к `world.time`.
+- Если выносливости меньше стоимости, переход недоступен: кнопка неактивна, а не «переход в минус».
+- Внутри одной локации (дверь, коридор) стоимость обычно нулевая: `cost = { stamina: 0, hours: 0 }`.
 - Стоимость — данные: правка `topology.json` меняет цену всех дорог, правка одного ребра — только его.
 
 ### 14.2. `SpawnEntry`
@@ -1359,10 +1349,14 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `id` | string | всегда `topology` |
 | `transitions` | Transition[] | разрешённые переходы «роль → роль через путь» |
 | `routeLength` | `[int, int]` | сколько `route`-локаций между хабом и точкой интереса ⏸; база для формулы `formula_route_length` |
-| `costs` | `{ [via]: { travel: int, hours: number } }` | стоимость перехода по типу пути ⏸ |
+| `edgeLength` | `[int, int]` | вилка длины ребра: сколько «шагов» занимает переход, если `Connection.length` не задан; по умолчанию `[1, 2]` |
+| `costs` | `{ [via]: { stamina: int, hours: number } }` | стоимость перехода по типу пути ⏸ |
 | `hubFastTravel` | bool | можно ли ходить между хабами напрямую |
-| `hubFastTravelCost` | `{ travel: int, hours: number }`? | цена быстрого перехода между хабами |
+| `hubFastTravelCost` | `{ stamina: int, hours: number }`? | цена быстрого перехода между хабами |
 | `maxBranchDepth` | int | предел вложенности веток от хаба ⏸ |
+| `initialStamina` | int | стартовая и максимальная выносливость игрока; по умолчанию 10 |
+| `dayStartHour` | number | час начала дня, по умолчанию 6 |
+| `nightStartHour` | number | час начала ночи, по умолчанию 22 |
 
 `Transition`: `{ from: nodeType, to: nodeType, via: string[] }`.
 
@@ -1380,19 +1374,23 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
     { "from": "hub", "to": "hub", "via": ["road", "path"] }
   ],
   "routeLength": [1, 3],
+  "edgeLength": [1, 2],
   "costs": {
-    "road": { "travel": 2, "hours": 1 },
-    "path": { "travel": 3, "hours": 1.5 },
-    "gate": { "travel": 1, "hours": 0.5 },
-    "tunnel": { "travel": 4, "hours": 2 },
-    "door": { "travel": 0, "hours": 0 },
-    "stairs": { "travel": 0, "hours": 0 },
-    "hatch": { "travel": 0, "hours": 0 },
-    "corridor": { "travel": 0, "hours": 0 }
+    "road": { "stamina": 2, "hours": 1 },
+    "path": { "stamina": 3, "hours": 1.5 },
+    "gate": { "stamina": 1, "hours": 0.5 },
+    "tunnel": { "stamina": 4, "hours": 2 },
+    "door": { "stamina": 0, "hours": 0 },
+    "stairs": { "stamina": 0, "hours": 0 },
+    "hatch": { "stamina": 0, "hours": 0 },
+    "corridor": { "stamina": 0, "hours": 0 }
   },
   "hubFastTravel": true,
-  "hubFastTravelCost": { "travel": 5, "hours": 6 },
-  "maxBranchDepth": 4
+  "hubFastTravelCost": { "stamina": 5, "hours": 6 },
+  "maxBranchDepth": 4,
+  "initialStamina": 10,
+  "dayStartHour": 6,
+  "nightStartHour": 22
 }
 ```
 
@@ -1402,7 +1400,9 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - Если переход запрещён, шаблон не загружается: ошибка на этап данных, а не «странная карта» в игре.
 - `routeLength` задаёт, сколько отрезков пути проходить до точки интереса; значение может считаться формулой (раздел 11.6), поле — база.
 - **Отрезки пути настраиваются:** глобальная вилка — `routeLength`, конкретная точка интереса может её переопределить через `LocationTemplate.approachLength`. Значение из формулы `formula_route_length` (переменные `danger`, `tier`, `locationTier`) имеет приоритет над базой.
-- **Переход стоит ресурсов:** цена по типу пути — `Topology.costs`, переопределение — `Connection.cost`. Итог умножается на `length` ребра; списывается с `player.travel`, время прибавляется к `world.time`. Не хватает очков — переход недоступен.
+- **Переход стоит ресурсов:** цена по типу пути — `Topology.costs`, переопределение — `Connection.cost`. Итог умножается на `length` ребра; списывается с `player.stamina`, время прибавляется к `world.time`. Не хватает выносливости — переход недоступен.
+- **Маршрут строится на каждую точку интереса отдельно.** Для каждого `site` создаётся своя цепочка экземпляров `route`; разные локации не делят отрезки и рёбра. Число отрезков берётся из `approachLength` локации, иначе из `routeLength`; это независимый бросок на каждую локацию.
+- **Длина ребра немного случайна.** Если `Connection.length` не задан, длина выбирается из `edgeLength`; стоимость считается как `cost[via] × length`. Авторское ребро с `length` фиксирует длину и не бросает её.
 - `maxBranchDepth` ограничивает, насколько далеко от хаба может уйти ветка: защита от бесконечных цепочек.
 - Генератор маршрута: `hub` → 1..`routeLength` отрезков `route` → `site`; `interior` прикрепляется к `site`. Промежуточные локации получают объекты и события по общим правилам.
 
@@ -1429,7 +1429,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `factionId` | string | чей квест |
 | `giverActorId` | string | кто выдаёт: `Actor` с `type = npc` или `trader` |
 | `kind` | enum | `story` — сюжетный, `repeatable` — повторяемый |
-| `repeat` | object | для `repeatable`: `{ type: "life" \| "timed", limit?: int, duration?: number }` |
+| `repeat` | object | для `repeatable`: `{ type: "life" \| "timed", cooldownDays?: number, duration?: number }` |
 | `titleKey` | string | «Пропавший курьер» |
 | `descriptionKey` | string | 1–3 предложения |
 | `stages` | Stage[] | этапы по порядку |
@@ -1455,8 +1455,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 Правила:
 
 - **Сюжетный квест (`story`) не проваливается.** Его можно только пройти; `consequences` у него — последствия событий, а не провала.
-- **Повторяемый (`repeatable`) провалиться может** и бывает двух видов: `type = "life"` — ограничен числом выполнений на прохождение (`limit`), `type = "timed"` — ограничен сроком (`duration` во времени мира).
-- ❓ Что именно ограничивает «за жизнь» — `limit` выполнений, смерть персонажа или тир — уточняется (раздел 18).
+- **Повторяемый (`repeatable`) провалиться может** и бывает двух видов: `type = "life"` — один заход на жизнь: смерть игрока проваливает квест, после воскрешения и выхода из любого хаба начинается откат на `cooldownDays` игровых дней (срок зависит от сложности и награды); `type = "timed"` — ограничен сроком (`duration` во времени мира). Сданный повторяемый квест тоже уходит в откат.
 - Провал и отказ от квеста теряют репутацию фракции (раздел 15.1, манифест §9).
 
 ### 15.3. `Unlock`
@@ -1537,8 +1536,8 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `equipment` | object | раздел 10 |
 | `skills` | string[] | выученные скиллы |
 | `modifiers` | Modifier[] | постоянные бонусы от прокачки |
-| `travel` | `{ current, max }` | очки перемещения по миру: отдельный ресурс, не боевые ОД |
-| `needs` | `{ hunger, thirst, sleep, max }` | потребности: еда, вода, сон; шкалы 0..`max` ❓ ставки расхода |
+| `stamina` | `{ current, max }` | выносливость: ресурс перемещения по миру, не боевые ОД; восстанавливается сном в хабе и привалом |
+| `needs` | `{ hunger, thirst, sleep, max }` | потребности: еда, вода, сон; шкалы 0..`max` ⏸ ставки расхода |
 | `position` | `{ locationInstanceId }` | где находится |
 
 Строки сетки в сейве **не хранятся**: `rows` вычисляется как `GameRules.baseRows + backpack.extraRows`. Единственный источник базового числа — `GameRules` (раздел 17.1).
@@ -1555,7 +1554,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `actorStates` | `[{ objectId, actorId, alive, hostile }]` | состояние экземпляров персонажей: ключ — `objectId` объекта на локации, `actorId` — шаблон |
 | `traders` | `[{ actorId, stock: [{ itemId, count }] }]` | текущие запасы торговцев |
 | `time` | `{ day, hours, phase }` | время мира: двигается при переходах и отдыхе |
-| `weather` | string? | текущая погода ❓ пока только заглушка |
+| `weather` | string | текущая погода: `clear` / `rain` / `fog`; фаза суток — в `time.phase` (`day` / `night`) |
 | `settings` | object | выбранные на старте настройки прохождения (`deathMode`, `lootLoss`) |
 | `stash` | GridContainer? | склад в хабе ❓ |
 
@@ -1726,11 +1725,18 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 **Локации и квесты**
 
 - `rarity` ∈ `common`, `uncommon`, `rare`, `unique`; `spawnChance` ∈ 0..1.
-- `unique = true` требует `rarity = "unique"` и несовместим с `kind = "wild"` без квестовой привязки.
+- `unique = true` требует `rarity = "unique"` и несовместим с `locationKind = "wild"` без квестовой привязки.
 - Квестовые локации (`unique = true`) существуют в одном экземпляре на прохождение.
 - `Quest.kind` ∈ `story`, `repeatable`; у `repeatable` обязателен блок `repeat`.
-- `repeat.type = "life"` требует `limit ≥ 1`; `repeat.type = "timed"` требует `duration > 0`.
+- `repeat.type = "life"` требует `cooldownDays ≥ 1`; `repeat.type = "timed"` требует `duration > 0`.
 - `Quest.kind = "story"` не имеет `consequences` провала и не может быть провален.
+- `locationKind` ∈ `hub`, `wild`, `special`; `nodeType` ∈ `hub`, `route`, `site`, `interior`.
+- `objectCount`, `approachLength`, `edgeLength` и `routeLength` заданы парами `[min, max]` с `min ≥ 0` и `min ≤ max`; у `approachLength` и `edgeLength` минимум ≥ 1.
+- `danger` и `spawnChance` ∈ 0..1; `unique = true` требует `rarity = "unique"`.
+- `approachLength.max` не больше `Topology.maxBranchDepth`; если маршрут может быть длиннее одного отрезка, в топологии обязан существовать переход `route → route`.
+- `Connection.toId` → `LocationTemplate`; переход `(from.nodeType, to.nodeType, via)` разрешён `Topology.transitions`; теги обеих сторон удовлетворяют таблице `via` (14.1.1); `hub → hub` возможен только при `Topology.hubFastTravel = true`.
+- `Topology.costs` содержит цену для каждого `via`, встречающегося в `transitions`; стоимости неотрицательны; `initialStamina ≥ 0`, `0 ≤ dayStartHour < nightStartHour ≤ 24`.
+- Для генерации нужны хотя бы один `hub` и хотя бы один `site`; иначе загрузка данных считается невалидной.
 - `Stage.targetId` соответствует таблице «этап → тип цели» (раздел 15.2): `find`/`gather` → `Item`, `kill`/`talk` → `Actor` нужного типа, `visit` → `LocationTemplate`.
 - `Dialog.startNodeId` ссылается на существующий узел того же диалога; все `nextNodeId` разрешаются внутри диалога.
 - У каждого узла диалога либо есть варианты, либо он закрывает диалог; висячих узлов нет.
@@ -1747,7 +1753,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - Каждая нехабовая локация достижима из какого-либо `hub`; висячих компонент нет.
 - `routeLength[0] ≤ routeLength[1]`; цепочка `hub → route… → site` укладывается в эти границы.
 - `approachLength[0] ≤ approachLength[1]`, если задано; иначе действует `Topology.routeLength` или `formula_route_length`.
-- `Topology.costs[via]` задан для каждого `via`, который встречается в `transitions`; `travel ≥ 0`, `hours ≥ 0`.
+- `Topology.costs[via]` задан для каждого `via`, который встречается в `transitions`; `stamina ≥ 0`, `hours ≥ 0`.
 - `Connection.cost`, если задан, переопределяет `Topology.costs[via]`; отрицательных значений нет.
 - `Topology` ровно одна; `hubFastTravel = false` запрещает прямые рёбра `hub → hub`.
 
@@ -1773,7 +1779,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - `instanceId` уникальны.
 - Ссылка на удалённый из данных `itemId` не роняет загрузку, а помечается.
 - `actorStates[].objectId` уникален в пределах сейва и ссылается на `SpawnedObject.objectId`; `actorId` разрешается в `Actor`.
-- `player.travel.current` ∈ 0..`player.travel.max`, `travel.max ≥ 0`.
+- `player.stamina.current` ∈ 0..`player.stamina.max`, `stamina.max ≥ 0`.
 - Строк сетки в сейве нет: `rows` вычисляется из `GameRules.baseRows` и рюкзака.
 - `player.needs` — все шкалы 0..`max`; `max ≥ 1`.
 - `world.time.hours` ∈ 0..24; `settings` соответствует `GameRules`.
@@ -1885,7 +1891,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
     "material": "medium",
     "durabilityFactor": 1.0,
     "quality": 1,
-    "modifiers": [{ "stat": "movePoints", "mode": "add", "value": -1 }]
+    "modifiers": [{ "stat": "stamina", "mode": "add", "value": -1 }]
   }
 }
 ```
@@ -2220,7 +2226,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
     },
     "skills": [],
     "modifiers": [],
-    "travel": { "current": 10, "max": 10 },
+    "stamina": { "current": 10, "max": 10 },
     "needs": { "hunger": 80, "thirst": 70, "sleep": 90, "max": 100 },
     "position": { "locationInstanceId": "loc_instance_1" }
   },
@@ -2417,7 +2423,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
   "danger": 0.3,
   "connections": [
     { "toId": "loc_road_02", "via": "road", "length": 2 },
-    { "toId": "loc_house_01", "via": "path", "cost": { "travel": 4, "hours": 2 } }
+    { "toId": "loc_house_01", "via": "path", "cost": { "stamina": 4, "hours": 2 } }
   ]
 }
 ```

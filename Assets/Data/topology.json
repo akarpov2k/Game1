@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "kind": "topology",
+  "id": "topology",
+  "transitions": [
+    { "from": "hub", "to": "route", "via": ["road", "path"] },
+    { "from": "route", "to": "route", "via": ["road", "path", "tunnel"] },
+    { "from": "route", "to": "site", "via": ["path", "gate"] },
+    { "from": "site", "to": "interior", "via": ["door", "stairs", "hatch"] },
+    { "from": "interior", "to": "interior", "via": ["corridor", "door", "stairs"] },
+    { "from": "hub", "to": "hub", "via": ["road", "path"] }
+  ],
+  "routeLength": [1, 3],
+  "edgeLength": [1, 2],
+  "costs": {
+    "road": { "stamina": 2, "hours": 1 },
+    "path": { "stamina": 3, "hours": 1.5 },
+    "gate": { "stamina": 1, "hours": 0.5 },
+    "tunnel": { "stamina": 4, "hours": 2 },
+    "door": { "stamina": 0, "hours": 0 },
+    "stairs": { "stamina": 0, "hours": 0 },
+    "hatch": { "stamina": 0, "hours": 0 },
+    "corridor": { "stamina": 0, "hours": 0 }
+  },
+  "hubFastTravel": true,
+  "hubFastTravelCost": { "stamina": 5, "hours": 6 },
+  "maxBranchDepth": 4,
+  "initialStamina": 10,
+  "dayStartHour": 6,
+  "nightStartHour": 22
+}

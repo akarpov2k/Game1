@@ -8,6 +8,7 @@ using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.Repositories;
 using AnomalyPath.Core.Templates;
+using AnomalyPath.Core.World;
 
 namespace AnomalyPath.Core.Validation
 {
@@ -71,6 +72,7 @@ namespace AnomalyPath.Core.Validation
                 Try(() => ItemRepository.FromLoadedData(loaded), issues);
                 Try(() => DamageTypeRepository.FromLoadedData(loaded), issues);
                 ValidateProtectionKeys(loaded, issues);
+                AddWorldIssues(loaded, issues);
             }
             catch (DataException error)
             {
@@ -115,6 +117,14 @@ namespace AnomalyPath.Core.Validation
                             CoreText.Format(CoreErrors.UnknownDamageType, pair.Key)));
                     }
                 }
+            }
+        }
+
+        private static void AddWorldIssues(LoadedData data, List<ValidationIssue> issues)
+        {
+            foreach (var issue in WorldValidator.Validate(data))
+            {
+                issues.Add(issue);
             }
         }
 
@@ -266,6 +276,14 @@ namespace AnomalyPath.Core.Validation
                 else if (kind == "equipment")
                 {
                     Try(() => Equipment.EquipmentSettings.FromJson(resolved, pair.Key), issues);
+                }
+                else if (kind == "locations")
+                {
+                    Try(() => LocationTemplate.FromJson(resolved, pair.Key), issues);
+                }
+                else if (kind == "topology")
+                {
+                    Try(() => TopologyTemplate.FromJson(resolved, pair.Key), issues);
                 }
             }
 

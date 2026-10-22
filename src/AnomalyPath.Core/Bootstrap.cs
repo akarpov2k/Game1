@@ -45,6 +45,8 @@ namespace AnomalyPath.Core
             var damageTypes = DamageTypeRepository.FromLoadedData(data);
             var formulas = FormulaRepository.FromLoadedData(data);
             var actors = ActorRepository.FromLoadedData(data);
+            var locations = LocationRepository.FromLoadedData(data);
+            var topology = TopologyRepository.FromLoadedData(data);
             var combatSettings = LoadCombatSettings(data);
             var balance = LoadBalance(data);
             var instanceIds = new SequentialInstanceIdGenerator();
@@ -58,6 +60,10 @@ namespace AnomalyPath.Core
             container.RegisterSingleton<IDamageTypeRepository>(damageTypes);
             container.RegisterSingleton<IFormulaRepository>(formulas);
             container.RegisterSingleton<IActorRepository>(actors);
+            container.RegisterSingleton<ILocationRepository>(locations);
+            container.RegisterSingleton<ITopologyRepository>(topology);
+            container.RegisterSingleton<IWorldGenerator>(new WorldGenerator(locations, topology));
+            container.RegisterSingleton<ITravelService>(new TravelService());
             container.RegisterSingleton<IInstanceIdGenerator>(instanceIds);
             container.RegisterSingleton<IInventoryService>(inventory);
             container.RegisterSingleton<IEquipmentSettings>(equipmentSettings);
