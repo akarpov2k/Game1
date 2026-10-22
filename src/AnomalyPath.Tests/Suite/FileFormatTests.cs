@@ -165,6 +165,45 @@ namespace AnomalyPath.Tests
                     });
             });
 
+            Check("формат: набор грузится как сущность loadouts", () =>
+            {
+                WithFixture(
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("loadouts/loadout_x.json"),
+                        ["loadouts/loadout_x.json"] = "{\"schemaVersion\":1,\"kind\":\"loadouts\"," +
+                                                       "\"id\":\"loadout_x\",\"nameKey\":\"n\"," +
+                                                       "\"items\":[{\"itemId\":\"wpn_pm\",\"count\":1}]," +
+                                                       "\"equipment\":{\"main\":\"wpn_pm\"}}"
+                    },
+                    root =>
+                    {
+                        var data = new DataLoader(new FileSystemDataSource(root)).Load();
+                        Equal(1, data.All("loadouts").Count, "loadouts");
+                        Equal("loadouts", data.OfKind("loadouts")["loadout_x"].Get("kind").Text, "kind");
+                    });
+            });
+
+            Check("формат: правила грузятся как сущность rules", () =>
+            {
+                WithFixture(
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("rules.json"),
+                        ["rules.json"] = "{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"rules\"," +
+                                         "\"deathMode\":\"hubReturn\",\"lootLossOptions\":[{\"id\":\"none\"," +
+                                         "\"titleKey\":\"t.none\",\"loss\":\"none\",\"share\":0}]," +
+                                         "\"defaultLootLoss\":\"none\",\"insuranceChance\":0.15," +
+                                         "\"insuranceAppliesTo\":\"loot\",\"baseRows\":4,\"tierCount\":4}"
+                    },
+                    root =>
+                    {
+                        var data = new DataLoader(new FileSystemDataSource(root)).Load();
+                        Equal(1, data.All("rules").Count, "rules");
+                        Equal("hubReturn", data.OfKind("rules")["rules"].Get("deathMode").Text, "deathMode");
+                    });
+            });
+
             Check("формат: повторная коллекция — ошибка", () =>
             {
                 WithFixture(

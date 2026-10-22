@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "rules",
+  "id": "rules",
+  "deathMode": "hubReturn",
+  "lootLossOptions": [
+    { "id": "none", "titleKey": "rules.lootLoss.none", "loss": "none", "share": 0 },
+    { "id": "partial", "titleKey": "rules.lootLoss.partial", "loss": "partial", "share": 0.5 },
+    { "id": "all", "titleKey": "rules.lootLoss.all", "loss": "all", "share": 1 }
+  ],
+  "defaultLootLoss": "partial",
+  "insuranceChance": 0.15,
+  "insuranceAppliesTo": "loot",
+  "baseRows": 4,
+  "gridWidth": 8,
+  "needsMax": 100,
+  "playerActorId": "actor_player",
+  "tierCount": 4
+}

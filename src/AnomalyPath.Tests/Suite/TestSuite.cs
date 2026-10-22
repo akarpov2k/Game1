@@ -21,6 +21,7 @@ namespace AnomalyPath.Tests
         /// <returns>Счётчики и список упавших проверок.</returns>
         public static TestRunResult Run(string dataRoot, Action<string> log)
         {
+            TestBase.DataRootOverride = dataRoot;
             var source = new FileSystemDataSource(dataRoot);
             CoreText.Configure(JsonStringCatalog.FromSource(source, Bootstrap.DefaultTextCatalog));
 
@@ -28,6 +29,8 @@ namespace AnomalyPath.Tests
             {
                 new DataLoadingTests(dataRoot),
                 new RepositoryTests(dataRoot),
+                new RulesTests(dataRoot),
+                new LoadoutTests(dataRoot),
                 new InventoryTests(),
                 new EquipmentTests(dataRoot),
                 new FormulaTests(dataRoot),
@@ -35,6 +38,7 @@ namespace AnomalyPath.Tests
                 new DamageTypeTests(dataRoot),
                 new CombatTests(dataRoot),
                 new WorldTests(dataRoot),
+                new SessionTests(dataRoot),
                 new SaveTests(dataRoot),
                 new JsonFormatTests(),
                 new FileFormatTests(),

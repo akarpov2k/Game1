@@ -49,7 +49,13 @@ namespace AnomalyPath.Runtime
 
             var saveRoot = Path.Combine(Application.persistentDataPath, "Saves");
             var items = Services!.Resolve<IItemRepository>();
-            Services.RegisterSingleton<ISaveService>(new SaveService(new FileSaveStorage(saveRoot), items));
+            var saves = new SaveService(new FileSaveStorage(saveRoot), items);
+            Services.RegisterSingleton<ISaveService>(saves);
+            Services.RegisterSingleton<IGameSessionService>(new GameSessionService(
+                Services.Resolve<ITravelService>(),
+                Services.Resolve<ICombatService>(),
+                saves,
+                Services.Resolve<INewGameService>()));
         }
     }
 }

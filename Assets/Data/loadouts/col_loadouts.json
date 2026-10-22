@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "loadouts",
+  "collection": true,
+  "id": "col_loadouts",
+  "entries": [
+    "loadouts/loadout_scout.json",
+    "loadouts/loadout_rifleman.json"
+  ]
+}

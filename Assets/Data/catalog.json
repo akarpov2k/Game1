@@ -14,7 +14,9 @@
     "formulas/formula_damage_base.json",
     "combat.json",
     "balance.json",
+    "rules.json",
     "actors/col_actors.json",
+    "loadouts/col_loadouts.json",
     "topology.json",
     "locations/col_locations.json"
   ]

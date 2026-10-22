@@ -47,12 +47,16 @@ namespace AnomalyPath.Core
             var actors = ActorRepository.FromLoadedData(data);
             var locations = LocationRepository.FromLoadedData(data);
             var topology = TopologyRepository.FromLoadedData(data);
+            var loadouts = LoadoutRepository.FromLoadedData(data);
             var combatSettings = LoadCombatSettings(data);
             var balance = LoadBalance(data);
             var instanceIds = new SequentialInstanceIdGenerator();
             var equipmentSettings = LoadEquipmentSettings(data);
+            var rules = GameRulesRepository.FromLoadedData(data);
 
             var inventory = new InventoryService(items, instanceIds);
+            var travel = new TravelService();
+            var world = new WorldGenerator(locations, topology);
 
             var container = new ServiceContainer();
             container.RegisterSingleton<IItemRepository>(items);
@@ -62,17 +66,30 @@ namespace AnomalyPath.Core
             container.RegisterSingleton<IActorRepository>(actors);
             container.RegisterSingleton<ILocationRepository>(locations);
             container.RegisterSingleton<ITopologyRepository>(topology);
-            container.RegisterSingleton<IWorldGenerator>(new WorldGenerator(locations, topology));
-            container.RegisterSingleton<ITravelService>(new TravelService());
+            container.RegisterSingleton<ILoadoutRepository>(loadouts);
+            container.RegisterSingleton<IWorldGenerator>(world);
+            container.RegisterSingleton<ITravelService>(travel);
             container.RegisterSingleton<IInstanceIdGenerator>(instanceIds);
             container.RegisterSingleton<IInventoryService>(inventory);
             container.RegisterSingleton<IEquipmentSettings>(equipmentSettings);
+            container.RegisterSingleton<IGameRulesRepository>(rules);
             var equipmentService = new EquipmentService(items, inventory);
             container.RegisterSingleton<IEquipmentService>(equipmentService);
             var wear = new ArmorWearService(items);
             container.RegisterSingleton<IArmorWearService>(wear);
             container.RegisterSingleton<ICombatRandom>(new SeededCombatRandom(1));
-            container.RegisterSingleton<ICombatService>(new CombatService(items, damageTypes, equipmentService, wear, formulas, combatSettings, balance, new SeededCombatRandom(1), inventory));
+            var combatService = new CombatService(items, damageTypes, equipmentService, wear, formulas, combatSettings, balance, new SeededCombatRandom(1), inventory);
+            container.RegisterSingleton<ICombatService>(combatService);
+            container.RegisterSingleton<INewGameService>(new NewGameService(
+                rules,
+                world,
+                actors,
+                loadouts,
+                items,
+                inventory,
+                equipmentService,
+                equipmentSettings,
+                instanceIds));
             return container;
         }
 

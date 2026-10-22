@@ -42,6 +42,15 @@ namespace AnomalyPath.Tests
                 True(data.TryGet("items", "wpn_akm", out _), "wpn_akm не найден");
                 False(data.TryGet("items", "wpn_unknown", out _), "лишний id");
             });
+
+            Check("загрузка: правила прохождения", () =>
+            {
+                True(data.TryGet("rules", "rules", out var rules), "rules не найдены");
+                Equal("hubReturn", rules.Get("deathMode").Text, "deathMode");
+                Equal(4.0, rules.Get("baseRows").Number, "baseRows");
+                Equal(4.0, rules.Get("tierCount").Number, "tierCount");
+                Equal(3, rules.Get("lootLossOptions").Items.Count, "варианты потери лута");
+            });
         }
 
         private void InheritanceTests()

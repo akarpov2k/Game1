@@ -111,8 +111,22 @@ namespace AnomalyPath.Tests
             return count;
         }
 
+        /// <summary>Путь к данным, переданный раннером (в Unity автопоиск от каталога редактора не работает).</summary>
+        public static string? DataRootOverride { get; set; }
+
         protected string ResolveDataRootForTests()
         {
+            if (!string.IsNullOrEmpty(DataRootOverride) && Directory.Exists(DataRootOverride))
+            {
+                return DataRootOverride!;
+            }
+
+            var fromCurrent = Path.Combine(Environment.CurrentDirectory, "Assets", "Data");
+            if (Directory.Exists(fromCurrent))
+            {
+                return fromCurrent;
+            }
+
             var directory = new DirectoryInfo(AppContext.BaseDirectory);
             while (directory != null)
             {

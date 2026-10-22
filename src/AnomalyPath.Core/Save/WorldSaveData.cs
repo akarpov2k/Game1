@@ -23,6 +23,7 @@ namespace AnomalyPath.Core.Save
         /// <param name="weather">Погода.</param>
         /// <param name="locations">Экземпляры локаций.</param>
         /// <param name="edges">Рёбра переходов.</param>
+        /// <param name="settings">Настройки новой игры или <c>null</c> для старых сейвов.</param>
         public WorldSaveData(
             string startLocationId,
             string currentLocationId,
@@ -35,7 +36,8 @@ namespace AnomalyPath.Core.Save
             double nightStartHour,
             string weather,
             IReadOnlyList<LocationSaveData> locations,
-            IReadOnlyList<EdgeSaveData> edges)
+            IReadOnlyList<EdgeSaveData> edges,
+            NewGameSettingsSaveData? settings = null)
         {
             StartLocationId = startLocationId;
             CurrentLocationId = currentLocationId;
@@ -49,6 +51,7 @@ namespace AnomalyPath.Core.Save
             Weather = weather;
             Locations = locations;
             Edges = edges;
+            Settings = settings;
         }
 
         /// <summary>Стартовая локация.</summary>
@@ -87,6 +90,9 @@ namespace AnomalyPath.Core.Save
         /// <summary>Рёбра переходов.</summary>
         public IReadOnlyList<EdgeSaveData> Edges { get; }
 
+        /// <summary>Настройки новой игры или <c>null</c>.</summary>
+        public NewGameSettingsSaveData? Settings { get; }
+
         /// <summary>Сериализует снимок в JSON-узел.</summary>
         /// <returns>Объект сохранения мира.</returns>
         public JsonValue ToJson()
@@ -116,6 +122,11 @@ namespace AnomalyPath.Core.Save
             }
 
             value.Members["edges"] = edges;
+            if (Settings != null)
+            {
+                value.Members["settings"] = Settings.ToJson();
+            }
+
             return value;
         }
 
@@ -145,6 +156,12 @@ namespace AnomalyPath.Core.Save
 
             var locations = ReadLocations(value, sourcePath);
             var edges = ReadEdges(value, sourcePath);
+            NewGameSettingsSaveData? settings = null;
+            if (value.TryGet("settings", out var settingsValue) && settingsValue.IsObject)
+            {
+                settings = NewGameSettingsSaveData.FromJson(settingsValue, sourcePath);
+            }
+
             return new WorldSaveData(
                 startLocationId,
                 currentLocationId,
@@ -157,7 +174,8 @@ namespace AnomalyPath.Core.Save
                 nightStartHour,
                 weather,
                 locations,
-                edges);
+                edges,
+                settings);
         }
 
         private static IReadOnlyList<LocationSaveData> ReadLocations(

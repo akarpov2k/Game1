@@ -6,6 +6,7 @@ using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Save;
+using AnomalyPath.Core.Session;
 using AnomalyPath.Core.World;
 
 namespace AnomalyPath.Core.Services
@@ -48,7 +49,12 @@ namespace AnomalyPath.Core.Services
                 world.Clock.NightStartHour,
                 WeatherCodec.ToCode(world.Weather),
                 ToLocationData(world.Map),
-                ToEdgeData(world.Map));
+                ToEdgeData(world.Map),
+                state.Settings == null
+                    ? null
+                    : new NewGameSettingsSaveData(
+                        state.Settings.LootLossFactor,
+                        state.Settings.TradeDifficulty));
             var game = new SaveGame(
                 SaveGame.CurrentSchemaVersion,
                 SaveGame.CurrentSaveVersion,
@@ -118,7 +124,10 @@ namespace AnomalyPath.Core.Services
             var player = game.Player == null
                 ? null
                 : PlayerSaveMapper.FromSaveData(game.Player, _items, slot);
-            return new GameState(state, player);
+            var settings = game.World.Settings == null
+                ? null
+                : new NewGameSettings(game.World.Settings.LootLossFactor, game.World.Settings.TradeDifficulty);
+            return new GameState(state, player, settings);
         }
 
         /// <inheritdoc />

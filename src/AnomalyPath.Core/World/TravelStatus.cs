@@ -14,6 +14,9 @@ namespace AnomalyPath.Core.World
         WrongLocation,
 
         /// <summary>Не хватает выносливости.</summary>
-        NotEnoughStamina
+        NotEnoughStamina,
+
+        /// <summary>Переход запрещён во время боя.</summary>
+        InCombat
     }
 }

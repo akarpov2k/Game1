@@ -3,13 +3,13 @@
 Дополнение к [GAME_MANIFEST.md](GAME_MANIFEST.md). Здесь только структура данных: файлы, поля, типы, правила.
 Поведение и баланс — в манифесте. Код читает эти схемы, а не наоборот.
 
-**Статус:** черновик v0.33 (2026-10-22). Соответствует манифесту v0.50.
+**Статус:** черновик v0.34 (2026-10-22). Соответствует манифесту v0.53.
 
 ---
 
-## 0. Что нового в v0.33
+## 0. Что нового в v0.34
 
-Сохранение игрока (v2): `PlayerSave` с предметами, инвентарём, экипировкой и потребностями; `saveVersion = 2`. Сейвы v1 читаются без блока `player`.
+Новая игра: сущность `Loadout` (наборы снаряжения `loadouts/*.json`), поля `GameRules.playerActorId` / `gridWidth` / `needsMax`, настройки `world.settings` (`lootLossFactor`, `tradeDifficulty`).
 
 ### Что было раньше
 
@@ -68,6 +68,7 @@
 | `EconomySettings` | `economy` | единственная запись |
 | `CombatSettings` | `combat` | единственная запись |
 | `GameRules` | `rules` | единственная запись |
+| `Loadout` | `loadout_` | `loadout_scout` |
 | `BalanceSettings` | `balance` | единственная запись |
 | `Topology` | `topology` | единственная запись |
 
@@ -1540,6 +1541,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `weather` | string | `clear`, `rain`, `fog` |
 | `locations` | LocationSave[] | экземпляры локаций |
 | `edges` | EdgeSave[] | рёбра переходов со стоимостью |
+| `settings` | object? | выбранные на старте настройки: `lootLossFactor` (0..1) и `tradeDifficulty` (≥ 0) |
 
 `LocationSave`: `{ instanceId, templateId, seed, background, nodeType, tier, danger, visited, cleared }`.
 
@@ -1594,7 +1596,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `traders` | `[{ actorId, stock: [{ itemId, count }] }]` | текущие запасы торговцев |
 | `time` | `{ day, hours, phase }` | время мира: двигается при переходах и отдыхе |
 | `weather` | string | текущая погода: `clear` / `rain` / `fog`; фаза суток — в `time.phase` (`day` / `night`) |
-| `settings` | object | выбранные на старте настройки прохождения (`deathMode`, `lootLoss`) |
+| `settings` | object | выбранные на старте настройки прохождения (`lootLossFactor`, `tradeDifficulty`) |
 | `stash` | GridContainer? | склад в хабе ❓ |
 
 Правила:
@@ -1619,6 +1621,9 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `insuranceChance` | number | 0..1, шанс, что конкретная вещь не пропадёт при потере ⏸ |
 | `insuranceAppliesTo` | enum | `loot` — только добыча вылазки; `all` — включая снаряжение |
 | `baseRows` | int | строк сетки без рюкзака (принято 4) |
+| `gridWidth` | int | ширина сетки инвентаря (принято 8) |
+| `needsMax` | int | максимум шкал потребностей новой игры |
+| `playerActorId` | string | актёр игрока, откуда берутся стартовые здоровье, ОД и уровень |
 | `tierCount` | int | число тиров (принято 4, запас до 8–10) |
 
 Правило: `GameRules` — данные, а не код; числа меняются без пересборки, а сейв хранит только выбор игрока.
@@ -1802,8 +1807,16 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - `lootLossOptions[].loss` ∈ `none`, `partial`, `all`; у `partial` обязателен `share` ∈ 0..1; у `none` — `share = 0`; у `all` — `share = 1`.
 - `defaultLootLoss` ссылается на существующий вариант.
 - `insuranceChance` ∈ 0..1; при `permadeath` страховка не применяется.
-- `baseRows ≥ 1`, `tierCount ≥ 1`.
-- Сейв хранит выбранные `settings`, которые совпадают с одним из `lootLossOptions` и с `deathMode`.
+- `baseRows ≥ 1`, `gridWidth ≥ 1`, `needsMax ≥ 1`, `tierCount ≥ 1`.
+- `playerActorId` ссылается на существующего актёра.
+- Сейв хранит выбранные `settings`: `lootLossFactor` ∈ 0..1, `tradeDifficulty` ≥ 0.
+
+**Наборы снаряжения**
+
+- `Loadout.items[].itemId` и `Loadout.equipment[].itemId` ссылаются на существующие предметы.
+- `Loadout.items[].count ≥ 1`; неизвестный слот экипировки — ошибка загрузки.
+- Предмет в `equipment` допускает этот слот по своему `equipSlots`.
+- Предметы набора помещаются в стартовую сетку `gridWidth × baseRows`; иначе ошибка данных.
 
 **Генерация и контент**
 
@@ -2645,3 +2658,66 @@ Mods/hardcore_loot/
 ```
 
 Порядок: база загружается первой, затем моды по `priority`. Внутри мода сначала `includes` и `entities` (новые `id`), затем `overrides` — замена совпавших `id`. Мод с большим `priority` перекрывает мод с меньшим. Сломанный мод не загружается целиком и не мешает остальным.
+
+## 21. Наборы снаряжения и новая игра
+
+### 21.1. `Loadout` (данные, вид `loadouts`)
+
+Подготовленный набор для старта новой игры: экипировка и расходники. Игрок выбирает один набор; код только применяет его.
+
+| Поле | Тип | Смысл |
+| --- | --- | --- |
+| `id` | string | `loadout_scout` |
+| `kind` | string | всегда `loadouts` |
+| `nameKey` | string | ключ названия набора |
+| `descriptionKey` | string? | ключ описания |
+| `items` | LoadoutItem[] | предметы, которые кладутся в инвентарь |
+| `equipment` | `{ [slotId]: itemId }` | предметы, которые сразу надеваются |
+
+`LoadoutItem`: `{ itemId, count }`, `count ≥ 1`.
+
+Слоты в `equipment`: `main`, `secondary`, `helmet`, `armor`, `backpack`, `belt`. Предмет обязан допускать этот слот через своё поле `equipSlots` (раздел 10). Предметы из `equipment` в инвентарь не кладутся.
+
+Правила:
+
+- `itemId` из `items` и `equipment` существуют в данных; иначе preflight не проходит.
+- `count ≥ 1`; неизвестный слот — ошибка загрузки.
+- Стартовые предметы обязаны помещаться в сетку `gridWidth × baseRows`; если не помещаются — ошибка данных, а не переполнение.
+- Набор — контент: состав меняется файлом, код не содержит имён предметов.
+
+Пример:
+
+```json
+{
+  "schemaVersion": 1,
+  "kind": "loadouts",
+  "id": "loadout_scout",
+  "nameKey": "loadout.loadout_scout.name",
+  "descriptionKey": "loadout.loadout_scout.description",
+  "items": [
+    { "itemId": "ammo_9x18", "count": 60 },
+    { "itemId": "ammo_545", "count": 30 }
+  ],
+  "equipment": {
+    "main": "wpn_pm",
+    "armor": "itm_armor_jacket",
+    "helmet": "itm_helmet_light"
+  }
+}
+```
+
+### 21.2. Настройки новой игры
+
+Настройки не являются сущностью данных: они выбираются игроком при старте и сохраняются в `world.settings`.
+
+| Поле | Тип | Смысл |
+| --- | --- | --- |
+| `lootLossFactor` | number | коэффициент потери лута при смерти, 0..1; умножает долю выбранного варианта |
+| `tradeDifficulty` | number | коэффициент усложнения торговли, ≥ 0, по умолчанию 1 |
+
+Правила:
+
+- `lootLossFactor` ∈ 0..1, `tradeDifficulty` ≥ 0; иначе ошибка загрузки сейва.
+- Настройки фиксируются при старте и не меняются задним числом.
+- Старые сейвы без `settings` читаются: настройки считаются отсутствующими.
+
