@@ -94,45 +94,51 @@
 
 Следствие: любое поле, которое меняется в игре (убитый враг, снятый лут, износ, флаг события), в данных отсутствует, а в сейве присутствует.
 
-### 2.1. Локализация: `.resx`
+### 2.1. Локализация: JSON-каталоги
 
-Тексты не дублируются в JSON. В данных лежит **ключ**, текст — в ресурсах.
+Тексты не дублируются в JSON сущностей. В данных лежит **ключ**, текст — в каталоге.
 
 **Файлы:**
 
 ```
-Assets/Localization/Resources/Strings.ru.resx
-Assets/Localization/Resources/Strings.en.resx
-Mods/<name>/Localization/Strings.ru.resx
-Mods/<name>/Localization/Strings.en.resx
+Assets/Data/Localization/errors.ru.json      # сообщения ядра: ошибки данных и проверок
+Assets/Data/Localization/errors.en.json
+Assets/Data/Localization/strings.ru.json     # тексты игры: названия, описания, подписи
+Assets/Data/Localization/strings.en.json
+Mods/<name>/Localization/...                 # моды добавляют свои каталоги (раздел 3.8)
 ```
 
-**Формат ключа:** `<вид>.<id>.<поле>`, латиница в нижнем регистре, точки как разделители.
+Формат файла — плоский JSON-объект `{ "ключ": "текст" }` в UTF-8. Значение — только строка; вложенность не поддерживается, остальные поля игнорируются.
+
+**Формат ключа:** `<раздел>.<id>.<поле>`, латиница в нижнем регистре, точки как разделители.
 
 | Сущность | Поле | Пример ключа |
 | --- | --- | --- |
 | `Item` | `nameKey` | `item.wpn_ak74.name` |
 | `Item` | `descriptionKey` | `item.wpn_ak74.desc` |
-| `LocationTemplate` | `titleKey` | `loc.loc_road_01.title` |
+| `LocationTemplate` | `titleKey` | `location.route.highway.title` |
 | `Event` | `titleKey`, `textKey` | `event.evt_dead_courier.text` |
 | `Quest` | `titleKey`, `descriptionKey` | `quest.qst_lost_courier.title` |
-| `Actor` | `nameKey` | `npc.npc_caravan_boss.name` |
+| `Actor` | `nameKey` | `actor.enemy_bandit.name` |
 | `Skill` | `nameKey`, `descriptionKey` | `skill.skill_burst.name` |
 | `DamageType` | `nameKey` | `damage.dmg_bullet.name` |
 | `Rarity` | `nameKey` | `rarity.rar_rare.name` |
 | `Feature` | `nameKey`, `descriptionKey` | `feature.feat_selfloading.name` |
+| `Loadout` | `nameKey`, `descriptionKey` | `loadout.loadout_scout.name` |
+| `GameRules` | `lootLossOptions[].titleKey` | `rules.lootLoss.partial` |
 | `Dialog` | узлы и варианты | `dlg.dlg_caravan_boss.hello` |
 | Интерфейс | — | `ui.inventory.title`, `ui.button.leave` |
 
-Префикс ключа — **вид в единственном числе** (`item`, `loc`, `event`, `quest`, `npc`, `skill`, `damage`, `rarity`, `feature`, `dlg`), даже если `kind` во множественном. Валидатор сверяет префикс с видом сущности.
+Раздел ключа — смысловая группа, а не обязательно вид из `kind`: в данных сейчас `item`, `actor`, `damage`, `location`, `loadout`, `rules`. Валидатор сверяет **наличие** ключа (поля, имя которого заканчивается на `Key`), а не префикс; совпадение префикса с видом — соглашение, которое проверяется на ревью.
 
 **Правила:**
 
 - В данных **нет** полей `name`, `description`, `title`, `text`. Только ключи.
-- Языки: `ru` — основной, `en` — второй. Русский файл — эталон: ключ, которого нет в `ru`, ошибка валидации.
-- Загрузчик: собственный парсер `.resx` (XML) в словарь. Стандартный `ResourceManager` и сателлитные сборки **не используются**: Unity не собирает их для игровых данных, а моды не могут добавлять свои сборки.
-- Порядок разрешения: текущий язык → `en` → сам ключ. Отсутствие перевода не ломает игру, но валидатор помечает расхождение наборов ключей между `ru` и `en`.
-- ❓ Формат `resx` поддерживает `<comment>` и метаданные — используем только `data`/`value`; остальное игнорируется.
+- Языки: `ru` — основной, `en` — второй. Русский каталог — эталон: ключ данных, которого нет в `strings.ru.json`, — **ошибка** проверки данных; отсутствие того же ключа в `strings.en.json` — предупреждение.
+- Отсутствие самого `strings.ru.json` — предупреждение: игра стартует и показывает ключи как есть (так живут фикстуры тестов и минимальные наборы данных).
+- Загрузчик: собственный разбор плоского JSON в словарь (`JsonStringCatalog`), без `ResourceManager` и сателлитных сборок — Unity не собирает их для игровых данных, а моды не могут добавлять свои сборки. `.resx` не используется.
+- Порядок разрешения: текущий язык → `en` → сам ключ (`GameTexts`). Отсутствие перевода не ломает игру.
+- Расхождение наборов ключей между `strings.ru.json` и `strings.en.json` — предупреждение.
 
 ## 3. Файлы данных, каталоги, моды
 
@@ -2730,4 +2736,28 @@ Mods/hardcore_loot/
 - `lootLossFactor` ∈ 0..1, `tradeDifficulty` ≥ 0; иначе ошибка загрузки сейва.
 - Настройки фиксируются при старте и не меняются задним числом.
 - Старые сейвы без `settings` читаются: настройки считаются отсутствующими.
+
+## 22. Ники для новой игры (`nicks`)
+
+Файл `Assets/Data/nicks.json`, вид `nicks`, одна запись с массивом ников:
+
+```json
+{
+  "schemaVersion": 1,
+  "kind": "nicks",
+  "id": "nicks",
+  "names": ["Ворон", "Клинок", "Дым"]
+}
+```
+
+| Поле | Тип | Обязательное | Смысл |
+| --- | --- | --- | --- |
+| `id` | string | да | id записи, `nicks` |
+| `names` | string[] | да | непустой список ников; строки обрезаются по краям |
+
+Правила:
+
+- `names` непуст, каждый элемент — непустая строка; иначе ошибка проверки данных.
+- Случайный ник выбирается детерминированно по seed новой игры (`INicknameGenerator`).
+- Ник игрока хранится в `player.name` сейва; старый сейв без поля читается, ник остаётся пустым.
 

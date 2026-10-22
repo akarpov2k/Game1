@@ -25,6 +25,9 @@ namespace AnomalyPath.Core.Rules
         /// <summary>Страховка распространяется и на снаряжение.</summary>
         public const string InsuranceAll = "all";
 
+        /// <summary>Стартовые деньги, если поле не задано в данных.</summary>
+        public const int DefaultStartingMoney = 1000;
+
         /// <summary>Создаёт правила прохождения.</summary>
         /// <param name="id">Идентификатор записи, всегда <c>rules</c>.</param>
         /// <param name="deathMode">Режим смерти.</param>
@@ -37,6 +40,7 @@ namespace AnomalyPath.Core.Rules
         /// <param name="playerActorId">Актёр игрока для стартовых характеристик.</param>
         /// <param name="gridWidth">Ширина сетки инвентаря.</param>
         /// <param name="needsMax">Максимум шкал потребностей.</param>
+        /// <param name="startingMoney">Деньги на персонаже на старте.</param>
         /// <exception cref="ArgumentException">Строковые поля пусты.</exception>
         /// <exception cref="ArgumentNullException">Список вариантов потери лута не задан.</exception>
         public GameRulesTemplate(
@@ -50,7 +54,8 @@ namespace AnomalyPath.Core.Rules
             int tierCount,
             string playerActorId,
             int gridWidth,
-            int needsMax)
+            int needsMax,
+            int startingMoney = DefaultStartingMoney)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -88,6 +93,7 @@ namespace AnomalyPath.Core.Rules
             PlayerActorId = playerActorId;
             GridWidth = gridWidth;
             NeedsMax = needsMax;
+            StartingMoney = startingMoney;
         }
 
         /// <summary>Идентификатор записи, всегда <c>rules</c>.</summary>
@@ -122,6 +128,9 @@ namespace AnomalyPath.Core.Rules
 
         /// <summary>Максимум шкал потребностей.</summary>
         public int NeedsMax { get; }
+
+        /// <summary>Деньги на персонаже на старте игры.</summary>
+        public int StartingMoney { get; }
 
         /// <summary>Проверяет, известен ли режим смерти.</summary>
         /// <param name="value">Значение поля <c>deathMode</c>.</param>
@@ -215,6 +224,12 @@ namespace AnomalyPath.Core.Rules
                 throw new DataException(path, CoreErrors.RulesRange, "needsMax");
             }
 
+            var startingMoney = DataMap.OptionalInt(value, "startingMoney", DefaultStartingMoney);
+            if (startingMoney < 0)
+            {
+                throw new DataException(path, CoreErrors.RulesRange, "startingMoney");
+            }
+
             return new GameRulesTemplate(
                 id,
                 deathMode,
@@ -226,7 +241,8 @@ namespace AnomalyPath.Core.Rules
                 tierCount,
                 playerActorId,
                 gridWidth,
-                needsMax);
+                needsMax,
+                startingMoney);
         }
 
         private static bool ContainsOption(IReadOnlyList<LootLossOption> options, string id)

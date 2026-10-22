@@ -19,6 +19,8 @@ namespace AnomalyPath.Core.Player
         /// <param name="equipment">Экипировка.</param>
         /// <param name="skills">Выученные скиллы.</param>
         /// <param name="needs">Потребности.</param>
+        /// <param name="name">Ник персонажа; пусто — взять id.</param>
+        /// <param name="money">Деньги на персонаже; по умолчанию 0.</param>
         /// <exception cref="ArgumentException">id пуст или зависимости не заданы.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Числовые значения вне допустимых границ.</exception>
         public PlayerState(
@@ -30,23 +32,27 @@ namespace AnomalyPath.Core.Player
             GridContainer inventory,
             InventoryEquipment equipment,
             IReadOnlyList<string> skills,
-            NeedsState needs)
+            NeedsState needs,
+            string? name = null,
+            int money = 0)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentException("id игрока не задан", nameof(id));
             }
 
-            if (level < 1 || xp < 0 || health < 0 || apMax < 0)
+            if (level < 1 || xp < 0 || health < 0 || apMax < 0 || money < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(level));
             }
 
             Id = id;
+            Name = string.IsNullOrWhiteSpace(name) ? id : name.Trim();
             Level = level;
             Xp = xp;
             Health = health;
             ApMax = apMax;
+            Money = money;
             Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
             Equipment = equipment ?? throw new ArgumentNullException(nameof(equipment));
             Skills = skills ?? throw new ArgumentNullException(nameof(skills));
@@ -55,6 +61,9 @@ namespace AnomalyPath.Core.Player
 
         /// <summary>Идентификатор игрока.</summary>
         public string Id { get; }
+
+        /// <summary>Ник персонажа.</summary>
+        public string Name { get; }
 
         /// <summary>Уровень.</summary>
         public int Level { get; }
@@ -67,6 +76,9 @@ namespace AnomalyPath.Core.Player
 
         /// <summary>Максимум очков действия.</summary>
         public int ApMax { get; }
+
+        /// <summary>Деньги на персонаже.</summary>
+        public int Money { get; }
 
         /// <summary>Сетка инвентаря.</summary>
         public GridContainer Inventory { get; }

@@ -163,6 +163,9 @@ namespace AnomalyPath.Core.Localization
         /// <summary>В наборе переводов не хватает ключа.</summary>
         public const string TranslationMissing = "validation.translation_missing";
 
+        /// <summary>Каталог текстов игры отсутствует.</summary>
+        public const string GameTextsMissing = "validation.game_texts_missing";
+
         /// <summary>Файл не используется ни каталогом, ни коллекциями.</summary>
         public const string UnreachableFile = "validation.unreachable";
 

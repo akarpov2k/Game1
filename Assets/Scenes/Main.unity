@@ -149,6 +149,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 02c5ca47afc2bc044904ddb6dd3c9324, type: 3}
   m_Name: 
   m_EditorClassIdentifier: AnomalyPath.Runtime::AnomalyPath.Runtime.GameScreen
+  spriteCatalog: {fileID: 11400000, guid: 3427e51c16d17a640b1c55677521f2e7, type: 2}
 --- !u!114 &930534038
 MonoBehaviour:
   m_ObjectHideFlags: 0

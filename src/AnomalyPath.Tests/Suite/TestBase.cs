@@ -242,7 +242,9 @@ namespace AnomalyPath.Tests
                 ["catalog.json"] = Catalog("items/a.json"),
                 ["items/a.json"] = Weapon("wpn_a"),
                 ["Localization/errors.ru.json"] = ru,
-                ["Localization/errors.en.json"] = enWithExtra
+                ["Localization/errors.en.json"] = enWithExtra,
+                ["Localization/strings.ru.json"] = "{\"n\":\"Название\"}",
+                ["Localization/strings.en.json"] = "{\"n\":\"Name\"}"
             };
         }
 

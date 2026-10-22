@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da7b963d9867ba941994a4f94dfc2abd, type: 3}
+  m_Name: SpriteCatalog
+  m_EditorClassIdentifier: AnomalyPath.Runtime::AnomalyPath.Runtime.Ui.Art.SpriteCatalog
+  entries:
+  - id: icons/ammo_545
+    value: {fileID: 21300000, guid: 129e44e5648ac0e4ba46995075ab4a27, type: 3}
+  - id: icons/ammo_762x39
+    value: {fileID: 21300000, guid: 95f5c3c3078bb5c4d988c7b4014c6093, type: 3}
+  - id: icons/ammo_762x54
+    value: {fileID: 21300000, guid: 69fc42ece1a8b9f46b137b2e6e69871c, type: 3}
+  - id: icons/ammo_9x18
+    value: {fileID: 21300000, guid: a02d045b1010fd244888df4d3af62db0, type: 3}
+  - id: icons/art_chemical_toxin
+    value: {fileID: 21300000, guid: 384e3a3d052cffa48afc31bd690bd0d8, type: 3}
+  - id: icons/art_electric_spark
+    value: {fileID: 21300000, guid: ed4c8e58ca5e3aa408820cbcfa563f6b, type: 3}
+  - id: icons/art_fire_ember
+    value: {fileID: 21300000, guid: cb3225567fcc9e94cad14a7f87d24840, type: 3}
+  - id: icons/art_gravity_lens
+    value: {fileID: 21300000, guid: e25dbf09d841b414badb41da64008e76, type: 3}
+  - id: icons/itm_armor_exoskeleton
+    value: {fileID: 21300000, guid: 2407931d4c0ca6646bd7556c842159f3, type: 3}
+  - id: icons/itm_armor_jacket
+    value: {fileID: 21300000, guid: 40fbaf5931f3958448d8f6c33414dc67, type: 3}
+  - id: icons/itm_armor_plate
+    value: {fileID: 21300000, guid: 322e23d42d6db0f459bd4083b17b007a, type: 3}
+  - id: icons/itm_backpack_small
+    value: {fileID: 21300000, guid: 29ca1847cb80a224781fb35edea9f797, type: 3}
+  - id: icons/itm_belt_artifact
+    value: {fileID: 21300000, guid: 6f99f28ee9b4549449d252abb5442f53, type: 3}
+  - id: icons/itm_helmet_light
+    value: {fileID: 21300000, guid: 2e33d5dd69bdd314882bfd716c402be0, type: 3}
+  - id: icons/wpn_ak74
+    value: {fileID: 21300000, guid: 367d942d2ec601b4cb30bca1174ced91, type: 3}
+  - id: icons/wpn_akm
+    value: {fileID: 21300000, guid: fe5d2a150994fff41ac06b0d4e251b2e, type: 3}
+  - id: icons/wpn_pm
+    value: {fileID: 21300000, guid: e1effab79ef8f4746affc7aa0c84488f, type: 3}
+  - id: icons/wpn_sv98
+    value: {fileID: 21300000, guid: 8ad6711938d2297458da5fb26c0ebd70, type: 3}
+  - id: bg_hub_settlement
+    value: {fileID: 21300000, guid: 9c2c029ce057e2d498083980275ea8f2, type: 3}
+  - id: bg_interior_room
+    value: {fileID: 21300000, guid: f7a0bc65360dbfc438183cf5f422da59, type: 3}
+  - id: bg_route_forest
+    value: {fileID: 21300000, guid: 1dc54f3907e905749bbc55faa5b2e989, type: 3}
+  - id: bg_route_highway
+    value: {fileID: 21300000, guid: 55abf78903ede3b458fcd69562b0e691, type: 3}
+  - id: bg_route_highway_rain
+    value: {fileID: 21300000, guid: f8b75514eee09564fb750b3f78b9bb5c, type: 3}
+  - id: bg_site_anomaly
+    value: {fileID: 21300000, guid: 59db3b22748934c429b271cdd95038f7, type: 3}
+  - id: bg_site_house
+    value: {fileID: 21300000, guid: d49658c7f016f564aa2f9cefc709bffa, type: 3}
+  - id: backdrops/screen
+    value: {fileID: 21300000, guid: 4733eec4d11c5904084ed6aeceb385be, type: 3}

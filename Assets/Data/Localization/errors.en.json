@@ -52,6 +52,7 @@
   "validation.ok": "Data validation passed: no errors",
   "validation.failed": "Data validation failed: {0} errors, {1} warnings",
   "validation.translation_missing": "Missing translation for key '{0}' in language '{1}'",
+  "validation.game_texts_missing": "Game text catalog is missing: '{0}'",
   "validation.unreachable": "File is not referenced by the catalog or by any collection",
   "error.duplicate_id_files": "Duplicate id '{0}' in kind '{1}': already declared in {2}",
   "error.world_unknown_node_type": "Unknown location role: '{0}'",

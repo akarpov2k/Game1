@@ -96,6 +96,15 @@ namespace AnomalyPath.Tests
                 Equal("actor_player", rules.PlayerActorId, "playerActorId");
                 Equal(3, rules.LootLossOptions.Count, "варианты");
                 Equal("rules", rules.Id, "id");
+                Equal(1000, rules.StartingMoney, "startingMoney по умолчанию");
+            });
+
+            Check("правила: стартовые деньги из данных", () =>
+            {
+                var rules = GameRulesTemplate.FromJson(
+                    JsonParser.Parse(Rules(startingMoney: 2500), "rules"),
+                    "rules");
+                Equal(2500, rules.StartingMoney, "startingMoney");
             });
 
             var invalid = new (string Name, string Json, string Code)[]
@@ -107,6 +116,7 @@ namespace AnomalyPath.Tests
                 ("tierCount 0", Rules(tierCount: 0), CoreErrors.RulesRange),
                 ("gridWidth 0", Rules(gridWidth: 0), CoreErrors.RulesRange),
                 ("needsMax 0", Rules(needsMax: 0), CoreErrors.RulesRange),
+                ("startingMoney -1", Rules(startingMoney: -1), CoreErrors.RulesRange),
                 ("пустой playerActorId", Rules(playerActorId: ""), CoreErrors.MissingStringField),
                 ("insuranceChance 1.5", Rules(insuranceChance: 1.5), CoreErrors.RulesChance),
                 ("неизвестная страховка", Rules(insuranceScope: "unknown"), CoreErrors.RulesUnknownInsuranceScope),
@@ -165,11 +175,12 @@ namespace AnomalyPath.Tests
             double share = 0.5,
             string playerActorId = "actor_player",
             int gridWidth = 8,
-            int needsMax = 100)
+            int needsMax = 100,
+            int startingMoney = 1000)
         {
             var insurance = insuranceChance.ToString(CultureInfo.InvariantCulture);
             var shareText = share.ToString(CultureInfo.InvariantCulture);
-            return $"{{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"{id}\",\"deathMode\":\"{deathMode}\",\"lootLossOptions\":[{{\"id\":\"none\",\"titleKey\":\"t.none\",\"loss\":\"none\",\"share\":0}},{{\"id\":\"partial\",\"titleKey\":\"t.partial\",\"loss\":\"{loss}\",\"share\":{shareText}}},{{\"id\":\"all\",\"titleKey\":\"t.all\",\"loss\":\"all\",\"share\":1}}],\"defaultLootLoss\":\"{defaultLoss}\",\"insuranceChance\":{insurance},\"insuranceAppliesTo\":\"{insuranceScope}\",\"baseRows\":{baseRows},\"tierCount\":{tierCount},\"playerActorId\":\"{playerActorId}\",\"gridWidth\":{gridWidth},\"needsMax\":{needsMax}}}";
+            return $"{{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"{id}\",\"deathMode\":\"{deathMode}\",\"lootLossOptions\":[{{\"id\":\"none\",\"titleKey\":\"t.none\",\"loss\":\"none\",\"share\":0}},{{\"id\":\"partial\",\"titleKey\":\"t.partial\",\"loss\":\"{loss}\",\"share\":{shareText}}},{{\"id\":\"all\",\"titleKey\":\"t.all\",\"loss\":\"all\",\"share\":1}}],\"defaultLootLoss\":\"{defaultLoss}\",\"insuranceChance\":{insurance},\"insuranceAppliesTo\":\"{insuranceScope}\",\"baseRows\":{baseRows},\"tierCount\":{tierCount},\"playerActorId\":\"{playerActorId}\",\"gridWidth\":{gridWidth},\"needsMax\":{needsMax},\"startingMoney\":{startingMoney}}}";
         }
     }
 }

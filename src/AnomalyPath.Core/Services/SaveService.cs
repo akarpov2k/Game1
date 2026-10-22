@@ -28,7 +28,12 @@ namespace AnomalyPath.Core.Services
         }
 
         /// <inheritdoc />
-        public void Save(GameState state, string slot, double playtime = 0, DateTimeOffset? createdAt = null)
+        public void Save(
+            GameState state,
+            string slot,
+            double playtime = 0,
+            DateTimeOffset? createdAt = null,
+            string? title = null)
         {
             if (state == null)
             {
@@ -62,7 +67,8 @@ namespace AnomalyPath.Core.Services
                 playtime,
                 world.Map.Seed,
                 worldData,
-                state.Player == null ? null : PlayerSaveMapper.ToSaveData(state.Player));
+                state.Player == null ? null : PlayerSaveMapper.ToSaveData(state.Player),
+                title);
             _storage.Write(slot, JsonWriter.Write(game.ToJson()));
         }
 
@@ -151,7 +157,10 @@ namespace AnomalyPath.Core.Services
                         game.World.CurrentLocationId,
                         game.World.Day,
                         game.World.Hours,
-                        true));
+                        true,
+                        game.Title,
+                        game.Player?.Level ?? 0,
+                        game.Player?.Money ?? 0));
                 }
                 catch (DataException)
                 {

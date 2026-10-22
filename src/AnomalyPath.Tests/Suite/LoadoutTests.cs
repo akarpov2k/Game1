@@ -6,6 +6,7 @@ using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Di;
 using AnomalyPath.Core.Equipment;
+using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Loadouts;
 using AnomalyPath.Core.Localization;
@@ -33,6 +34,7 @@ namespace AnomalyPath.Tests
             var services = Bootstrap.Build(_dataRoot);
             RepositoryTests(services);
             CreateTests(services);
+            PreviewTests(services);
             ParsingTests();
             ValidatorTests();
         }
@@ -120,12 +122,8 @@ namespace AnomalyPath.Tests
                     services.Resolve<IGameRulesRepository>(),
                     services.Resolve<IWorldGenerator>(),
                     services.Resolve<IActorRepository>(),
-                    new LoadoutRepository(new[] { loadout }),
-                    services.Resolve<IItemRepository>(),
-                    services.Resolve<IInventoryService>(),
-                    services.Resolve<IEquipmentService>(),
-                    services.Resolve<IEquipmentSettings>(),
-                    services.Resolve<IInstanceIdGenerator>());
+                    NewPreviewService(services, new[] { loadout }),
+                    services.Resolve<INicknameGenerator>());
 
                 var error = Throws<DataException>(
                     () => service.Create(42, "loadout_overflow", new NewGameSettings(0.5, 1)),
@@ -149,6 +147,167 @@ namespace AnomalyPath.Tests
                     "настройки");
             });
         }
+
+        private void PreviewTests(ServiceContainer services)
+        {
+            Check("набор: предпросмотр раскладывает оружие, броню и расходники", () =>
+            {
+                var preview = services.Resolve<ILoadoutPreviewService>().Build("loadout_scout");
+                var inventory = services.Resolve<IInventoryService>();
+
+                True(preview.IsComplete, "набор без потерь");
+                Equal("loadout_scout", preview.Loadout.Id, "id набора");
+                Equal(8, preview.Inventory.Width, "ширина сетки");
+                Equal(6, preview.Inventory.Rows, "строки с рюкзаком");
+                Equal("wpn_pm", preview.Equipment.Get(EquipmentSlot.Main)?.ItemId, "оружие");
+                Equal("itm_armor_jacket", preview.Equipment.Get(EquipmentSlot.Armor)?.ItemId, "броня");
+                Equal("itm_belt_artifact", preview.Equipment.Get(EquipmentSlot.Belt)?.ItemId, "пояс");
+                Equal(60, inventory.Count(preview.Inventory, "ammo_9x18"), "патроны 9x18");
+                Equal(30, inventory.Count(preview.Inventory, "ammo_545"), "патроны 5.45");
+            });
+
+            Check("набор: сетка показа содержит все предметы набора как обычные экземпляры", () =>
+            {
+                var preview = services.Resolve<ILoadoutPreviewService>().Build("loadout_rifleman");
+                var inventory = services.Resolve<IInventoryService>();
+
+                True(preview.IsDisplayComplete, "все предметы поместились");
+                Equal(preview.Inventory.Width, preview.Display.Width, "ширина сетки показа");
+                Equal(preview.Inventory.Rows, preview.Display.Rows, "строки сетки показа");
+                Equal(26, preview.Display.UsedCells, "занятые клетки показа");
+                Equal(8, preview.Display.Items.Count, "предметов в показе");
+                True(HasItem(preview.Display, "wpn_ak74"), "автомат как обычный предмет");
+                True(HasItem(preview.Display, "itm_armor_plate"), "броня как обычный предмет");
+                True(HasItem(preview.Display, "itm_belt_artifact"), "пояс как обычный предмет");
+                Equal(120, inventory.Count(preview.Display, "ammo_545"), "патроны 5.45 в показе");
+                Equal(30, inventory.Count(preview.Display, "ammo_9x18"), "патроны 9x18 в показе");
+            });
+
+            Check("набор: показ не подменяет стартовый инвентарь", () =>
+            {
+                var preview = services.Resolve<ILoadoutPreviewService>().Build("loadout_rifleman");
+
+                Equal(2, preview.Inventory.Items.Count, "в стартовом инвентаре только расходники");
+                False(HasItem(preview.Inventory, "wpn_ak74"), "оружие не лежит в стартовом инвентаре");
+                Equal("wpn_ak74", preview.Equipment.Get(EquipmentSlot.Main)?.ItemId, "оружие надето");
+                Equal(7, services.Resolve<ILoadoutPreviewService>().Build("loadout_scout").Display.Items.Count,
+                    "предметов в показе второго набора");
+            });
+
+            Check("набор: предпросмотр повторяем: та же раскладка", () =>
+            {
+                var previews = services.Resolve<ILoadoutPreviewService>();
+                var first = previews.Build("loadout_rifleman");
+                var second = previews.Build("loadout_rifleman");
+
+                Equal(first.Inventory.UsedCells, second.Inventory.UsedCells, "занятые клетки");
+                Equal(first.Inventory.Items.Count, second.Inventory.Items.Count, "экземпляры");
+                for (var index = 0; index < first.Inventory.Items.Count; index++)
+                {
+                    var left = first.Inventory.Items[index];
+                    var right = second.Inventory.Items[index];
+                    Equal(left.ItemId, right.ItemId, "предмет " + index);
+                    Equal(left.X, right.X, "x " + index);
+                    Equal(left.Y, right.Y, "y " + index);
+                }
+            });
+
+            Check("набор: у сетки показа нет лимита ячеек", () =>
+            {
+                var items = new List<LoadoutItem>();
+                for (var index = 0; index < 10; index++)
+                {
+                    items.Add(new LoadoutItem("itm_armor_plate", 1));
+                }
+
+                var loadout = new LoadoutTemplate(
+                    "loadout_heavy",
+                    "n",
+                    null,
+                    items,
+                    new Dictionary<EquipmentSlot, string>());
+                var preview = NewPreviewService(services, new[] { loadout }).Build("loadout_heavy");
+
+                True(!preview.IsComplete, "стартовый инвентарь переполнен");
+                Equal(0, preview.DisplayOverflow.Count, "сетка показа без переполнения");
+                True(preview.Display.Rows > 6, "сетка показа выросла по рядам");
+                Equal(10, preview.Display.Items.Count, "все предметы отрисованы");
+            });
+
+            Check("набор: предпросмотр не падает на переполнении", () =>
+            {
+                var items = new List<LoadoutItem>();
+                for (var index = 0; index < 10; index++)
+                {
+                    items.Add(new LoadoutItem("itm_armor_plate", 1));
+                }
+
+                var loadout = new LoadoutTemplate(
+                    "loadout_overflow",
+                    "n",
+                    null,
+                    items,
+                    new Dictionary<EquipmentSlot, string>());
+                var preview = NewPreviewService(services, new[] { loadout }).Build("loadout_overflow");
+
+                True(!preview.IsComplete, "набор с потерей");
+                True(preview.Overflow.Count > 0, "есть переполнение");
+                Equal(0, preview.Rejected.Count, "слоты");
+            });
+
+            Check("набор: предпросмотр сообщает о неверном слоте", () =>
+            {
+                var equipment = new Dictionary<EquipmentSlot, string>
+                {
+                    [EquipmentSlot.Helmet] = "wpn_pm"
+                };
+                var loadout = new LoadoutTemplate(
+                    "loadout_bad_slot",
+                    "n",
+                    null,
+                    new List<LoadoutItem>(),
+                    equipment);
+                var preview = NewPreviewService(services, new[] { loadout }).Build("loadout_bad_slot");
+
+                Equal(1, preview.Rejected.Count, "отвергнутых");
+                Equal(EquipmentSlot.Helmet, preview.Rejected[0].Key, "слот");
+                Equal("wpn_pm", preview.Rejected[0].Value, "предмет");
+                Equal(0, preview.Overflow.Count, "переполнение");
+            });
+
+            Check("набор: предпросмотр неизвестного набора — ошибка", () =>
+            {
+                var error = Throws<DataException>(
+                    () => services.Resolve<ILoadoutPreviewService>().Build("loadout_missing"),
+                    "набор");
+                Equal(CoreErrors.LoadoutNotFound, error.Code, "код");
+            });
+        }
+
+        private static bool HasItem(GridContainer container, string itemId)
+        {
+            foreach (var item in container.Items)
+            {
+                if (item.ItemId == itemId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static ILoadoutPreviewService NewPreviewService(
+            ServiceContainer services,
+            IEnumerable<LoadoutTemplate> loadouts) =>
+            new LoadoutPreviewService(
+                services.Resolve<IGameRulesRepository>(),
+                new LoadoutRepository(loadouts),
+                services.Resolve<IItemRepository>(),
+                services.Resolve<IInventoryService>(),
+                services.Resolve<IEquipmentService>(),
+                services.Resolve<IEquipmentSettings>(),
+                services.Resolve<IInstanceIdGenerator>());
 
         private void ParsingTests()
         {

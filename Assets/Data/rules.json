@@ -15,5 +15,6 @@
   "gridWidth": 8,
   "needsMax": 100,
   "playerActorId": "actor_player",
+  "startingMoney": 1000,
   "tierCount": 4
 }

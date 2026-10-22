@@ -8,6 +8,7 @@ using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Loadouts;
 using AnomalyPath.Core.Localization;
+using AnomalyPath.Core.Nicks;
 using AnomalyPath.Core.Repositories;
 using AnomalyPath.Core.Rules;
 using AnomalyPath.Core.Templates;
@@ -86,6 +87,7 @@ namespace AnomalyPath.Core.Validation
             }
 
             ValidateTextSets(issues);
+            ValidateGameTexts(issues);
 
             var report = new ValidationReport(Distinct(issues));
             if (!report.IsValid)
@@ -395,6 +397,10 @@ namespace AnomalyPath.Core.Validation
                 {
                     Try(() => LoadoutTemplate.FromJson(resolved, pair.Key), issues);
                 }
+                else if (kind == "nicks")
+                {
+                    Try(() => NicknameCatalogTemplate.FromJson(resolved, pair.Key), issues);
+                }
             }
 
             return entityFiles;
@@ -598,6 +604,111 @@ namespace AnomalyPath.Core.Validation
                         CoreErrors.TranslationMissing,
                         CoreText.Format(CoreErrors.TranslationMissing, key, "ru"),
                         isWarning: true));
+                }
+            }
+        }
+
+        private void ValidateGameTexts(List<ValidationIssue> issues)
+        {
+            var ru = TryReadCatalog(Bootstrap.DefaultGameTextCatalog, issues);
+            if (ru == null)
+            {
+                issues.Add(new ValidationIssue(
+                    Bootstrap.DefaultGameTextCatalog,
+                    CoreErrors.GameTextsMissing,
+                    CoreText.Format(CoreErrors.GameTextsMissing, Bootstrap.DefaultGameTextCatalog),
+                    isWarning: true));
+                return;
+            }
+
+            var en = TryReadCatalog(Bootstrap.FallbackGameTextCatalog, issues);
+
+            foreach (var file in _parsed)
+            {
+                if (file.Key.StartsWith("Localization/", StringComparison.OrdinalIgnoreCase) ||
+                    file.Key.StartsWith("Localization\\", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                foreach (var key in CollectTextKeys(file.Value))
+                {
+                    if (!ru.Contains(key))
+                    {
+                        issues.Add(new ValidationIssue(
+                            file.Key,
+                            CoreErrors.TranslationMissing,
+                            CoreText.Format(CoreErrors.TranslationMissing, key, "ru")));
+                    }
+                    else if (en != null && !en.Contains(key))
+                    {
+                        issues.Add(new ValidationIssue(
+                            file.Key,
+                            CoreErrors.TranslationMissing,
+                            CoreText.Format(CoreErrors.TranslationMissing, key, "en"),
+                            isWarning: true));
+                    }
+                }
+            }
+
+            if (en == null)
+            {
+                return;
+            }
+
+            foreach (var key in ru.Keys)
+            {
+                if (!en.Contains(key))
+                {
+                    issues.Add(new ValidationIssue(
+                        Bootstrap.DefaultGameTextCatalog,
+                        CoreErrors.TranslationMissing,
+                        CoreText.Format(CoreErrors.TranslationMissing, key, "en"),
+                        isWarning: true));
+                }
+            }
+
+            foreach (var key in en.Keys)
+            {
+                if (!ru.Contains(key))
+                {
+                    issues.Add(new ValidationIssue(
+                        Bootstrap.FallbackGameTextCatalog,
+                        CoreErrors.TranslationMissing,
+                        CoreText.Format(CoreErrors.TranslationMissing, key, "ru"),
+                        isWarning: true));
+                }
+            }
+        }
+
+        private static IEnumerable<string> CollectTextKeys(JsonValue value)
+        {
+            if (value.Kind == JsonKind.Object)
+            {
+                foreach (var pair in value.Entries)
+                {
+                    if (pair.Key.EndsWith("Key", StringComparison.Ordinal) &&
+                        pair.Value.Kind == JsonKind.String &&
+                        pair.Value.Text.Length > 0)
+                    {
+                        yield return pair.Value.Text;
+                        continue;
+                    }
+
+                    foreach (var nested in CollectTextKeys(pair.Value))
+                    {
+                        yield return nested;
+                    }
+                }
+            }
+            else if (value.Kind == JsonKind.Array)
+            {
+                foreach (var item in value.Items)
+                {
+                    foreach (var nested in CollectTextKeys(item))
+                    {
+                        yield return nested;
+                    }
                 }
             }
         }

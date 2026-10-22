@@ -11,6 +11,7 @@ namespace AnomalyPath.Core.Save
     {
         /// <summary>Создаёт запись игрока.</summary>
         /// <param name="id">Id игрока.</param>
+        /// <param name="name">Ник персонажа.</param>
         /// <param name="level">Уровень.</param>
         /// <param name="xp">Опыт.</param>
         /// <param name="health">Здоровье.</param>
@@ -20,8 +21,10 @@ namespace AnomalyPath.Core.Save
         /// <param name="equipment">Экипировка.</param>
         /// <param name="skills">Скиллы.</param>
         /// <param name="needs">Потребности.</param>
+        /// <param name="money">Деньги на персонаже; по умолчанию 0.</param>
         public PlayerSaveData(
             string id,
+            string name,
             int level,
             int xp,
             int health,
@@ -30,13 +33,16 @@ namespace AnomalyPath.Core.Save
             InventorySaveData inventory,
             EquipmentSaveData equipment,
             IReadOnlyList<string> skills,
-            NeedsSaveData needs)
+            NeedsSaveData needs,
+            int money = 0)
         {
             Id = id;
+            Name = name ?? string.Empty;
             Level = level;
             Xp = xp;
             Health = health;
             ApMax = apMax;
+            Money = money;
             Items = items;
             Inventory = inventory;
             Equipment = equipment;
@@ -46,6 +52,9 @@ namespace AnomalyPath.Core.Save
 
         /// <summary>Id игрока.</summary>
         public string Id { get; }
+
+        /// <summary>Ник персонажа.</summary>
+        public string Name { get; }
 
         /// <summary>Уровень.</summary>
         public int Level { get; }
@@ -58,6 +67,9 @@ namespace AnomalyPath.Core.Save
 
         /// <summary>Максимум ОД.</summary>
         public int ApMax { get; }
+
+        /// <summary>Деньги на персонаже.</summary>
+        public int Money { get; }
 
         /// <summary>Все экземпляры предметов.</summary>
         public IReadOnlyList<ItemSaveData> Items { get; }
@@ -80,10 +92,12 @@ namespace AnomalyPath.Core.Save
         {
             var value = JsonValue.NewObject();
             value.Members["id"] = JsonValue.FromString(Id);
+            value.Members["name"] = JsonValue.FromString(Name);
             value.Members["level"] = JsonValue.FromNumber(Level);
             value.Members["xp"] = JsonValue.FromNumber(Xp);
             value.Members["health"] = JsonValue.FromNumber(Health);
             value.Members["apMax"] = JsonValue.FromNumber(ApMax);
+            value.Members["money"] = JsonValue.FromNumber(Money);
             var items = JsonValue.NewArray();
             foreach (var item in Items)
             {
@@ -139,6 +153,7 @@ namespace AnomalyPath.Core.Save
 
             return new PlayerSaveData(
                 id,
+                DataMap.OptionalString(value, "name") ?? string.Empty,
                 level,
                 xp,
                 health,
@@ -147,7 +162,8 @@ namespace AnomalyPath.Core.Save
                 InventorySaveData.FromJson(inventoryValue, sourcePath),
                 EquipmentSaveData.FromJson(equipmentValue, sourcePath),
                 ReadSkills(value),
-                NeedsSaveData.FromJson(needsValue, sourcePath));
+                NeedsSaveData.FromJson(needsValue, sourcePath),
+                DataMap.OptionalInt(value, "money", 0));
         }
 
         private static IReadOnlyList<ItemSaveData> ReadItems(JsonValue value, string sourcePath)

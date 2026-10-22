@@ -118,6 +118,10 @@ crashlytics-build.properties
 !tests/**/*.csproj
 !/AnomalyPath.sln
 
+# Исключение из правила [Bb]uild/: это скрипты редактора, а не артефакты сборки
+!Assets/Editor/Build/
+!Assets/Editor/Build/**
+
 # Локальные кэши dotnet и временные проверки
 .nuget/
 .dotnet/

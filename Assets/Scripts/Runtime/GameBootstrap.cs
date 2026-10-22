@@ -20,10 +20,10 @@ namespace AnomalyPath.Runtime
         private bool logReport = true;
 
         /// <summary>Результат проверки данных: отчёт и сервисы.</summary>
-        public PreflightResult Preflight { get; private set; }
+        public PreflightResult Preflight { get; private set; } = null!;
 
         /// <summary>Контейнер сервисов; <c>null</c>, если данные невалидны.</summary>
-        public ServiceContainer Services => Preflight?.Services;
+        public ServiceContainer? Services => Preflight?.Services;
 
         private void Awake()
         {

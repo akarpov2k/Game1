@@ -14,7 +14,13 @@ namespace AnomalyPath.Core.Abstractions
         /// <param name="slot">Имя слота.</param>
         /// <param name="playtime">Наигранное время в секундах.</param>
         /// <param name="createdAt">Дата создания; по умолчанию текущая.</param>
-        void Save(GameState state, string slot, double playtime = 0, DateTimeOffset? createdAt = null);
+        /// <param name="title">Название сохранения, заданное игроком.</param>
+        void Save(
+            GameState state,
+            string slot,
+            double playtime = 0,
+            DateTimeOffset? createdAt = null,
+            string? title = null);
 
         /// <summary>Загружает состояние из слота.</summary>
         /// <param name="slot">Имя слота.</param>

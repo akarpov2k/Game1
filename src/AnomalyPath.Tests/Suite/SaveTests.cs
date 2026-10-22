@@ -129,6 +129,50 @@ namespace AnomalyPath.Tests
                     Equal(state.Clock.Day, slots[0].Day, "день");
                     True(slots[0].IsReadable, "читается");
                     Equal(7.0, slots[0].Playtime, "время");
+                    Equal(0, slots[0].Level, "уровень без игрока");
+                    Equal(0, slots[0].Money, "деньги без игрока");
+                    Equal(string.Empty, slots[0].Title, "название по умолчанию");
+                });
+            });
+
+            Check("сейв: список слотов показывает название, уровень и деньги", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    var service = new SaveService(new FileSaveStorage(root), items);
+                    service.Save(
+                        new GameState(state, NewPlayer(items)),
+                        "slot_1",
+                        5,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero),
+                        "Мой сейв");
+
+                    var slots = service.ListSlots();
+                    Equal(1, slots.Count, "слоты");
+                    Equal("Мой сейв", slots[0].Title, "название");
+                    Equal(3, slots[0].Level, "уровень");
+                    Equal(1500, slots[0].Money, "деньги");
+                });
+            });
+
+            Check("сейв: старый сейв без денег читается с нулём", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(new GameState(state, NewPlayer(items)), "slot_1", 0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var text = File.ReadAllText(storage.GetPath("slot_1"))
+                        .Replace("\"money\": 1500,", string.Empty);
+                    File.WriteAllText(storage.GetPath("slot_1"), text);
+
+                    Equal(0, service.Load("slot_1").Player!.Money, "деньги по умолчанию");
+                    Equal(0, service.ListSlots()[0].Money, "деньги в списке");
                 });
             });
 
@@ -183,6 +227,7 @@ namespace AnomalyPath.Tests
                     Equal(120, restored.Xp, "опыт");
                     Equal(90, restored.Health, "здоровье");
                     Equal(10, restored.ApMax, "ОД");
+                    Equal(1500, restored.Money, "деньги");
                     Equal(80, restored.Needs.Hunger, "сытость");
                     Equal(1, restored.Inventory.Items.Count, "предметов в сетке");
                     var rifle = restored.Inventory.Find("inst_rifle")!;
@@ -239,8 +284,8 @@ namespace AnomalyPath.Tests
                     var service = new SaveService(storage, items);
                     service.Save(new GameState(state, null), "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"))
-                        .Replace("\"schemaVersion\": 2", "\"schemaVersion\": 1")
-                        .Replace("\"saveVersion\": 2", "\"saveVersion\": 1");
+                        .Replace("\"schemaVersion\": 3", "\"schemaVersion\": 1")
+                        .Replace("\"saveVersion\": 3", "\"saveVersion\": 1");
                     File.WriteAllText(storage.GetPath("slot_1"), text);
 
                     True(service.Load("slot_1").Player == null, "игрока нет");
@@ -284,6 +329,14 @@ namespace AnomalyPath.Tests
                 });
             });
 
+            Check("сейв: ячейки экрана сохранения", () =>
+            {
+                Equal("save_1", SaveSlots.Slot(1), "первая");
+                Equal("save_6", SaveSlots.Slot(SaveSlots.SlotCount), "последняя на странице");
+                Equal("save_99", SaveSlots.Slot(99), "слоты не ограничены страницей");
+                Throws<ArgumentOutOfRangeException>(() => SaveSlots.Slot(0), "ноль");
+            });
+
             Check("сейв: недопустимое имя слота", () =>
             {
                 WithSaveRoot(root =>
@@ -315,7 +368,7 @@ namespace AnomalyPath.Tests
                     var service = new SaveService(storage, items);
                     service.Save(new GameState(state, null), "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"));
-                    File.WriteAllText(storage.GetPath("slot_1"), text.Replace("\"schemaVersion\": 2", "\"schemaVersion\": 99"));
+                    File.WriteAllText(storage.GetPath("slot_1"), text.Replace("\"schemaVersion\": 3", "\"schemaVersion\": 99"));
                     var error = Throws<DataException>(() => service.Load("slot_1"), "версия");
                     Equal("error.save_unsupported_version", error.Code, "код");
                 });
@@ -421,7 +474,9 @@ namespace AnomalyPath.Tests
                 grid,
                 equipment,
                 new[] { "skill_test" },
-                new NeedsState(80, 70, 90, 100));
+                new NeedsState(80, 70, 90, 100),
+                "Игрок",
+                1500);
         }
 
         private void WithSaveRoot(Action<string> body)

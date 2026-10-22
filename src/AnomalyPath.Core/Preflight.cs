@@ -56,8 +56,45 @@ namespace AnomalyPath.Core
             }
 
             var report = new DataValidator(source, parsed, syntaxIssues).Validate(out var data);
-            var services = report.IsValid && data != null ? Bootstrap.BuildServices(data) : null;
+            var gameTexts = LoadGameTexts(parsed, syntaxIssues);
+            var services = report.IsValid && data != null ? Bootstrap.BuildServices(data, gameTexts) : null;
             return new PreflightResult(report, services);
+        }
+
+        private static Abstractions.IGameTexts LoadGameTexts(
+            System.Collections.Generic.Dictionary<string, Json.JsonValue> parsed,
+            System.Collections.Generic.List<ValidationIssue> issues)
+        {
+            if (!parsed.TryGetValue(Bootstrap.DefaultGameTextCatalog, out var primary))
+            {
+                return Localization.GameTexts.Empty;
+            }
+
+            Localization.JsonStringCatalog main;
+            try
+            {
+                main = Localization.JsonStringCatalog.FromValue(primary, Bootstrap.DefaultGameTextCatalog);
+            }
+            catch (Data.DataException error)
+            {
+                issues.Add(new ValidationIssue(error.Path, error.Code, error.Reason));
+                return Localization.GameTexts.Empty;
+            }
+
+            Localization.JsonStringCatalog? fallback = null;
+            if (parsed.TryGetValue(Bootstrap.FallbackGameTextCatalog, out var secondary))
+            {
+                try
+                {
+                    fallback = Localization.JsonStringCatalog.FromValue(secondary, Bootstrap.FallbackGameTextCatalog);
+                }
+                catch (Data.DataException error)
+                {
+                    issues.Add(new ValidationIssue(error.Path, error.Code, error.Reason));
+                }
+            }
+
+            return new Localization.GameTexts(main, fallback);
         }
 
         /// <summary>Проверяет папку данных и возвращает только отчёт.</summary>

@@ -18,6 +18,7 @@
     "actors/col_actors.json",
     "loadouts/col_loadouts.json",
     "topology.json",
-    "locations/col_locations.json"
+    "locations/col_locations.json",
+    "nicks.json"
   ]
 }

@@ -1,10 +1,13 @@
 #nullable enable
 using AnomalyPath.Core.Abstractions;
+using AnomalyPath.Core.Character;
 using AnomalyPath.Core.Combat;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Di;
 using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Inventory;
+using AnomalyPath.Core.Localization;
+using AnomalyPath.Core.Nicks;
 using AnomalyPath.Core.Repositories;
 using AnomalyPath.Core.Services;
 using AnomalyPath.Core.Validation;
@@ -19,6 +22,12 @@ namespace AnomalyPath.Core
     {
         /// <summary>Каталог текстов по умолчанию, относительно корня данных.</summary>
         public const string DefaultTextCatalog = "Localization/errors.ru.json";
+
+        /// <summary>Каталог текстов игры на основном языке (русский).</summary>
+        public const string DefaultGameTextCatalog = "Localization/strings.ru.json";
+
+        /// <summary>Каталог текстов игры на втором языке: откат, если ключа нет в основном.</summary>
+        public const string FallbackGameTextCatalog = "Localization/strings.en.json";
 
         /// <summary>Собирает контейнер сервисов из папки данных.</summary>
         /// <param name="dataRoot">Корень данных (в редакторе — <c>Assets/Data</c>).</param>
@@ -37,9 +46,10 @@ namespace AnomalyPath.Core
 
         /// <summary>Строит репозитории и сервисы из уже загруженных данных — без повторного чтения файлов.</summary>
         /// <param name="data">Результат загрузки.</param>
+        /// <param name="texts">Тексты игры; <c>null</c> — пустой каталог, ключи возвращаются как есть.</param>
         /// <returns>Контейнер с зарегистрированными репозиториями и сервисами.</returns>
         /// <exception cref="DataException">Сущность не соответствует схеме.</exception>
-        public static ServiceContainer BuildServices(LoadedData data)
+        public static ServiceContainer BuildServices(LoadedData data, IGameTexts? texts = null)
         {
             var items = ItemRepository.FromLoadedData(data);
             var damageTypes = DamageTypeRepository.FromLoadedData(data);
@@ -53,6 +63,7 @@ namespace AnomalyPath.Core
             var instanceIds = new SequentialInstanceIdGenerator();
             var equipmentSettings = LoadEquipmentSettings(data);
             var rules = GameRulesRepository.FromLoadedData(data);
+            var nicknames = LoadNicknames(data);
 
             var inventory = new InventoryService(items, instanceIds);
             var travel = new TravelService();
@@ -60,6 +71,7 @@ namespace AnomalyPath.Core
 
             var container = new ServiceContainer();
             container.RegisterSingleton<IItemRepository>(items);
+            container.RegisterSingleton<IGameTexts>(texts ?? GameTexts.Empty);
             container.RegisterSingleton<IItemCatalogService>(new ItemCatalogService(items));
             container.RegisterSingleton<IDamageTypeRepository>(damageTypes);
             container.RegisterSingleton<IFormulaRepository>(formulas);
@@ -73,23 +85,30 @@ namespace AnomalyPath.Core
             container.RegisterSingleton<IInventoryService>(inventory);
             container.RegisterSingleton<IEquipmentSettings>(equipmentSettings);
             container.RegisterSingleton<IGameRulesRepository>(rules);
+            container.RegisterSingleton<INicknameGenerator>(nicknames);
             var equipmentService = new EquipmentService(items, inventory);
             container.RegisterSingleton<IEquipmentService>(equipmentService);
+            container.RegisterSingleton<ICharacterActions>(new CharacterActions(items, inventory, equipmentService));
             var wear = new ArmorWearService(items);
             container.RegisterSingleton<IArmorWearService>(wear);
             container.RegisterSingleton<ICombatRandom>(new SeededCombatRandom(1));
             var combatService = new CombatService(items, damageTypes, equipmentService, wear, formulas, combatSettings, balance, new SeededCombatRandom(1), inventory);
             container.RegisterSingleton<ICombatService>(combatService);
-            container.RegisterSingleton<INewGameService>(new NewGameService(
+            var loadoutPreviews = new LoadoutPreviewService(
                 rules,
-                world,
-                actors,
                 loadouts,
                 items,
                 inventory,
                 equipmentService,
                 equipmentSettings,
-                instanceIds));
+                instanceIds);
+            container.RegisterSingleton<ILoadoutPreviewService>(loadoutPreviews);
+            container.RegisterSingleton<INewGameService>(new NewGameService(
+                rules,
+                world,
+                actors,
+                loadoutPreviews,
+                nicknames));
             return container;
         }
 
@@ -111,6 +130,18 @@ namespace AnomalyPath.Core
             return records.Count == 0
                 ? EquipmentSettings.Default
                 : EquipmentSettings.FromJson(records[0], "equipment");
+        }
+
+        private static INicknameGenerator LoadNicknames(LoadedData data)
+        {
+            var records = data.All("nicks");
+            if (records.Count == 0)
+            {
+                return new NicknameGenerator(System.Array.Empty<string>());
+            }
+
+            var template = NicknameCatalogTemplate.FromJson(records[0], "nicks");
+            return new NicknameGenerator(template.Names);
         }
     }
 }

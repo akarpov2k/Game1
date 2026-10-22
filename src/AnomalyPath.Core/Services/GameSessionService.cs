@@ -36,14 +36,19 @@ namespace AnomalyPath.Core.Services
         }
 
         /// <inheritdoc />
-        public void Save(GameSession session, string slot, double playtime = 0, DateTimeOffset? createdAt = null)
+        public void Save(
+            GameSession session,
+            string slot,
+            double playtime = 0,
+            DateTimeOffset? createdAt = null,
+            string? title = null)
         {
             if (session == null)
             {
                 throw new ArgumentNullException(nameof(session));
             }
 
-            _saves.Save(session.State, slot, playtime, createdAt);
+            _saves.Save(session.State, slot, playtime, createdAt, title);
         }
 
         /// <inheritdoc />

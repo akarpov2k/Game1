@@ -78,6 +78,7 @@ namespace AnomalyPath.Core.Save
 
             return new PlayerSaveData(
                 player.Id,
+                player.Name,
                 player.Level,
                 player.Xp,
                 player.Health,
@@ -86,7 +87,8 @@ namespace AnomalyPath.Core.Save
                 new InventorySaveData(player.Inventory.Id, player.Inventory.Width, player.Inventory.Rows, placements),
                 new EquipmentSaveData(player.Equipment.OwnerId, slots, quick, artifacts),
                 player.Skills,
-                new NeedsSaveData(player.Needs.Hunger, player.Needs.Thirst, player.Needs.Sleep, player.Needs.Max));
+                new NeedsSaveData(player.Needs.Hunger, player.Needs.Thirst, player.Needs.Sleep, player.Needs.Max),
+                player.Money);
         }
 
         /// <summary>Восстанавливает игрока из снимка.</summary>
@@ -184,7 +186,9 @@ namespace AnomalyPath.Core.Save
                 inventory,
                 equipment,
                 data.Skills,
-                new NeedsState(data.Needs.Hunger, data.Needs.Thirst, data.Needs.Sleep, data.Needs.Max));
+                new NeedsState(data.Needs.Hunger, data.Needs.Thirst, data.Needs.Sleep, data.Needs.Max),
+                data.Name,
+                data.Money);
         }
 
         private static bool TryPlace(

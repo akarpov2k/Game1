@@ -9,10 +9,10 @@ namespace AnomalyPath.Core.Save
     public sealed class SaveGame
     {
         /// <summary>Поддерживаемая версия схемы сохранения.</summary>
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         /// <summary>Поддерживаемая версия формата сохранения.</summary>
-        public const int CurrentSaveVersion = 2;
+        public const int CurrentSaveVersion = 3;
 
         /// <summary>Создаёт сохранение.</summary>
         /// <param name="schemaVersion">Версия схемы.</param>
@@ -22,6 +22,7 @@ namespace AnomalyPath.Core.Save
         /// <param name="seed">Seed мира.</param>
         /// <param name="world">Снимок мира.</param>
         /// <param name="player">Снимок игрока или <c>null</c> для world-only сейва.</param>
+        /// <param name="title">Название сохранения, заданное игроком.</param>
         public SaveGame(
             int schemaVersion,
             int saveVersion,
@@ -29,7 +30,8 @@ namespace AnomalyPath.Core.Save
             double playtime,
             int seed,
             WorldSaveData world,
-            PlayerSaveData? player = null)
+            PlayerSaveData? player = null,
+            string? title = null)
         {
             SchemaVersion = schemaVersion;
             SaveVersion = saveVersion;
@@ -38,6 +40,7 @@ namespace AnomalyPath.Core.Save
             Seed = seed;
             World = world;
             Player = player;
+            Title = title ?? string.Empty;
         }
 
         /// <summary>Версия схемы.</summary>
@@ -61,6 +64,9 @@ namespace AnomalyPath.Core.Save
         /// <summary>Снимок игрока или <c>null</c>.</summary>
         public PlayerSaveData? Player { get; }
 
+        /// <summary>Название сохранения, заданное игроком; пусто — без названия.</summary>
+        public string Title { get; }
+
         /// <summary>Сериализует сохранение.</summary>
         /// <returns>JSON-объект.</returns>
         public JsonValue ToJson()
@@ -71,6 +77,11 @@ namespace AnomalyPath.Core.Save
             value.Members["createdAt"] = JsonValue.FromString(CreatedAt);
             value.Members["playtime"] = JsonValue.FromNumber(Playtime);
             value.Members["seed"] = JsonValue.FromNumber(Seed);
+            if (Title.Length > 0)
+            {
+                value.Members["title"] = JsonValue.FromString(Title);
+            }
+
             value.Members["world"] = World.ToJson();
             if (Player != null)
             {
@@ -133,7 +144,8 @@ namespace AnomalyPath.Core.Save
                 playtime,
                 seed,
                 WorldSaveData.FromJson(worldValue, sourcePath),
-                player);
+                player,
+                DataMap.OptionalString(value, "title"));
         }
     }
 }
