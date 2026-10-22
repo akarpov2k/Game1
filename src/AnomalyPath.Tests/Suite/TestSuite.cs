@@ -35,6 +35,7 @@ namespace AnomalyPath.Tests
                 new DamageTypeTests(dataRoot),
                 new CombatTests(dataRoot),
                 new WorldTests(dataRoot),
+                new SaveTests(dataRoot),
                 new JsonFormatTests(),
                 new FileFormatTests(),
                 new ValidationErrorTests(dataRoot),

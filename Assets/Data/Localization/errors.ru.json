@@ -72,5 +72,11 @@
   "error.world_clock_hours": "Часы должны быть в диапазоне 0..24",
   "error.world_instance_not_found": "Локация не найдена: '{0}'",
   "error.world_depth": "Маршрут до '{0}' длиннее maxBranchDepth",
-  "error.world_unique_rarity": "Уникальная локация '{0}' должна иметь rarity = unique"
+  "error.world_unique_rarity": "Уникальная локация '{0}' должна иметь rarity = unique",
+  "error.save_slot_invalid": "Некорректное имя слота сохранения: '{0}'",
+  "error.save_not_found": "Слот сохранения не найден: '{0}'",
+  "error.save_unsupported_version": "Версия сохранения {0} не поддерживается (поддерживается до {1})",
+  "error.save_write_failed": "Не удалось записать сохранение: {0}",
+  "error.save_unknown_weather": "Неизвестная погода в сохранении: '{0}'",
+  "error.save_missing_field": "В сохранении отсутствует поле '{0}'"
 }

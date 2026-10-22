@@ -3,18 +3,18 @@
 Дополнение к [GAME_MANIFEST.md](GAME_MANIFEST.md). Здесь только структура данных: файлы, поля, типы, правила.
 Поведение и баланс — в манифесте. Код читает эти схемы, а не наоборот.
 
-**Статус:** черновик v0.31 (2026-10-22). Соответствует манифесту v0.48.
+**Статус:** черновик v0.33 (2026-10-22). Соответствует манифесту v0.50.
 
 ---
 
-## 0. Что нового в v0.31
+## 0. Что нового в v0.33
 
-Слой мира: тип локации переименован в `locationKind` (поле `kind` занято видом сущности), у `Topology` появились `edgeLength`, `initialStamina`, `dayStartHour` и `nightStartHour`.
-
-Маршрут строится на каждую точку интереса отдельно: своя цепочка `route`, свои рёбра. Длина ребра случайна в `edgeLength`, если `Connection.length` не задан.
+Сохранение игрока (v2): `PlayerSave` с предметами, инвентарём, экипировкой и потребностями; `saveVersion = 2`. Сейвы v1 читаются без блока `player`.
 
 ### Что было раньше
 
+- **v0.32:** сохранение мира (v1) — карта, выносливость, время и погода, атомарная запись.
+- **v0.31:** слой мира — `locationKind`, `Topology.edgeLength`, `initialStamina`, день/ночь, независимый маршрут на каждый `site`.
 - **v0.30:** `stamina` вместо `travel`, погода `clear`/`rain`/`fog`, `repeat.cooldownDays`, `EconomySettings.currency`, модификатор `stamina`, прокачка на четыре характеристики.
 - **v0.29:** магазин и перезарядка за ОД, патроны из инвентаря, уровень актёра в меткости, прогрессивный рандом; коэффициент точности оружия, множители дистанции и детерминированный бросок; боевой расчёт из данных; типы урона как сущности; износ брони `ceil(урон / (durabilityFactor × quality × 10))`, `wearFactor` удалён.
 - **v0.21:** износ делил на пулестойкость, материал, качество и запас прочности; `wearFactor` в `equipment.json`.
@@ -1512,7 +1512,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 ## 17. Сейв
 
-Один файл, JSON, в `Application.persistentDataPath`. Корневой объект:
+Один файл, JSON, в `Application.persistentDataPath`. Формат v2 сохраняет **мир и игрока**; сейвы v1 (world-only) читаются: блок `player` в них отсутствует. Запись атомарная: `save.json.tmp` → замена, предыдущая версия остаётся в `save.json.bak`; список слотов строится по файлам `*.json`.
 
 | Поле | Тип | Смысл |
 | --- | --- | --- |
@@ -1521,26 +1521,65 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `createdAt` | string | ISO-8601 |
 | `playtime` | number | секунды |
 | `seed` | int | seed мира |
-| `player` | PlayerState | игрок |
-| `world` | WorldState | мир |
+| `player` | PlayerSave? | игрок; отсутствует в сейве v1 |
+| `world` | SaveWorld | мир |
 
-`PlayerState`:
+`SaveWorld`:
 
 | Поле | Тип | Смысл |
 | --- | --- | --- |
+| `startLocationId` | string | стартовая локация новой игры |
+| `currentLocationId` | string | где игрок сейчас |
+| `stamina` | int | текущая выносливость |
+| `staminaMax` | int | максимум выносливости |
+| `startingStamina` | int | стартовая выносливость мира |
+| `day` | int | день мира |
+| `hours` | number | часы 0..24 |
+| `dayStartHour` | number | порог начала дня |
+| `nightStartHour` | number | порог начала ночи |
+| `weather` | string | `clear`, `rain`, `fog` |
+| `locations` | LocationSave[] | экземпляры локаций |
+| `edges` | EdgeSave[] | рёбра переходов со стоимостью |
+
+`LocationSave`: `{ instanceId, templateId, seed, background, nodeType, tier, danger, visited, cleared }`.
+
+`EdgeSave`: `{ edgeId, fromId, toId, via, length, stamina, hours, oneWay, hidden }`.
+
+Правила:
+
+- `instanceId` уникален в пределах сейва; все `fromId`/`toId` рёбер существуют среди локаций.
+- `currentLocationId` и `startLocationId` существуют среди локаций.
+- Стоимость ребра сохраняется целиком: правка `topology.json` не меняет уже сохранённый мир.
+- Неизвестная погода — ошибка загрузки; неизвестная версия `schemaVersion`/`saveVersion` — ошибка с отказом загрузки.
+
+`PlayerSave`:
+
+| Поле | Тип | Смысл |
+| --- | --- | --- |
+| `id` | string | идентификатор игрока |
 | `level` | int | уровень |
 | `xp` | int | опыт |
 | `health` | int | текущее здоровье |
 | `apMax` | int | максимум ОД |
-| `inventory` | GridContainer | сетка с `ItemInstance[]` |
-| `equipment` | object | раздел 10 |
+| `items` | ItemSave[] | все экземпляры предметов, на которые ссылаются инвентарь и экипировка |
+| `inventory` | InventorySave | сетка и размещения |
+| `equipment` | EquipmentSave | слоты, быстрые слоты и артефакты |
 | `skills` | string[] | выученные скиллы |
-| `modifiers` | Modifier[] | постоянные бонусы от прокачки |
-| `stamina` | `{ current, max }` | выносливость: ресурс перемещения по миру, не боевые ОД; восстанавливается сном в хабе и привалом |
-| `needs` | `{ hunger, thirst, sleep, max }` | потребности: еда, вода, сон; шкалы 0..`max` ⏸ ставки расхода |
-| `position` | `{ locationInstanceId }` | где находится |
+| `needs` | `{ hunger, thirst, sleep, max }` | потребности: еда, вода, сон |
 
-Строки сетки в сейве **не хранятся**: `rows` вычисляется как `GameRules.baseRows + backpack.extraRows`. Единственный источник базового числа — `GameRules` (раздел 17.1).
+`ItemSave`: `{ instanceId, itemId, stack, durability, durabilityMax, variantKey, magazine }`; `null` у необязательных полей.
+
+`InventorySave`: `{ id, width, rows, placements: [{ instanceId, x, y, rotated, overflow }] }`.
+
+`EquipmentSave`: `{ ownerId, slots: [{ slot, instanceId }], quickSlots: string?[], artifacts: string?[] }`.
+
+Правила:
+
+- Предметы хранятся **один раз** в `items`, инвентарь и экипировка ссылаются на `instanceId`.
+- Предмет, которого нет в данных, не теряется: он восстанавливается в переполнении.
+- Если позиция больше не помещается в сетку (изменились габариты или ширина), предмет уходит в переполнение.
+- `stamina` и позиция игрока не дублируются в `PlayerSave`: ими владеет `SaveWorld`.
+- `modifiers` пока не сохраняются: появятся вместе с прокачкой и её модификаторами.
 
 `WorldState`:
 

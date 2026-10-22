@@ -72,5 +72,11 @@
   "error.world_clock_hours": "Hours must be within 0..24",
   "error.world_instance_not_found": "Location not found: '{0}'",
   "error.world_depth": "Route to '{0}' is longer than maxBranchDepth",
-  "error.world_unique_rarity": "Unique location '{0}' must have rarity = unique"
+  "error.world_unique_rarity": "Unique location '{0}' must have rarity = unique",
+  "error.save_slot_invalid": "Invalid save slot name: '{0}'",
+  "error.save_not_found": "Save slot not found: '{0}'",
+  "error.save_unsupported_version": "Save version {0} is not supported (up to {1})",
+  "error.save_write_failed": "Failed to write save: {0}",
+  "error.save_unknown_weather": "Unknown weather in save: '{0}'",
+  "error.save_missing_field": "Save file is missing field '{0}'"
 }

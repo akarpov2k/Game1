@@ -1,6 +1,9 @@
 using System.IO;
 using AnomalyPath.Core;
+using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Di;
+using AnomalyPath.Core.Save;
+using AnomalyPath.Core.Services;
 using AnomalyPath.Core.Validation;
 using UnityEngine;
 
@@ -43,6 +46,10 @@ namespace AnomalyPath.Runtime
             {
                 Debug.Log($"AnomalyPath: {Preflight.Report.Summary}");
             }
+
+            var saveRoot = Path.Combine(Application.persistentDataPath, "Saves");
+            var items = Services!.Resolve<IItemRepository>();
+            Services.RegisterSingleton<ISaveService>(new SaveService(new FileSaveStorage(saveRoot), items));
         }
     }
 }

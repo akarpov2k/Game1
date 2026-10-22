@@ -225,5 +225,23 @@ namespace AnomalyPath.Core.Localization
 
         /// <summary>Уникальная локация должна иметь редкость unique.</summary>
         public const string WorldUniqueRarity = "error.world_unique_rarity";
+
+        /// <summary>Некорректное имя слота сохранения.</summary>
+        public const string SaveSlotInvalid = "error.save_slot_invalid";
+
+        /// <summary>Слот сохранения не найден.</summary>
+        public const string SaveNotFound = "error.save_not_found";
+
+        /// <summary>Версия сохранения не поддерживается.</summary>
+        public const string SaveUnsupportedVersion = "error.save_unsupported_version";
+
+        /// <summary>Сохранение не удалось записать.</summary>
+        public const string SaveWriteFailed = "error.save_write_failed";
+
+        /// <summary>Неизвестная погода в сохранении.</summary>
+        public const string SaveUnknownWeather = "error.save_unknown_weather";
+
+        /// <summary>В сохранении отсутствует обязательное поле.</summary>
+        public const string SaveMissingField = "error.save_missing_field";
     }
 }
