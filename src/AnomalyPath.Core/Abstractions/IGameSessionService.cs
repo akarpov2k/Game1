@@ -45,6 +45,11 @@ namespace AnomalyPath.Core.Abstractions
         /// <returns>Что потеряно, что осталось и что спасла страховка.</returns>
         DeathResult ApplyDeath(GameSession session);
 
+        /// <summary>Завершает бой и применяет его последствия: опыт и лут либо смерть и респавн.</summary>
+        /// <param name="session">Игровая сессия.</param>
+        /// <returns>Результат боя; повторный вызов на завершённом бое ничего не меняет.</returns>
+        CombatOutcome ApplyCombatOutcome(GameSession session);
+
         /// <summary>Рёбра, видимые из текущей локации; в бою список пуст.</summary>
         /// <param name="session">Игровая сессия.</param>
         /// <returns>Видимые рёбра.</returns>
@@ -61,8 +66,14 @@ namespace AnomalyPath.Core.Abstractions
         /// <param name="playerActor">Актёр игрока.</param>
         /// <param name="enemy">Противник.</param>
         /// <param name="distance">Начальная дистанция.</param>
+        /// <param name="scenario">Сценарий боя; <c>null</c> — обычный бой, игрок ходит первым.</param>
         /// <returns><c>true</c>, если бой начат.</returns>
-        bool StartCombat(GameSession session, ActorTemplate playerActor, ActorTemplate enemy, DistanceZone distance);
+        bool StartCombat(
+            GameSession session,
+            ActorTemplate playerActor,
+            ActorTemplate enemy,
+            DistanceZone distance,
+            CombatScenario? scenario = null);
 
         /// <summary>Выполняет атаку текущим участником.</summary>
         /// <param name="session">Игровая сессия.</param>

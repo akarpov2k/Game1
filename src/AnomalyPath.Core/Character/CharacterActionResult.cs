@@ -28,6 +28,18 @@ namespace AnomalyPath.Core.Character
         /// <summary>Магазин пуст.</summary>
         NothingToUnload,
 
+        /// <summary>Магазин уже полон, заряжать нечего.</summary>
+        MagazineFull,
+
+        /// <summary>Предмет — не патроны.</summary>
+        NotAmmo,
+
+        /// <summary>Патроны не подходят к оружию по калибру.</summary>
+        AmmoCaliberMismatch,
+
+        /// <summary>В инвентаре нет патронов подходящего калибра.</summary>
+        NoAmmo,
+
         /// <summary>В данных нет патронов нужного калибра.</summary>
         AmmoTemplateMissing,
     }

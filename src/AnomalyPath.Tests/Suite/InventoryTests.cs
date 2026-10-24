@@ -4,6 +4,7 @@ using AnomalyPath.Core;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Inventory;
+using AnomalyPath.Core.Templates;
 
 namespace AnomalyPath.Tests
 {
@@ -97,6 +98,86 @@ namespace AnomalyPath.Tests
                 Equal(2, grid.Items[0].Stack, "в стопке две штуки");
             });
 
+            Check("инвентарь: новое оружие (запас торговца) получает пустой магазин", () =>
+            {
+                var (service, grid) = NewInventory(4, 4);
+                service.TryAdd(grid, TestData.Rifle, 1, out _);
+                Equal(0, grid.Items[0].MagazineRounds, "магазин пуст");
+            });
+
+            Check("инвентарь: число патронов в магазине переносится при добавлении", () =>
+            {
+                var (service, grid) = NewInventory(4, 4);
+                service.TryAdd(grid, TestData.Rifle, 1, null, null, 5, out _);
+                Equal(5, grid.Items[0].MagazineRounds, "магазин сохранён");
+            });
+
+            Check("инвентарь: TakeAmmo берёт из самой маленькой стопки", () =>
+            {
+                var (service, grid) = NewInventory(8, 8);
+                var template = Template(TestData.AmmoJson);
+                var large = PlaceAmmo(grid, template, 0, 9);
+                var small = PlaceAmmo(grid, template, 1, 2);
+
+                var taken = service.TakeAmmo(grid, "c", 5);
+
+                Equal(5, taken, "взято");
+                Equal(6, large.Stack, "из большой стопки добирали остаток");
+                True(grid.Find(small.InstanceId) == null, "маленькая стопка израсходована");
+                Equal(1, PlacedCount(grid), "осталась одна стопка");
+            });
+
+            Check("инвентарь: TakeAmmo расходует неполную стопку раньше полной", () =>
+            {
+                var (service, grid) = NewInventory(8, 8);
+                var template = Template(TestData.AmmoJson);
+                var full = PlaceAmmo(grid, template, 0, 60);
+                var part = PlaceAmmo(grid, template, 1, 10);
+
+                var taken = service.TakeAmmo(grid, "c", 5);
+
+                Equal(5, taken, "взято");
+                Equal(5, part.Stack, "неполная стопка");
+                Equal(60, full.Stack, "полная стопка не тронута");
+            });
+
+            Check("инвентарь: TakeAmmo не берёт чужой калибр и переполнение", () =>
+            {
+                var (service, grid) = NewInventory(8, 8);
+                var template = Template(TestData.AmmoJson);
+                PlaceAmmo(grid, template, 0, 5);
+                var overflow = new ItemInstance("overflow", TestData.Ammo, 20);
+                grid.AddOverflow(overflow);
+
+                Equal(0, service.TakeAmmo(grid, "other", 3), "чужой калибр");
+                Equal(3, service.TakeAmmo(grid, "c", 3), "свой калибр");
+                Equal(20, overflow.Stack, "переполнение не тронуто");
+            });
+
+            Check("инвентарь: TakeAmmoFrom берёт только из указанной стопки", () =>
+            {
+                var (service, grid) = NewInventory(8, 8);
+                var template = Template(TestData.AmmoJson);
+                var first = PlaceAmmo(grid, template, 0, 5);
+                var second = PlaceAmmo(grid, template, 1, 20);
+
+                var taken = service.TakeAmmoFrom(grid, second.InstanceId, 7);
+
+                Equal(7, taken, "взято");
+                Equal(5, first.Stack, "первая стопка не тронута");
+                Equal(13, second.Stack, "вторая стопка");
+                Equal(0, service.TakeAmmoFrom(grid, second.InstanceId, 0), "нулевой запрос");
+                Equal(0, service.TakeAmmo(grid, "c", 0), "нулевой запрос по калибру");
+            });
+
+            Check("инвентарь: TakeAmmoFrom не берёт из не-патронов", () =>
+            {
+                var (service, grid) = NewInventory(8, 8);
+                service.TryAdd(grid, TestData.Part, 1, out _);
+
+                Equal(0, service.TakeAmmoFrom(grid, grid.Items[0].InstanceId, 1), "не патроны");
+            });
+
             Check("инвентарь: перемещение в свободную клетку", () =>
             {
                 var (service, grid) = NewInventory(4, 4);
@@ -154,6 +235,12 @@ namespace AnomalyPath.Tests
                 True(container.IsRegistered<IInventoryService>(), "зарегистрирован");
                 True(container.IsRegistered<IInstanceIdGenerator>(), "генератор id");
             });
+        }
+        private static ItemInstance PlaceAmmo(GridContainer grid, ItemTemplate template, int x, int count)
+        {
+            var stack = new ItemInstance("ammo_" + x + "_" + count, TestData.Ammo, count);
+            grid.Place(stack, template, x, 0, false);
+            return stack;
         }
     }
 }

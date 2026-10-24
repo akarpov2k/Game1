@@ -51,6 +51,7 @@ namespace AnomalyPath.Tests
                 True(Math.Abs(rules.TradeDifficulty - 1) < 1e-9, "tradeDifficulty");
                 True(Math.Abs(rules.TradeDifficultyMax - 3) < 1e-9, "tradeDifficultyMax");
                 True(Math.Abs(rules.TradeDifficultyStep - 0.1) < 1e-9, "tradeDifficultyStep");
+                True(Math.Abs(rules.RespawnPercent - 0.3) < 1e-9, "respawnPercent");
                 Equal(24, rules.NicknameMaxLength, "nicknameMaxLength");
                 Equal(32, rules.PreviewMaxRows, "previewMaxRows");
                 Equal(6, rules.SavePageSize, "savePageSize");
@@ -98,6 +99,7 @@ namespace AnomalyPath.Tests
                 Equal("actor_player", rules.PlayerActorId, "playerActorId");
                 True(Math.Abs(rules.InsuranceChance - 0.15) < 1e-9, "insuranceChance");
                 True(Math.Abs(rules.InsuranceStep - 0.05) < 1e-9, "insuranceStep");
+                True(Math.Abs(rules.RespawnPercent - 0.3) < 1e-9, "respawnPercent");
                 Equal("rules", rules.Id, "id");
                 Equal(1000, rules.StartingMoney, "startingMoney по умолчанию");
             });
@@ -121,7 +123,10 @@ namespace AnomalyPath.Tests
                 ("пустой playerActorId", Rules(playerActorId: ""), CoreErrors.MissingStringField),
                 ("insuranceChance 1.5", Rules(insuranceChance: 1.5), CoreErrors.RulesChance),
                 ("insuranceChance -0.1", Rules(insuranceChance: -0.1), CoreErrors.RulesChance),
-                ("insuranceStep 0", Rules(insuranceStep: 0), CoreErrors.PositiveValue)
+                ("insuranceStep 0", Rules(insuranceStep: 0), CoreErrors.PositiveValue),
+                ("respawnPercent 0", Rules(respawnPercent: 0), CoreErrors.RulesChance),
+                ("respawnPercent 1.5", Rules(respawnPercent: 1.5), CoreErrors.RulesChance),
+                ("respawnPercent -0.1", Rules(respawnPercent: -0.1), CoreErrors.RulesChance)
             };
 
             foreach (var item in invalid)
@@ -163,11 +168,13 @@ namespace AnomalyPath.Tests
             string playerActorId = "actor_player",
             int gridWidth = 8,
             int needsMax = 100,
-            int startingMoney = 1000)
+            int startingMoney = 1000,
+            double respawnPercent = 0.3)
         {
             var insurance = insuranceChance.ToString(CultureInfo.InvariantCulture);
             var step = insuranceStep.ToString(CultureInfo.InvariantCulture);
-            return $"{{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"{id}\",\"insuranceChance\":{insurance},\"insuranceStep\":{step},\"baseRows\":{baseRows},\"tierCount\":{tierCount},\"playerActorId\":\"{playerActorId}\",\"gridWidth\":{gridWidth},\"needsMax\":{needsMax},\"startingMoney\":{startingMoney},\"tradeDifficulty\":1,\"tradeDifficultyMax\":3,\"tradeDifficultyStep\":0.1,\"nicknameMaxLength\":24,\"previewMaxRows\":32,\"savePageSize\":6}}";
+            var respawn = respawnPercent.ToString(CultureInfo.InvariantCulture);
+            return $"{{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"{id}\",\"insuranceChance\":{insurance},\"insuranceStep\":{step},\"respawnPercent\":{respawn},\"baseRows\":{baseRows},\"tierCount\":{tierCount},\"playerActorId\":\"{playerActorId}\",\"gridWidth\":{gridWidth},\"needsMax\":{needsMax},\"startingMoney\":{startingMoney},\"tradeDifficulty\":1,\"tradeDifficultyMax\":3,\"tradeDifficultyStep\":0.1,\"nicknameMaxLength\":24,\"previewMaxRows\":32,\"savePageSize\":6}}";
         }
     }
 }

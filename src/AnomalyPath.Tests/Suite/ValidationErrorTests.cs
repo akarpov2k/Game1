@@ -16,7 +16,258 @@ namespace AnomalyPath.Tests
 
         public override void Run()
         {
-            ErrorTests(); ErrorBehaviorTests();
+            ErrorTests(); ErrorBehaviorTests(); TraderErrorTests(); QuestErrorTests(); TalentErrorTests();
+        }
+
+        private void TraderErrorTests()
+        {
+            var cases = new (string Name, string Location, string Actor, string Fragment)[]
+            {
+                (
+                    "ошибка: торговец не привязан к хабу",
+                    "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_hub\"," +
+                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"nodeType\":\"hub\"," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]}",
+                    "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"trd_x\",\"type\":\"trader\"," +
+                    "\"nameKey\":\"n\",\"roles\":[\"trader\"],\"trader\":{\"restockHours\":12," +
+                    "\"playerBuyModifier\":1,\"playerSellModifier\":0.5," +
+                    "\"assortment\":[{\"itemId\":\"wpn_x\",\"stock\":1}]}}",
+                    "не привязан ни к одному хабу"),
+                (
+                    "ошибка: торговец привязан не к хабу",
+                    "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_route\"," +
+                    "\"titleKey\":\"t\",\"locationKind\":\"wild\",\"nodeType\":\"route\"," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]," +
+                    "\"traders\":[\"trd_x\"]}",
+                    "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"trd_x\",\"type\":\"trader\"," +
+                    "\"nameKey\":\"n\",\"roles\":[\"trader\"],\"trader\":{\"restockHours\":12," +
+                    "\"playerBuyModifier\":1,\"playerSellModifier\":0.5," +
+                    "\"assortment\":[{\"itemId\":\"wpn_x\",\"stock\":1}]}}",
+                    "небезопасной локации"),
+                (
+                    "ошибка: товар торговца не найден",
+                    "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_hub\"," +
+                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"nodeType\":\"hub\"," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]," +
+                    "\"traders\":[\"trd_x\"]}",
+                    "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"trd_x\",\"type\":\"trader\"," +
+                    "\"nameKey\":\"n\",\"roles\":[\"trader\"],\"trader\":{\"restockHours\":12," +
+                    "\"playerBuyModifier\":1,\"playerSellModifier\":0.5," +
+                    "\"assortment\":[{\"itemId\":\"missing\",\"stock\":1}]}}",
+                    "не найден среди предметов"),
+                (
+                    "ошибка: у торговца нет блока торговли",
+                    "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_hub\"," +
+                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"nodeType\":\"hub\"," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]}",
+                    "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"trd_x\",\"type\":\"trader\"," +
+                    "\"nameKey\":\"n\",\"roles\":[\"trader\"]}",
+                    "нет блока 'trader'"),
+                (
+                    "ошибка: роль торговца у не-торговца",
+                    "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_hub\"," +
+                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"nodeType\":\"hub\"," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]}",
+                    "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"npc_x\",\"type\":\"npc\"," +
+                    "\"nameKey\":\"n\",\"roles\":[\"trader\"]}",
+                    "Роль 'trader' задана"),
+            };
+
+            foreach (var testCase in cases)
+            {
+                Check(testCase.Name, () =>
+                {
+                    WithFixture(
+                        new Dictionary<string, string>
+                        {
+                            ["catalog.json"] = Catalog("actors/a.json", "locations/loc.json"),
+                            ["actors/a.json"] = testCase.Actor,
+                            ["locations/loc.json"] = testCase.Location,
+                        },
+                        root =>
+                        {
+                            var report = Preflight.Run(root).Report;
+                            True(HasIssue(report, "trd_x", testCase.Fragment) ||
+                                 HasIssue(report, "actors/a.json", testCase.Fragment) ||
+                                 HasIssue(report, "loc_hub", testCase.Fragment) ||
+                                 HasIssue(report, "loc_route", testCase.Fragment),
+                                $"нет ошибки: {testCase.Fragment}");
+                        });
+                });
+            }
+        }
+
+        private void QuestErrorTests()
+        {
+            var cases = new (string Name, string Quest, string ExtraFile, string ExtraJson, string Fragment)[]
+            {
+                (
+                    "ошибка: цель квеста — неизвестный предмет",
+                    "{\"schemaVersion\":1,\"kind\":\"quests\",\"id\":\"qst_x\",\"questKind\":\"repeatable\"," +
+                    "\"questType\":\"findItems\",\"titleKey\":\"t\",\"descriptionKey\":\"d\"," +
+                    "\"target\":{\"itemPool\":[\"missing\"],\"itemKinds\":1,\"itemCount\":1," +
+                    "\"npcPool\":[\"enemy_x\"],\"npcCount\":1,\"poolSize\":1,\"minTier\":0,\"maxTier\":2}," +
+                    "\"rewards\":{\"money\":1}}",
+                    "actors/enemy.json",
+                    "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"enemy_x\",\"type\":\"enemy\"," +
+                    "\"nameKey\":\"n\",\"roles\":[\"human\"],\"combat\":{\"tier\":1,\"level\":1," +
+                    "\"health\":10,\"ap\":1,\"xp\":1,\"ai\":\"aggressive\",\"accuracy\":0.5}}",
+                    "не найден"),
+                (
+                    "ошибка: цель квеста — неизвестный актёр",
+                    "{\"schemaVersion\":1,\"kind\":\"quests\",\"id\":\"qst_x\",\"questKind\":\"repeatable\"," +
+                    "\"questType\":\"killMutants\",\"titleKey\":\"t\",\"descriptionKey\":\"d\"," +
+                    "\"target\":{\"count\":1,\"poolSize\":1,\"actorPool\":[\"mutant_missing\"]," +
+                    "\"minTier\":0,\"maxTier\":2},\"rewards\":{\"money\":1}}",
+                    "actors/enemy.json",
+                    "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"enemy_x\",\"type\":\"enemy\"," +
+                    "\"nameKey\":\"n\",\"roles\":[\"mutant\"],\"combat\":{\"tier\":1,\"level\":1," +
+                    "\"health\":10,\"ap\":1,\"xp\":1,\"ai\":\"aggressive\",\"accuracy\":0.5}}",
+                    "Актёр не найден"),
+                (
+                    "ошибка: цель зачистки не точка интереса",
+                    "{\"schemaVersion\":1,\"kind\":\"quests\",\"id\":\"qst_x\",\"questKind\":\"repeatable\"," +
+                    "\"questType\":\"clearLocation\",\"titleKey\":\"t\",\"descriptionKey\":\"d\"," +
+                    "\"target\":{\"locationPool\":[\"loc_route\"],\"minTier\":0,\"maxTier\":2}," +
+                    "\"rewards\":{\"money\":1}}",
+                    "locations/loc_route.json",
+                    "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_route\",\"titleKey\":\"t\"," +
+                    "\"locationKind\":\"wild\",\"nodeType\":\"route\",\"tags\":[\"road\"],\"tier\":1," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]}",
+                    "дикой точкой интереса"),
+                (
+                    "ошибка: пул целей квеста пуст",
+                    "{\"schemaVersion\":1,\"kind\":\"quests\",\"id\":\"qst_x\",\"questKind\":\"repeatable\"," +
+                    "\"questType\":\"killMutants\",\"titleKey\":\"t\",\"descriptionKey\":\"d\"," +
+                    "\"target\":{\"count\":1,\"poolSize\":1,\"minTier\":9,\"maxTier\":9}," +
+                    "\"rewards\":{\"money\":1}}",
+                    "actors/enemy.json",
+                    "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"enemy_x\",\"type\":\"enemy\"," +
+                    "\"nameKey\":\"n\",\"roles\":[\"mutant\"],\"combat\":{\"tier\":1,\"level\":1," +
+                    "\"health\":10,\"ap\":1,\"xp\":1,\"ai\":\"aggressive\",\"accuracy\":0.5}}",
+                    "не дал ни одного кандидата"),
+                (
+                    "ошибка: предмет награды квеста не найден",
+                    "{\"schemaVersion\":1,\"kind\":\"quests\",\"id\":\"qst_x\",\"questKind\":\"repeatable\"," +
+                    "\"questType\":\"killMutants\",\"titleKey\":\"t\",\"descriptionKey\":\"d\"," +
+                    "\"target\":{\"count\":1,\"poolSize\":1,\"minTier\":0,\"maxTier\":2}," +
+                    "\"rewards\":{\"money\":1,\"items\":[{\"itemId\":\"missing\",\"count\":1}]}}",
+                    "actors/enemy.json",
+                    "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"enemy_x\",\"type\":\"enemy\"," +
+                    "\"nameKey\":\"n\",\"roles\":[\"mutant\"],\"combat\":{\"tier\":1,\"level\":1," +
+                    "\"health\":10,\"ap\":1,\"xp\":1,\"ai\":\"aggressive\",\"accuracy\":0.5}}",
+                    "Предмет награды квеста не найден"),
+            };
+
+            foreach (var testCase in cases)
+            {
+                Check(testCase.Name, () =>
+                {
+                    WithFixture(
+                        new Dictionary<string, string>
+                        {
+                            ["catalog.json"] = Catalog("quests/qst_x.json", testCase.ExtraFile),
+                            ["quests/qst_x.json"] = testCase.Quest,
+                            [testCase.ExtraFile] = testCase.ExtraJson,
+                        },
+                        root =>
+                        {
+                            var report = Preflight.Run(root).Report;
+                            True(
+                                HasIssue(report, "qst_x", testCase.Fragment),
+                                $"нет ошибки: {testCase.Fragment}; {Describe(report)}");
+                        });
+                });
+            }
+        }
+
+        private void TalentErrorTests()
+        {
+            var cases = new (string Name, string Talent, string Fragment)[]
+            {
+                (
+                    "ошибка: талант без максимального ранга",
+                    "{\"schemaVersion\":1,\"kind\":\"talents\",\"id\":\"talents\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"nodes\":[{\"id\":\"tal_a\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":0,\"column\":0,\"maxRank\":0,\"requiredPoints\":0," +
+                    "\"effects\":[{\"stat\":\"accuracy\",\"perRank\":0.01}]}]}",
+                    "максимальный ранг"),
+                (
+                    "ошибка: талант без эффектов",
+                    "{\"schemaVersion\":1,\"kind\":\"talents\",\"id\":\"talents\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"nodes\":[{\"id\":\"tal_a\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":0,\"column\":0,\"maxRank\":1,\"requiredPoints\":0," +
+                    "\"effects\":[]}]}",
+                    "нужен хотя бы один эффект"),
+                (
+                    "ошибка: неизвестная характеристика таланта",
+                    "{\"schemaVersion\":1,\"kind\":\"talents\",\"id\":\"talents\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"nodes\":[{\"id\":\"tal_a\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":0,\"column\":0,\"maxRank\":1,\"requiredPoints\":0," +
+                    "\"effects\":[{\"stat\":\"mana\",\"perRank\":1}]}]}",
+                    "Неизвестная характеристика"),
+                (
+                    "ошибка: дробная прибавка целой характеристики",
+                    "{\"schemaVersion\":1,\"kind\":\"talents\",\"id\":\"talents\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"nodes\":[{\"id\":\"tal_a\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":0,\"column\":0,\"maxRank\":1,\"requiredPoints\":0," +
+                    "\"effects\":[{\"stat\":\"apMax\",\"perRank\":1.5}]}]}",
+                    "положительным целым"),
+                (
+                    "ошибка: повторный эффект таланта",
+                    "{\"schemaVersion\":1,\"kind\":\"talents\",\"id\":\"talents\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"nodes\":[{\"id\":\"tal_a\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":0,\"column\":0,\"maxRank\":1,\"requiredPoints\":0," +
+                    "\"effects\":[{\"stat\":\"apMax\",\"perRank\":1},{\"stat\":\"apMax\",\"perRank\":1}]}]}",
+                    "указан дважды"),
+                (
+                    "ошибка: повторный id таланта",
+                    "{\"schemaVersion\":1,\"kind\":\"talents\",\"id\":\"talents\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"nodes\":[{\"id\":\"tal_a\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":0,\"column\":0,\"maxRank\":1,\"requiredPoints\":0," +
+                    "\"effects\":[{\"stat\":\"apMax\",\"perRank\":1}]},{\"id\":\"tal_a\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":1,\"column\":0,\"maxRank\":1,\"requiredPoints\":0," +
+                    "\"effects\":[{\"stat\":\"apMax\",\"perRank\":1}]}]}",
+                    "повторяется"),
+                (
+                    "ошибка: позиция таланта занята",
+                    "{\"schemaVersion\":1,\"kind\":\"talents\",\"id\":\"talents\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"nodes\":[{\"id\":\"tal_a\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":0,\"column\":0,\"maxRank\":1,\"requiredPoints\":0," +
+                    "\"effects\":[{\"stat\":\"apMax\",\"perRank\":1}]},{\"id\":\"tal_b\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":0,\"column\":0,\"maxRank\":1,\"requiredPoints\":0," +
+                    "\"effects\":[{\"stat\":\"apMax\",\"perRank\":1}]}]}",
+                    "уже занята"),
+                (
+                    "ошибка: талант требует больше очков, чем доступно",
+                    "{\"schemaVersion\":1,\"kind\":\"talents\",\"id\":\"talents\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"nodes\":[{\"id\":\"tal_a\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":0,\"column\":0,\"maxRank\":1,\"requiredPoints\":0," +
+                    "\"effects\":[{\"stat\":\"apMax\",\"perRank\":1}]},{\"id\":\"tal_b\",\"titleKey\":\"t\"," +
+                    "\"descriptionKey\":\"d\",\"row\":1,\"column\":0,\"maxRank\":1,\"requiredPoints\":5," +
+                    "\"effects\":[{\"stat\":\"apMax\",\"perRank\":1}]}]}",
+                    "требует 5 вложенных очков"),
+            };
+
+            foreach (var testCase in cases)
+            {
+                Check(testCase.Name, () =>
+                {
+                    WithFixture(
+                        new Dictionary<string, string>
+                        {
+                            ["catalog.json"] = Catalog("talents.json"),
+                            ["talents.json"] = testCase.Talent
+                        },
+                        root =>
+                        {
+                            var report = Preflight.Run(root).Report;
+                            True(
+                                HasIssue(report, "talents", testCase.Fragment),
+                                $"нет ошибки: {testCase.Fragment}; {Describe(report)}");
+                        });
+                });
+            }
         }
 
         private void ErrorBehaviorTests()
@@ -147,6 +398,23 @@ namespace AnomalyPath.Tests
                         ["items/a.json"] = "{ \"kind\":\"items\",\"id\":\"wpn_x\",\"nameKey\":\"n\",\"category\":\"weapon\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\" }",
                     },
                     "без блока weapon"),
+                (
+                    "ошибка: у врага нет опыта",
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("actors/a.json"),
+                        ["actors/a.json"] = "{ \"kind\":\"actors\",\"id\":\"enemy_x\",\"type\":\"enemy\",\"nameKey\":\"n\"," +
+                                             "\"combat\":{\"tier\":1,\"level\":1,\"health\":10,\"ap\":1,\"ai\":\"aggressive\",\"accuracy\":0.5} }",
+                    },
+                    "xp"),
+                (
+                    "ошибка: магазин оружия меньше одного патрона",
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("items/a.json"),
+                        ["items/a.json"] = "{ \"kind\":\"items\",\"id\":\"wpn_x\",\"nameKey\":\"n\",\"category\":\"weapon\",\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"weapon\":{\"classId\":\"w\",\"damageTypeId\":\"dmg_bullet\",\"damage\":1,\"accuracy\":0.5,\"magazine\":0,\"ammoCaliber\":\"c\",\"reloadTime\":1,\"armorPenetration\":0,\"durabilityMax\":10,\"durabilityPerShot\":0.1}}",
+                    },
+                    "вместимость магазина"),
             };
 
             foreach (var testCase in cases)

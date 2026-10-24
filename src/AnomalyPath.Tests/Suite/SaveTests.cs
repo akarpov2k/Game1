@@ -12,6 +12,7 @@ using AnomalyPath.Core.Player;
 using AnomalyPath.Core.Save;
 using AnomalyPath.Core.Services;
 using AnomalyPath.Core.Session;
+using AnomalyPath.Core.Trade;
 using AnomalyPath.Core.World;
 using InventoryEquipment = AnomalyPath.Core.Inventory.Equipment;
 
@@ -103,6 +104,7 @@ namespace AnomalyPath.Tests
                     Equal(state.Clock.Day, loaded.Clock.Day, "день");
                     Equal(state.Clock.Hours, loaded.Clock.Hours, "часы");
                     Equal(state.Weather, loaded.Weather, "погода");
+                    Equal(state.LastHubId, loaded.LastHubId, "последний хаб");
                     Equal(map.Seed, loaded.Map.Seed, "seed");
                     Equal(map.StartLocationId, loaded.Map.StartLocationId, "стартовая локация");
                     Equal(map.Locations.Count, loaded.Map.Locations.Count, "локации");
@@ -198,14 +200,33 @@ namespace AnomalyPath.Tests
                         new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"))
                         .Replace("\"insuranceChance\": 0.4", "\"lootLossFactor\": 0.4")
-                        .Replace("\"schemaVersion\": 4", "\"schemaVersion\": 3")
-                        .Replace("\"saveVersion\": 4", "\"saveVersion\": 3");
+                        .Replace("\"schemaVersion\": 9", "\"schemaVersion\": 3")
+                        .Replace("\"saveVersion\": 9", "\"saveVersion\": 3");
                     File.WriteAllText(storage.GetPath("slot_1"), text);
 
                     var loaded = service.Load("slot_1");
                     Equal(0.4, loaded.Settings!.InsuranceChance, "страховка из старого поля");
                     Equal(1.5, loaded.Settings.TradeDifficulty, "торговля");
                     False(loaded.Settings.Permadeath, "пермасмерть по умолчанию");
+                });
+            });
+
+            Check("сейв: старый сейв без магазина читается как разряженное оружие", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(new GameState(state, NewPlayer(items)), "slot_1", 0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var text = File.ReadAllText(storage.GetPath("slot_1"))
+                        .Replace("\"magazine\": 30", "\"magazine\": null");
+                    File.WriteAllText(storage.GetPath("slot_1"), text);
+
+                    var rifle = service.Load("slot_1").Player!.Inventory.Find("inst_rifle")!;
+                    Equal(0, rifle.MagazineRounds, "старое оружие разряжено");
                 });
             });
 
@@ -245,7 +266,7 @@ namespace AnomalyPath.Tests
                 {
                     var map = generator.Generate(42);
                     var state = WorldState.Start(map);
-                    var player = NewPlayer(items);
+                    var player = NewPlayer(items, 2, new Dictionary<string, int> { ["tal_steady_hand"] = 3 });
                     var service = new SaveService(new FileSaveStorage(root), items);
                     service.Save(
                         new GameState(state, player),
@@ -261,6 +282,8 @@ namespace AnomalyPath.Tests
                     Equal(90, restored.Health, "здоровье");
                     Equal(10, restored.ApMax, "ОД");
                     Equal(1500, restored.Money, "деньги");
+                    Equal(2, restored.TalentPoints, "очки талантов");
+                    Equal(3, restored.GetTalentRank("tal_steady_hand"), "ранг таланта");
                     Equal(80, restored.Needs.Hunger, "сытость");
                     Equal(1, restored.Inventory.Items.Count, "предметов в сетке");
                     var rifle = restored.Inventory.Find("inst_rifle")!;
@@ -272,6 +295,32 @@ namespace AnomalyPath.Tests
                     Equal("wpn_pm", restored.Equipment.Get(EquipmentSlot.Main)!.ItemId, "основное оружие");
                     Equal("wpn_ak74", restored.Equipment.GetQuick(0)!.ItemId, "быстрый слот");
                     Equal("art_fire_ember", restored.Equipment.Artifacts[0]!.ItemId, "артефакт");
+                });
+            });
+
+            Check("сейв: старый сейв без талантов читается с нулём очков", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(
+                        new GameState(state, NewPlayer(items, 2, new Dictionary<string, int> { ["tal_steady_hand"] = 3 })),
+                        "slot_1",
+                        0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var path = storage.GetPath("slot_1");
+                    var game = JsonParser.Parse(File.ReadAllText(path), "slot_1");
+                    var player = game.Get("player");
+                    player.Members.Remove("talentPoints");
+                    player.Members.Remove("talents");
+                    File.WriteAllText(path, JsonWriter.Write(game));
+
+                    var restored = service.Load("slot_1").Player!;
+                    Equal(0, restored.TalentPoints, "очки по умолчанию");
+                    Equal(0, restored.TalentRanks.Count, "ранги по умолчанию");
                 });
             });
 
@@ -317,8 +366,8 @@ namespace AnomalyPath.Tests
                     var service = new SaveService(storage, items);
                     service.Save(new GameState(state, null), "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"))
-                        .Replace("\"schemaVersion\": 4", "\"schemaVersion\": 1")
-                        .Replace("\"saveVersion\": 4", "\"saveVersion\": 1");
+                        .Replace("\"schemaVersion\": 9", "\"schemaVersion\": 1")
+                        .Replace("\"saveVersion\": 9", "\"saveVersion\": 1");
                     File.WriteAllText(storage.GetPath("slot_1"), text);
 
                     True(service.Load("slot_1").Player == null, "игрока нет");
@@ -401,7 +450,7 @@ namespace AnomalyPath.Tests
                     var service = new SaveService(storage, items);
                     service.Save(new GameState(state, null), "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"));
-                    File.WriteAllText(storage.GetPath("slot_1"), text.Replace("\"schemaVersion\": 4", "\"schemaVersion\": 99"));
+                    File.WriteAllText(storage.GetPath("slot_1"), text.Replace("\"schemaVersion\": 9", "\"schemaVersion\": 99"));
                     var error = Throws<DataException>(() => service.Load("slot_1"), "версия");
                     Equal("error.save_unsupported_version", error.Code, "код");
                 });
@@ -501,13 +550,36 @@ namespace AnomalyPath.Tests
                     True(travel.Travel(loaded, edge.EdgeId).Succeeded, "переход");
                 });
             });
+
+            Check("сейв: запас торговца и время пополнения восстанавливаются", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    var game = new GameState(state, NewPlayer(items));
+                    var trader = game.GetOrCreateTrader("trd_hub_smuggler");
+                    trader.SetStock("wpn_pm", 2);
+                    trader.MarkRestocked(12.5);
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(game, "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+
+                    var loaded = service.Load("slot_1");
+                    True(loaded.TryGetTrader("trd_hub_smuggler", out var restored), "торговец в сейве");
+                    Equal(2, restored!.Count("wpn_pm"), "остаток");
+                    Equal(12.5, restored.LastRestockAt, "время пополнения");
+                });
+            });
         }
 
-        private PlayerState NewPlayer(IItemRepository items)
+        private PlayerState NewPlayer(
+            IItemRepository items,
+            int talentPoints = 0,
+            IReadOnlyDictionary<string, int>? talentRanks = null)
         {
             var grid = new GridContainer("player", 8, 4);
-            var rifle = new ItemInstance("inst_rifle", "wpn_ak74", 1, 80, 100, "ak74_variant");
-            rifle.EnsureMagazine(30);
+            var rifle = new ItemInstance("inst_rifle", "wpn_ak74", 1, 80, 100, "ak74_variant", magazine: 30);
             grid.Place(rifle, items.Get("wpn_ak74"), 0, 0, false);
 
             var equipment = new InventoryEquipment("player", 4);
@@ -526,7 +598,9 @@ namespace AnomalyPath.Tests
                 new[] { "skill_test" },
                 new NeedsState(80, 70, 90, 100),
                 "Игрок",
-                1500);
+                1500,
+                talentPoints: talentPoints,
+                talentRanks: talentRanks);
         }
 
         private void WithSaveRoot(Action<string> body)

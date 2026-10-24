@@ -31,6 +31,24 @@ namespace AnomalyPath.Core.Abstractions
             string? variantKey,
             out IReadOnlyList<ItemInstance> overflow);
 
+        /// <summary>Добавляет предметы с заданной прочностью, вариантом и числом патронов в магазине.</summary>
+        /// <param name="container">Целевой контейнер.</param>
+        /// <param name="itemId">Id шаблона предмета.</param>
+        /// <param name="count">Сколько добавить.</param>
+        /// <param name="durability">Прочность; <c>null</c> — взять максимум из шаблона.</param>
+        /// <param name="variantKey">Ключ варианта (редкость, скиллы).</param>
+        /// <param name="magazine">Патроны в магазине; у оружия без значения — пустой магазин.</param>
+        /// <param name="overflow">Экземпляры, которым не хватило места.</param>
+        /// <returns><c>true</c>, если предметы обработаны.</returns>
+        bool TryAdd(
+            GridContainer container,
+            string itemId,
+            int count,
+            int? durability,
+            string? variantKey,
+            int? magazine,
+            out IReadOnlyList<ItemInstance> overflow);
+
         /// <summary>Проверяет, поместятся ли все экземпляры, не меняя контейнер.</summary>
         /// <param name="container">Контейнер.</param>
         /// <param name="items">Экземпляры для проверки.</param>
@@ -58,11 +76,18 @@ namespace AnomalyPath.Core.Abstractions
         /// <returns>Суммарное количество.</returns>
         int Count(GridContainer container, string itemId);
 
-        /// <summary>Берёт патроны указанного калибра: сначала из неполных стаков, потом из полных.</summary>
+        /// <summary>Берёт патроны указанного калибра, начиная с самых маленьких стопок.</summary>
         /// <param name="container">Контейнер.</param>
         /// <param name="caliber">Калибр.</param>
         /// <param name="count">Сколько патронов нужно.</param>
         /// <returns>Сколько удалось взять.</returns>
         int TakeAmmo(GridContainer container, string caliber, int count);
+
+        /// <summary>Берёт патроны из конкретной стопки, не трогая остальные.</summary>
+        /// <param name="container">Контейнер.</param>
+        /// <param name="instanceId">Id стопки патронов.</param>
+        /// <param name="count">Сколько патронов нужно.</param>
+        /// <returns>Сколько удалось взять.</returns>
+        int TakeAmmoFrom(GridContainer container, string instanceId, int count);
     }
 }

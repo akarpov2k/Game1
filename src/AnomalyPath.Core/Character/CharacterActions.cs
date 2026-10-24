@@ -10,7 +10,7 @@ using EquipmentState = AnomalyPath.Core.Inventory.Equipment;
 namespace AnomalyPath.Core.Character
 {
     /// <summary>
-    /// Действия с предметами игрока: надеть и снять предмет, надеть и снять артефакт, разрядить оружие,
+    /// Действия с предметами игрока: надеть и снять предмет, надеть и снять артефакт, зарядить и разрядить оружие,
     /// разобрать и выбросить. Все проверки делаются до изменения состояния, чтобы ошибка ничего не ломала.
     /// </summary>
     public sealed class CharacterActions : ICharacterActions
@@ -66,7 +66,14 @@ namespace AnomalyPath.Core.Character
             equipment.Set(slot, item);
             if (previous != null)
             {
-                _inventory.TryAdd(inventory, previous.ItemId, previous.Stack, previous.Durability, previous.VariantKey, out _);
+                _inventory.TryAdd(
+                    inventory,
+                    previous.ItemId,
+                    previous.Stack,
+                    previous.Durability,
+                    previous.VariantKey,
+                    previous.Magazine,
+                    out _);
             }
 
             return CharacterActionResult.Ok;
@@ -96,7 +103,14 @@ namespace AnomalyPath.Core.Character
             var probe = inventory.Clone();
             foreach (var entry in moving)
             {
-                _inventory.TryAdd(probe, entry.ItemId, entry.Stack, entry.Durability, entry.VariantKey, out var overflow);
+                _inventory.TryAdd(
+                    probe,
+                    entry.ItemId,
+                    entry.Stack,
+                    entry.Durability,
+                    entry.VariantKey,
+                    entry.Magazine,
+                    out var overflow);
                 if (overflow.Count > 0)
                 {
                     return CharacterActionResult.NoRoom;
@@ -111,7 +125,14 @@ namespace AnomalyPath.Core.Character
 
             foreach (var entry in moving)
             {
-                _inventory.TryAdd(inventory, entry.ItemId, entry.Stack, entry.Durability, entry.VariantKey, out _);
+                _inventory.TryAdd(
+                    inventory,
+                    entry.ItemId,
+                    entry.Stack,
+                    entry.Durability,
+                    entry.VariantKey,
+                    entry.Magazine,
+                    out _);
             }
 
             return CharacterActionResult.Ok;
@@ -163,7 +184,14 @@ namespace AnomalyPath.Core.Character
             }
 
             equipment.SetArtifact(index, null);
-            _inventory.TryAdd(inventory, artifact.ItemId, artifact.Stack, artifact.Durability, artifact.VariantKey, out _);
+            _inventory.TryAdd(
+                inventory,
+                artifact.ItemId,
+                artifact.Stack,
+                artifact.Durability,
+                artifact.VariantKey,
+                artifact.Magazine,
+                out _);
             return CharacterActionResult.Ok;
         }
 
@@ -184,7 +212,7 @@ namespace AnomalyPath.Core.Character
                 return CharacterActionResult.NotAWeapon;
             }
 
-            var inMagazine = item.Magazine ?? 0;
+            var inMagazine = item.MagazineRounds;
             if (inMagazine <= 0)
             {
                 return CharacterActionResult.NothingToUnload;
@@ -205,6 +233,96 @@ namespace AnomalyPath.Core.Character
             _inventory.TryAdd(inventory, ammoId, inMagazine, out _);
             item.Magazine = 0;
             rounds = inMagazine;
+            return CharacterActionResult.Ok;
+        }
+
+        /// <inheritdoc />
+        public CharacterActionResult Load(GridContainer inventory, EquipmentState equipment, string instanceId, out int rounds)
+        {
+            Require(inventory, equipment);
+            rounds = 0;
+            var item = FindAnywhere(inventory, equipment, instanceId);
+            if (item == null)
+            {
+                return CharacterActionResult.ItemMissing;
+            }
+
+            var template = _items.Get(item.ItemId);
+            if (template.Weapon == null)
+            {
+                return CharacterActionResult.NotAWeapon;
+            }
+
+            var need = template.Weapon.Magazine - item.MagazineRounds;
+            if (need <= 0)
+            {
+                return CharacterActionResult.MagazineFull;
+            }
+
+            var taken = _inventory.TakeAmmo(inventory, template.Weapon.AmmoCaliber, need);
+            if (taken <= 0)
+            {
+                return CharacterActionResult.NoAmmo;
+            }
+
+            item.Magazine = item.MagazineRounds + taken;
+            rounds = taken;
+            return CharacterActionResult.Ok;
+        }
+
+        /// <inheritdoc />
+        public CharacterActionResult LoadFrom(
+            GridContainer inventory,
+            EquipmentState equipment,
+            string weaponInstanceId,
+            string ammoInstanceId,
+            out int rounds)
+        {
+            Require(inventory, equipment);
+            rounds = 0;
+            var weapon = FindAnywhere(inventory, equipment, weaponInstanceId);
+            if (weapon == null)
+            {
+                return CharacterActionResult.ItemMissing;
+            }
+
+            var weaponTemplate = _items.Get(weapon.ItemId);
+            if (weaponTemplate.Weapon == null)
+            {
+                return CharacterActionResult.NotAWeapon;
+            }
+
+            var ammo = FindInGrid(inventory, ammoInstanceId);
+            if (ammo == null)
+            {
+                return CharacterActionResult.ItemMissing;
+            }
+
+            var ammoTemplate = _items.Get(ammo.ItemId);
+            if (ammoTemplate.Category != ItemCategory.Ammo)
+            {
+                return CharacterActionResult.NotAmmo;
+            }
+
+            if (!string.Equals(ammoTemplate.Caliber, weaponTemplate.Weapon.AmmoCaliber, StringComparison.Ordinal))
+            {
+                return CharacterActionResult.AmmoCaliberMismatch;
+            }
+
+            var need = weaponTemplate.Weapon.Magazine - weapon.MagazineRounds;
+            if (need <= 0)
+            {
+                return CharacterActionResult.MagazineFull;
+            }
+
+            var taken = _inventory.TakeAmmoFrom(inventory, ammoInstanceId, need);
+            if (taken <= 0)
+            {
+                return CharacterActionResult.NoAmmo;
+            }
+
+            weapon.Magazine = weapon.MagazineRounds + taken;
+            rounds = taken;
             return CharacterActionResult.Ok;
         }
 

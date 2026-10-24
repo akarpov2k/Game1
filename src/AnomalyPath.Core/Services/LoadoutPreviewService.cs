@@ -68,7 +68,15 @@ namespace AnomalyPath.Core.Services
                 var durability = template.ArmorDurabilityMax > 0
                     ? template.ArmorDurabilityMax
                     : template.Weapon?.DurabilityMax;
-                var instance = new ItemInstance(_ids.Next(), pair.Value, 1, durability, durability, null);
+                // Стартовое оружие выдаётся заряженным; запас торговца создаётся InventoryService и остаётся разряженным.
+                var instance = new ItemInstance(
+                    _ids.Next(),
+                    pair.Value,
+                    1,
+                    durability,
+                    durability,
+                    null,
+                    template.Weapon?.Magazine);
                 if (!_equipment.TryEquip(equipment, instance, pair.Key, out _))
                 {
                     rejected.Add(new KeyValuePair<EquipmentSlot, string>(pair.Key, pair.Value));

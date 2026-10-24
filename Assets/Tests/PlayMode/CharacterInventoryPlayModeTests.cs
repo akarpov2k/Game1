@@ -62,6 +62,124 @@ namespace AnomalyPath.Tests.PlayMode
             Assert.AreEqual(grid.Width * grid.Rows, cells, "Число клеток должно совпадать с сеткой");
         }
 
+        /// <summary>Патроны, брошенные на надетое оружие, заряжают магазин.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator CharacterInventory_DropAmmoOnEquippedWeapon_LoadsMagazine()
+        {
+            yield return OpenCharacter();
+
+            var screen = Object.FindAnyObjectByType<GameScreen>();
+            Assert.IsNotNull(screen, "GameScreen не найден");
+            var player = screen!.Session!.State.Player!;
+            var weapon = player.Equipment.Get(EquipmentSlot.Main);
+            Assert.IsNotNull(weapon, "В основном слоте нет оружия");
+            Assert.AreEqual(30, weapon!.MagazineRounds, "Стартовое оружие должно быть заряжено");
+            Assert.AreEqual(
+                CharacterActionResult.Ok,
+                screen.Actions.Unload(player.Inventory, player.Equipment, weapon.InstanceId, out var unloaded),
+                "Оружие не разрядилось");
+            Assert.AreEqual(30, unloaded, "Из стартового магазина должно выйти 30 патронов");
+            screen.ShowCharacter();
+            yield return null;
+
+            Assert.AreEqual(0, weapon.MagazineRounds, "Перед зарядкой магазин должен быть пуст");
+            var ammo = FindItem(player.Inventory, "ammo_545");
+            Assert.IsNotNull(ammo, "В инвентаре нет патронов 5.45");
+            var stack = ammo!.Stack;
+            Assert.GreaterOrEqual(stack, 30, "Для зарядки нужно не меньше 30 патронов");
+
+            var ammoObject = GameObject.Find("Item_" + ammo.InstanceId);
+            var slotObject = GameObject.Find("SlotMain");
+            Assert.IsNotNull(ammoObject, "Плашка патронов не создана");
+            Assert.IsNotNull(slotObject, "Слот основного оружия не создан");
+
+            var data = new PointerEventData(EventSystem.current)
+            {
+                position = ScreenCenter((RectTransform)ammoObject!.transform),
+                button = PointerEventData.InputButton.Left
+            };
+            ExecuteEvents.Execute(ammoObject, data, ExecuteEvents.beginDragHandler);
+            data.position = ScreenCenter((RectTransform)slotObject!.transform);
+            ExecuteEvents.Execute(ammoObject, data, ExecuteEvents.dragHandler);
+            ExecuteEvents.Execute(slotObject, data, ExecuteEvents.dropHandler);
+            yield return null;
+
+            Assert.AreEqual(30, weapon.MagazineRounds, "Магазин должен зарядиться до полного");
+            Assert.AreEqual(stack - 30, ammo.Stack, "Из стопки должно уйти ровно 30 патронов");
+        }
+
+        /// <summary>Патроны, брошенные на оружие в сетке, заряжают магазин.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator CharacterInventory_DropAmmoOnWeaponInGrid_LoadsMagazine()
+        {
+            yield return OpenCharacter();
+
+            var screen = Object.FindAnyObjectByType<GameScreen>();
+            Assert.IsNotNull(screen, "GameScreen не найден");
+            var player = screen!.Session!.State.Player!;
+            var equipped = player.Equipment.Get(EquipmentSlot.Main);
+            Assert.IsNotNull(equipped, "В основном слоте нет оружия");
+            Assert.AreEqual(
+                CharacterActionResult.Ok,
+                screen.Actions.Unequip(player.Inventory, player.Equipment, EquipmentSlot.Main),
+                "Оружие не снялось в инвентарь");
+            screen.ShowCharacter();
+            yield return null;
+
+            var weapon = FindItem(player.Inventory, "wpn_ak74");
+            Assert.IsNotNull(weapon, "Оружие не попало в сетку");
+            Assert.AreEqual(30, weapon!.MagazineRounds, "Снятое стартовое оружие должно быть заряжено");
+            Assert.AreEqual(
+                CharacterActionResult.Ok,
+                screen.Actions.Unload(player.Inventory, player.Equipment, weapon.InstanceId, out _),
+                "Оружие не разрядилось");
+            screen.ShowCharacter();
+            yield return null;
+
+            Assert.AreEqual(0, weapon.MagazineRounds, "Перед зарядкой магазин должен быть пуст");
+            var ammo = FindItem(player.Inventory, "ammo_545");
+            Assert.IsNotNull(ammo, "В инвентаре нет патронов 5.45");
+            var stack = ammo!.Stack;
+            Assert.GreaterOrEqual(stack, 30, "Для зарядки нужно не меньше 30 патронов");
+
+            var ammoObject = GameObject.Find("Item_" + ammo.InstanceId);
+            var weaponObject = GameObject.Find("Item_" + weapon.InstanceId);
+            var gridObject = GameObject.Find("InventoryGrid");
+            Assert.IsNotNull(ammoObject, "Плашка патронов не создана");
+            Assert.IsNotNull(weaponObject, "Плашка оружия не создана");
+            Assert.IsNotNull(gridObject, "Нет сетки для сброса");
+
+            var data = new PointerEventData(EventSystem.current)
+            {
+                position = ScreenCenter((RectTransform)ammoObject!.transform),
+                button = PointerEventData.InputButton.Left
+            };
+            ExecuteEvents.Execute(ammoObject, data, ExecuteEvents.beginDragHandler);
+            data.position = ScreenCenter((RectTransform)weaponObject!.transform);
+            ExecuteEvents.Execute(ammoObject, data, ExecuteEvents.dragHandler);
+            ExecuteEvents.Execute(gridObject!, data, ExecuteEvents.dropHandler);
+            yield return null;
+
+            Assert.AreEqual(30, weapon.MagazineRounds, "Магазин должен зарядиться до полного");
+            Assert.AreEqual(stack - 30, ammo.Stack, "Из стопки должно уйти ровно 30 патронов");
+            Assert.IsNotNull(player.Inventory.Find(weapon.InstanceId), "Оружие должно остаться в сетке");
+        }
+
+        private static ItemInstance? FindItem(GridContainer grid, string itemId)
+        {
+            foreach (var item in grid.Items)
+            {
+                if (!item.Overflow && item.ItemId == itemId)
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>Валюта стоит в верхней правой плашке окна инвентаря и равна деньгам игрока.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]

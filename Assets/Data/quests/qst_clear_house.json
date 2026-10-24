@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "quests",
+  "id": "qst_clear_house",
+  "questKind": "repeatable",
+  "questType": "clearLocation",
+  "titleKey": "quest.qst_clear_house.title",
+  "descriptionKey": "quest.qst_clear_house.desc",
+  "difficulty": 1,
+  "cooldownHours": 18,
+  "requirements": { "tier": 1 },
+  "target": {
+    "locationPool": ["loc_site_house"],
+    "minTier": 1,
+    "maxTier": 1
+  },
+  "rewards": { "money": 220 }
+}

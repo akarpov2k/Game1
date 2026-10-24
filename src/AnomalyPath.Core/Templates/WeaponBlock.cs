@@ -11,7 +11,7 @@ namespace AnomalyPath.Core.Templates
         /// <param name="damage">Базовый урон.</param>
         /// <param name="accuracy">Коэффициент точности.</param>
         /// <param name="ignoresDistance">Игнорировать ли штраф дистанции.</param>
-        /// <param name="magazine">Патронов в магазине.</param>
+        /// <param name="magazine">Вместимость магазина.</param>
         /// <param name="ammoCaliber">Калибр.</param>
         /// <param name="reloadTime">Перезарядка в ОД.</param>
         /// <param name="damageTypeId">Тип урона.</param>
@@ -59,7 +59,7 @@ namespace AnomalyPath.Core.Templates
         /// <summary>Игнорирует ли оружие штраф дальней дистанции.</summary>
         public bool IgnoresDistance { get; }
 
-        /// <summary>Патронов в магазине.</summary>
+        /// <summary>Вместимость магазина.</summary>
         public int Magazine { get; }
 
         /// <summary>Калибр.</summary>

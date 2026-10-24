@@ -110,6 +110,55 @@ namespace AnomalyPath.Core.World
         public bool TryGetLocation(string instanceId, out LocationInstance? location) =>
             _locations.TryGetValue(instanceId, out location);
 
+        /// <summary>Проверяет, есть ли локация с таким id экземпляра.</summary>
+        /// <param name="instanceId">Id экземпляра.</param>
+        /// <returns><c>true</c>, если локация есть на карте.</returns>
+        public bool ContainsLocation(string instanceId) => _locations.ContainsKey(instanceId);
+
+        /// <summary>Добавляет локацию на карту, например цель квеста.</summary>
+        /// <param name="location">Экземпляр локации.</param>
+        /// <exception cref="ArgumentNullException">Локация не задана.</exception>
+        /// <exception cref="DataException">Такой id уже есть.</exception>
+        public void AddLocation(LocationInstance location)
+        {
+            if (location == null)
+            {
+                throw new ArgumentNullException(nameof(location));
+            }
+
+            if (_locations.ContainsKey(location.InstanceId))
+            {
+                throw new DataException(location.InstanceId, CoreErrors.DuplicateRepositoryId);
+            }
+
+            _locations[location.InstanceId] = location;
+        }
+
+        /// <summary>Добавляет ребро перехода на карту.</summary>
+        /// <param name="edge">Ребро.</param>
+        /// <exception cref="ArgumentNullException">Ребро не задано.</exception>
+        /// <exception cref="DataException">Такой id уже есть или локация не найдена.</exception>
+        public void AddEdge(WorldEdge edge)
+        {
+            if (edge == null)
+            {
+                throw new ArgumentNullException(nameof(edge));
+            }
+
+            if (_edges.ContainsKey(edge.EdgeId))
+            {
+                throw new DataException(edge.EdgeId, CoreErrors.DuplicateRepositoryId);
+            }
+
+            if (!_locations.ContainsKey(edge.FromId) || !_locations.ContainsKey(edge.ToId))
+            {
+                throw new DataException(edge.EdgeId, CoreErrors.WorldConnectionTarget, edge.ToId);
+            }
+
+            _edges[edge.EdgeId] = edge;
+            _edgeList.Add(edge);
+        }
+
         /// <summary>Ищет ребро по id.</summary>
         /// <param name="edgeId">Id ребра.</param>
         /// <param name="edge">Найденное ребро или <c>null</c>.</param>

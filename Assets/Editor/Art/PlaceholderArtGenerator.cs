@@ -40,6 +40,15 @@ namespace AnomalyPath.Editor.Art
                 WriteBackground(path, background);
             }
 
+            foreach (var portrait in DataArtIds.Portraits())
+            {
+                var name = portrait.Id.StartsWith("portraits/", StringComparison.Ordinal)
+                    ? portrait.Id.Substring("portraits/".Length)
+                    : portrait.Id;
+                var path = Path.Combine(SpriteCatalogBuilder.PortraitsFolder, name + ".png").Replace('\\', '/');
+                WritePortrait(path, portrait);
+            }
+
             var backdropPath = Path.Combine(SpriteCatalogBuilder.BackdropsFolder, ScreenBackdropName + ".png").Replace('\\', '/');
             WriteScreenBackdrop(backdropPath);
 
@@ -145,9 +154,49 @@ namespace AnomalyPath.Editor.Art
             Save(texture, pixels, path);
         }
 
-        private static void WriteScreenBackdrop(string path)
+        private static void WritePortrait(string path, DataArtIds.PortraitId portrait)
         {
-            const int width = 1280;
+            var width = 512;
+            var height = string.Equals(portrait.Mode, "waist", StringComparison.Ordinal) ? 512 : 768;
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            var pixels = new Color32[width * height];
+            var hash = StableHash(portrait.Id);
+            var baseColor = Color.HSVToRGB((hash % 1000) / 1000f, 0.35f, 0.55f);
+            var dark = Color.Lerp(baseColor, Color.black, 0.55f);
+
+            var headRadius = height * 0.075f;
+            var headY = height * (height == 512 ? 0.72f : 0.82f);
+            var shoulderY = height * (height == 512 ? 0.52f : 0.68f);
+            var torsoBottom = height * (height == 512 ? 0.10f : 0.30f);
+            var torsoHalf = width * 0.17f;
+            var centerX = width / 2f;
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var dx = x - centerX;
+                    var inHead = (dx * dx) + ((y - headY) * (y - headY)) <= headRadius * headRadius;
+                    var inTorso = Math.Abs(dx) <= torsoHalf && y >= torsoBottom && y <= shoulderY;
+                    var inLegs = height != 512 &&
+                                 y >= height * 0.04f && y < torsoBottom &&
+                                 ((dx >= -torsoHalf * 0.9f && dx <= -torsoHalf * 0.1f) ||
+                                  (dx >= torsoHalf * 0.1f && dx <= torsoHalf * 0.9f));
+                    if (!inHead && !inTorso && !inLegs)
+                    {
+                        continue;
+                    }
+
+                    var t = (float)y / height;
+                    pixels[(y * width) + x] = Color.Lerp(dark, baseColor, t * 0.8f);
+                }
+            }
+
+            Save(texture, pixels, path);
+        }
+
+        private static void WriteScreenBackdrop(string path)
+        {            const int width = 1280;
             const int height = 720;
             var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
             var top = new Color(0.05f, 0.075f, 0.08f, 1f);
@@ -209,6 +258,8 @@ namespace AnomalyPath.Editor.Art
                     return new Color(0.33f, 0.43f, 0.55f, 1f);
                 case "artifact":
                     return new Color(0.50f, 0.36f, 0.58f, 1f);
+                case "talent":
+                    return new Color(0.50f, 0.46f, 0.28f, 1f);
                 default:
                     return new Color(0.42f, 0.42f, 0.38f, 1f);
             }
@@ -242,6 +293,8 @@ namespace AnomalyPath.Editor.Art
                     return Belt(x, y);
                 case "artifact":
                     return Math.Abs(x - 64) + Math.Abs(y - 64) <= 32;
+                case "talent":
+                    return TalentGlyph(icon.Id, x, y);
                 default:
                     return Circle(x, y);
             }
@@ -303,6 +356,28 @@ namespace AnomalyPath.Editor.Art
 
         private static bool Circle(int x, int y) =>
             ((x - 64) * (x - 64)) + ((y - 64) * (y - 64)) <= 24 * 24;
+
+        private static bool TalentGlyph(string id, int x, int y)
+        {
+            var dx = x - 64;
+            var dy = y - 64;
+            var ax = Math.Abs(dx);
+            var ay = Math.Abs(dy);
+            switch (StableHash(id) % 4)
+            {
+                case 0:
+                    return ax + ay <= 34 && ax + ay >= 18;
+                case 1:
+                    return ((dx * dx) + (dy * dy) <= 34 * 34 && (dx * dx) + (dy * dy) >= 18 * 18) ||
+                           (ax <= 4 && ay <= 34) ||
+                           (ay <= 4 && ax <= 34);
+                case 2:
+                    return (ax <= 8 && ay <= 34) || (ay <= 8 && ax <= 34);
+                default:
+                    return (ax <= 6 && ay <= 34) || (ay <= 6 && ax <= 34) ||
+                           (ax + ay <= 34 && ax + ay >= 18);
+            }
+        }
 
         private static int StableHash(string text)
         {

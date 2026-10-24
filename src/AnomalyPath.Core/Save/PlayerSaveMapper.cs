@@ -88,7 +88,12 @@ namespace AnomalyPath.Core.Save
                 new EquipmentSaveData(player.Equipment.OwnerId, slots, quick, artifacts),
                 player.Skills,
                 new NeedsSaveData(player.Needs.Hunger, player.Needs.Thirst, player.Needs.Sleep, player.Needs.Max),
-                player.Money);
+                player.Money,
+                player.CompletedQuests,
+                player.Unlocks,
+                player.Reputation,
+                player.TalentPoints,
+                player.TalentRanks);
         }
 
         /// <summary>Восстанавливает игрока из снимка.</summary>
@@ -127,6 +132,11 @@ namespace AnomalyPath.Core.Save
                 if (item.Magazine.HasValue)
                 {
                     instance.Magazine = item.Magazine;
+                }
+                else if (items.TryGet(item.ItemId, out var template) && template.Weapon != null)
+                {
+                    // Старые сейвы не хранили магазин: оружие в них считается разряженным.
+                    instance.Magazine = 0;
                 }
 
                 instances[item.InstanceId] = instance;
@@ -188,7 +198,12 @@ namespace AnomalyPath.Core.Save
                 data.Skills,
                 new NeedsState(data.Needs.Hunger, data.Needs.Thirst, data.Needs.Sleep, data.Needs.Max),
                 data.Name,
-                data.Money);
+                data.Money,
+                data.CompletedQuests,
+                data.Unlocks,
+                data.Reputation,
+                data.TalentPoints,
+                data.TalentRanks);
         }
 
         private static bool TryPlace(

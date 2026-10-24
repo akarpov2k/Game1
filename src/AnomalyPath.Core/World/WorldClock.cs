@@ -52,6 +52,9 @@ namespace AnomalyPath.Core.World
         /// <summary>Текущая фаза суток.</summary>
         public TimePhase Phase => Hours >= DayStartHour && Hours < NightStartHour ? TimePhase.Day : TimePhase.Night;
 
+        /// <summary>Абсолютное время мира в часах от начала игры: удобно для интервалов и пополнений.</summary>
+        public double AbsoluteHours => ((Day - 1) * 24) + Hours;
+
         /// <summary>Двигает время вперёд, перенося лишние часы в следующие дни.</summary>
         /// <param name="hours">Сколько часов добавить; не может быть отрицательным.</param>
         /// <exception cref="ArgumentOutOfRangeException">Отрицательное или не число.</exception>

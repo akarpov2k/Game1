@@ -41,6 +41,15 @@ namespace AnomalyPath.Runtime.Ui.Core
         /// <summary>Действия с предметами: надеть, снять, разрядить, разобрать, выбросить.</summary>
         ICharacterActions Actions { get; }
 
+        /// <summary>Торговля: доступность торговцев, ассортимент и сделки.</summary>
+        ITradeService Trade { get; }
+
+        /// <summary>Повторяемые задания: предложения торговцев, взятие и сдача.</summary>
+        IQuestService Quests { get; }
+
+        /// <summary>Прокачка: дерево талантов, очки и ранги.</summary>
+        ITalentService Talents { get; }
+
         /// <summary>Каталог спрайтов: иконки предметов и фоны локаций по id из данных.</summary>
         ISpriteCatalog Sprites { get; }
 
@@ -78,6 +87,17 @@ namespace AnomalyPath.Runtime.Ui.Core
 
         /// <summary>Показать экран персонажа с экипировкой и инвентарём.</summary>
         void ShowCharacter();
+
+        /// <summary>Показать экран торговца.</summary>
+        /// <param name="actorId">Идентификатор торговца.</param>
+        void ShowTrader(string actorId);
+
+        /// <summary>Показать журнал заданий.</summary>
+        /// <param name="traderActorId">Торговец-квестодатель или <c>null</c> для журнала без выдачи.</param>
+        void ShowQuests(string? traderActorId);
+
+        /// <summary>Показать дерево талантов.</summary>
+        void ShowTalents();
 
         /// <summary>Показать информационный экран.</summary>
         /// <param name="title">Заголовок.</param>

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "quests",
+  "collection": true,
+  "id": "col_quests",
+  "entries": [
+    "quests/qst_clear_house.json",
+    "quests/qst_clear_anomaly.json",
+    "quests/qst_kill_mutants.json",
+    "quests/qst_gather_artifacts.json",
+    "quests/qst_find_weapons.json",
+    "quests/qst_find_armor.json"
+  ]
+}

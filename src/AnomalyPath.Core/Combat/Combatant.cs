@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using AnomalyPath.Core.Inventory;
+using AnomalyPath.Core.Talents;
 using EquipmentState = AnomalyPath.Core.Inventory.Equipment;
 
 namespace AnomalyPath.Core.Combat
@@ -11,15 +12,19 @@ namespace AnomalyPath.Core.Combat
         /// <summary>Создаёт участника боя из шаблона.</summary>
         /// <param name="template">Актёр.</param>
         /// <param name="equipment">Экипировка игрока, если есть.</param>
+        /// <param name="modifiers">Бонусы талантов игрока; <c>null</c> — без бонусов.</param>
         /// <exception cref="System.ArgumentNullException">Шаблон не передан.</exception>
-        public Combatant(ActorTemplate template, EquipmentState? equipment = null)
+        public Combatant(ActorTemplate template, EquipmentState? equipment = null, TalentModifiers? modifiers = null)
         {
             Template = template ?? throw new System.ArgumentNullException(nameof(template));
             Equipment = equipment;
-            MaxHealth = template.Combat?.Health ?? 0;
+            var bonus = modifiers ?? TalentModifiers.None;
+            MaxHealth = (template.Combat?.Health ?? 0) + bonus.HealthMax;
             Health = MaxHealth;
-            MaxAp = template.Combat?.Ap ?? 0;
+            MaxAp = (template.Combat?.Ap ?? 0) + bonus.ApMax;
             Ap = MaxAp;
+            AccuracyBonus = bonus.Accuracy;
+            ApRestoreBonus = bonus.ApRestore;
         }
 
         /// <summary>Актёр.</summary>
@@ -39,6 +44,12 @@ namespace AnomalyPath.Core.Combat
 
         /// <summary>Максимум ОД.</summary>
         public int MaxAp { get; }
+
+        /// <summary>Бонус меткости от талантов.</summary>
+        public double AccuracyBonus { get; }
+
+        /// <summary>Бонус восстановления ОД за ход от талантов.</summary>
+        public int ApRestoreBonus { get; }
 
         /// <summary>Уровень актёра.</summary>
         public int Level => Template.Combat?.Level ?? 1;

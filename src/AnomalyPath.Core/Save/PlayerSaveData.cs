@@ -22,6 +22,11 @@ namespace AnomalyPath.Core.Save
         /// <param name="skills">Скиллы.</param>
         /// <param name="needs">Потребности.</param>
         /// <param name="money">Деньги на персонаже; по умолчанию 0.</param>
+        /// <param name="completedQuests">Завершённые квесты.</param>
+        /// <param name="unlocks">Полученные открытия.</param>
+        /// <param name="reputation">Репутация по фракциям.</param>
+        /// <param name="talentPoints">Свободные очки талантов; по умолчанию 0.</param>
+        /// <param name="talentRanks">Ранги талантов по id.</param>
         public PlayerSaveData(
             string id,
             string name,
@@ -34,7 +39,12 @@ namespace AnomalyPath.Core.Save
             EquipmentSaveData equipment,
             IReadOnlyList<string> skills,
             NeedsSaveData needs,
-            int money = 0)
+            int money = 0,
+            IReadOnlyList<string>? completedQuests = null,
+            IReadOnlyList<string>? unlocks = null,
+            IReadOnlyDictionary<string, int>? reputation = null,
+            int talentPoints = 0,
+            IReadOnlyDictionary<string, int>? talentRanks = null)
         {
             Id = id;
             Name = name ?? string.Empty;
@@ -43,11 +53,16 @@ namespace AnomalyPath.Core.Save
             Health = health;
             ApMax = apMax;
             Money = money;
+            TalentPoints = talentPoints;
             Items = items;
             Inventory = inventory;
             Equipment = equipment;
             Skills = skills;
             Needs = needs;
+            CompletedQuests = completedQuests ?? new List<string>();
+            Unlocks = unlocks ?? new List<string>();
+            Reputation = reputation ?? new Dictionary<string, int>();
+            TalentRanks = talentRanks ?? new Dictionary<string, int>();
         }
 
         /// <summary>Id игрока.</summary>
@@ -71,6 +86,9 @@ namespace AnomalyPath.Core.Save
         /// <summary>Деньги на персонаже.</summary>
         public int Money { get; }
 
+        /// <summary>Свободные очки талантов.</summary>
+        public int TalentPoints { get; }
+
         /// <summary>Все экземпляры предметов.</summary>
         public IReadOnlyList<ItemSaveData> Items { get; }
 
@@ -86,6 +104,18 @@ namespace AnomalyPath.Core.Save
         /// <summary>Потребности.</summary>
         public NeedsSaveData Needs { get; }
 
+        /// <summary>Завершённые квесты.</summary>
+        public IReadOnlyList<string> CompletedQuests { get; }
+
+        /// <summary>Полученные открытия.</summary>
+        public IReadOnlyList<string> Unlocks { get; }
+
+        /// <summary>Репутация по фракциям.</summary>
+        public IReadOnlyDictionary<string, int> Reputation { get; }
+
+        /// <summary>Вложенные ранги талантов по идентификатору.</summary>
+        public IReadOnlyDictionary<string, int> TalentRanks { get; }
+
         /// <summary>Сериализует игрока.</summary>
         /// <returns>JSON-объект.</returns>
         public JsonValue ToJson()
@@ -98,6 +128,7 @@ namespace AnomalyPath.Core.Save
             value.Members["health"] = JsonValue.FromNumber(Health);
             value.Members["apMax"] = JsonValue.FromNumber(ApMax);
             value.Members["money"] = JsonValue.FromNumber(Money);
+            value.Members["talentPoints"] = JsonValue.FromNumber(TalentPoints);
             var items = JsonValue.NewArray();
             foreach (var item in Items)
             {
@@ -115,7 +146,34 @@ namespace AnomalyPath.Core.Save
 
             value.Members["skills"] = skills;
             value.Members["needs"] = Needs.ToJson();
+            value.Members["quests"] = ToArray(CompletedQuests);
+            value.Members["unlocks"] = ToArray(Unlocks);
+            var reputation = JsonValue.NewObject();
+            foreach (var pair in Reputation)
+            {
+                reputation.Members[pair.Key] = JsonValue.FromNumber(pair.Value);
+            }
+
+            value.Members["reputation"] = reputation;
+            var talents = JsonValue.NewObject();
+            foreach (var pair in TalentRanks)
+            {
+                talents.Members[pair.Key] = JsonValue.FromNumber(pair.Value);
+            }
+
+            value.Members["talents"] = talents;
             return value;
+        }
+
+        private static JsonValue ToArray(IReadOnlyList<string> values)
+        {
+            var array = JsonValue.NewArray();
+            foreach (var value in values)
+            {
+                array.Items.Add(JsonValue.FromString(value));
+            }
+
+            return array;
         }
 
         /// <summary>Читает игрока.</summary>
@@ -130,7 +188,8 @@ namespace AnomalyPath.Core.Save
             var xp = DataMap.RequireInt(value, "xp", sourcePath);
             var health = DataMap.RequireInt(value, "health", sourcePath);
             var apMax = DataMap.RequireInt(value, "apMax", sourcePath);
-            if (level < 1 || xp < 0 || health < 0 || apMax < 0)
+            var talentPoints = DataMap.OptionalInt(value, "talentPoints", 0);
+            if (level < 1 || xp < 0 || health < 0 || apMax < 0 || talentPoints < 0)
             {
                 throw new DataException(sourcePath, CoreErrors.SaveMissingField, "player");
             }
@@ -163,7 +222,12 @@ namespace AnomalyPath.Core.Save
                 EquipmentSaveData.FromJson(equipmentValue, sourcePath),
                 ReadSkills(value),
                 NeedsSaveData.FromJson(needsValue, sourcePath),
-                DataMap.OptionalInt(value, "money", 0));
+                DataMap.OptionalInt(value, "money", 0),
+                DataMap.OptionalStringArray(value, "quests"),
+                DataMap.OptionalStringArray(value, "unlocks"),
+                ReadReputation(value),
+                talentPoints,
+                ReadTalentRanks(value, sourcePath));
         }
 
         private static IReadOnlyList<ItemSaveData> ReadItems(JsonValue value, string sourcePath)
@@ -199,6 +263,52 @@ namespace AnomalyPath.Core.Save
                         result.Add(item.Text);
                     }
                 }
+            }
+
+            return result;
+        }
+
+        private static IReadOnlyDictionary<string, int> ReadReputation(JsonValue value)
+        {
+            var result = new Dictionary<string, int>(System.StringComparer.Ordinal);
+            if (!value.TryGet("reputation", out var reputation) || !reputation.IsObject)
+            {
+                return result;
+            }
+
+            foreach (var pair in reputation.Entries)
+            {
+                if (pair.Value.Kind == JsonKind.Number)
+                {
+                    result[pair.Key] = (int)System.Math.Round(pair.Value.Number);
+                }
+            }
+
+            return result;
+        }
+
+        private static IReadOnlyDictionary<string, int> ReadTalentRanks(JsonValue value, string sourcePath)
+        {
+            var result = new Dictionary<string, int>(System.StringComparer.Ordinal);
+            if (!value.TryGet("talents", out var talents) || !talents.IsObject)
+            {
+                return result;
+            }
+
+            foreach (var pair in talents.Entries)
+            {
+                if (pair.Value.Kind != JsonKind.Number)
+                {
+                    throw new DataException(sourcePath, CoreErrors.SaveMissingField, "talents");
+                }
+
+                var rank = (int)System.Math.Round(pair.Value.Number);
+                if (string.IsNullOrWhiteSpace(pair.Key) || rank < 0)
+                {
+                    throw new DataException(sourcePath, CoreErrors.SaveMissingField, "talents");
+                }
+
+                result[pair.Key] = rank;
             }
 
             return result;

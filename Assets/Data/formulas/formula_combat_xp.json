@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "kind": "formulas",
+  "id": "formula_combat_xp",
+  "expression": "round(enemyXp * (1 + locationTier * 5 / 100))",
+  "variables": ["enemyXp", "locationTier"],
+  "result": "int",
+  "clampMin": 0
+}

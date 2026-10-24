@@ -46,7 +46,8 @@ namespace AnomalyPath.Tests
                     combat,
                     saves,
                     newGame,
-                    services.Resolve<IDeathService>());
+                    services.Resolve<IDeathService>(),
+                    services.Resolve<ICombatOutcomeService>());
                 TravelTests(services, sessions);
                 CombatTests(services, sessions, actors, items);
                 DeathSessionTests(services, sessions, items);
@@ -111,6 +112,27 @@ namespace AnomalyPath.Tests
                 False(session.InCombat, "бой завершён");
             });
 
+            Check("сессия: сценарий засады передаётся в бой", () =>
+            {
+                var session = NewSession(services, withPlayer: true);
+                var player = actors.Get("actor_player");
+                var enemy = actors.Get("enemy_bandit");
+
+                True(sessions.StartCombat(
+                    session, player, enemy, DistanceZone.Mid, CombatScenario.Ambush), "старт");
+
+                True(ReferenceEquals(session.Combat!.Current, session.Combat.Enemy), "первым ходит противник");
+                Equal(CombatScenarioKind.Ambush, session.Combat.Scenario.Kind, "сценарий");
+            });
+
+            Check("сессия: результат боя без боя ничего не делает", () =>
+            {
+                var session = NewSession(services, withPlayer: true);
+                var outcome = sessions.ApplyCombatOutcome(session);
+                Equal(CombatOutcomeStatus.NoCombat, outcome.Status, "статус");
+                False(session.InCombat, "боя нет");
+            });
+
             Check("сессия: атака тратит ОД и патрон", () =>
             {
                 var session = NewSession(services, withPlayer: true);
@@ -118,8 +140,12 @@ namespace AnomalyPath.Tests
                 var enemy = actors.Get("enemy_bandit");
                 True(sessions.StartCombat(session, player, enemy, DistanceZone.Mid), "старт");
 
-                var weapon = new ItemInstance("inst_pm", "wpn_pm", 1);
-                var magazine = weapon.EnsureMagazine(items.Get("wpn_pm").Weapon!.Magazine);
+                var weapon = new ItemInstance(
+                    "inst_pm",
+                    "wpn_pm",
+                    1,
+                    magazine: items.Get("wpn_pm").Weapon!.Magazine);
+                var magazine = weapon.MagazineRounds;
                 var ap = session.Combat!.Player.Ap;
 
                 True(sessions.TryAttack(session, weapon, out _), "атака выполнена");

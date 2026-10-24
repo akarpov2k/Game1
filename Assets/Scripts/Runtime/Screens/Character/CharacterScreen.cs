@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Player;
+using AnomalyPath.Core.Templates;
 using AnomalyPath.Runtime.Screens;
 using AnomalyPath.Runtime.Ui.Core;
 using AnomalyPath.Runtime.Ui.Items;
@@ -51,6 +52,15 @@ namespace AnomalyPath.Runtime.Screens.Character
             backRect.pivot = new Vector2(0.5f, 0f);
             backRect.anchoredPosition = new Vector2(0f, 40f);
             backRect.sizeDelta = new Vector2(320f, 54f);
+
+            var talents = host.Ui.CreateButton(Content, UiText.Get(host.Texts, UiTextKey.Talent_Open), host.ShowTalents);
+            talents.gameObject.name = "TalentOpen";
+            var talentsRect = (RectTransform)talents.transform;
+            talentsRect.anchorMin = new Vector2(0f, 0f);
+            talentsRect.anchorMax = new Vector2(0f, 0f);
+            talentsRect.pivot = new Vector2(0f, 0f);
+            talentsRect.anchoredPosition = new Vector2(40f, 40f);
+            talentsRect.sizeDelta = new Vector2(220f, 54f);
 
             _message = host.Ui.CreateText(Content, string.Empty, 18, TextAnchor.MiddleCenter, UiFactory.ToastColor);
             var messageRect = _message.rectTransform;
@@ -165,6 +175,7 @@ namespace AnomalyPath.Runtime.Screens.Character
             if (CharacterWidgets.Template(_host, item)?.Weapon != null)
             {
                 var id = item.InstanceId;
+                entries.Add(new KeyValuePair<string, Action>(UiText.Get(_host.Texts, UiTextKey.Character_Menu_Load), () => _presenter.Load(id)));
                 entries.Add(new KeyValuePair<string, Action>(UiText.Get(_host.Texts, UiTextKey.Character_Menu_Unload), () => _presenter.Unload(id)));
             }
 
@@ -177,10 +188,21 @@ namespace AnomalyPath.Runtime.Screens.Character
         /// <inheritdoc />
         public void DropOnSlot(string instanceId, EquipmentSlot slot)
         {
-            if (_drag.Origin == DragOrigin.Inventory)
+            if (_drag.Origin != DragOrigin.Inventory)
             {
-                _presenter.Equip(instanceId, slot);
+                return;
             }
+
+            var player = Player;
+            var dragged = player?.Inventory.Find(instanceId);
+            var equipped = player?.Equipment.Get(slot);
+            if (dragged != null && equipped != null && IsAmmo(dragged) && IsWeapon(equipped))
+            {
+                _presenter.LoadFrom(equipped.InstanceId, dragged.InstanceId);
+                return;
+            }
+
+            _presenter.Equip(instanceId, slot);
         }
 
         /// <inheritdoc />
@@ -205,6 +227,17 @@ namespace AnomalyPath.Runtime.Screens.Character
             {
                 if (x >= 0 && y >= 0)
                 {
+                    var dragged = player.Inventory.Find(instanceId);
+                    var target = player.Inventory.ItemAt(x, y);
+                    if (dragged != null && target != null &&
+                        target.InstanceId != dragged.InstanceId &&
+                        IsAmmo(dragged) &&
+                        IsWeapon(target))
+                    {
+                        _presenter.LoadFrom(target.InstanceId, dragged.InstanceId);
+                        return;
+                    }
+
                     _presenter.Move(instanceId, x, y, rotated);
                 }
 
@@ -235,6 +268,12 @@ namespace AnomalyPath.Runtime.Screens.Character
                 }
             }
         }
+
+        private bool IsAmmo(ItemInstance item) =>
+            CharacterWidgets.Template(_host, item)?.Category == ItemCategory.Ammo;
+
+        private bool IsWeapon(ItemInstance item) =>
+            CharacterWidgets.Template(_host, item)?.Weapon != null;
 
         private PlayerState? Player => _host.Session?.State.Player;
 

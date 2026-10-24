@@ -33,6 +33,7 @@ namespace AnomalyPath.Tests
 
             TemplateTests();
             GenerationTests(generator, locations, topology);
+            MapMutationTests(generator);
             TravelTests(generator, travel);
             ValidationTests();
         }
@@ -321,6 +322,48 @@ namespace AnomalyPath.Tests
             });
         }
 
+        private void MapMutationTests(IWorldGenerator generator)
+        {
+            Check("карта: локация и ребро добавляются во время игры", () =>
+            {
+                var map = generator.Generate(42);
+                var hub = map.StartLocationId;
+                var location = new LocationInstance(
+                    "locinst_test",
+                    "loc_site_house",
+                    7,
+                    "bg_site_house",
+                    LocationNodeType.Site,
+                    1,
+                    0.2);
+                map.AddLocation(location);
+                True(map.ContainsLocation("locinst_test"), "локация добавлена");
+                var edge = new WorldEdge(
+                    "edge_test",
+                    hub,
+                    "locinst_test",
+                    "path",
+                    1,
+                    new TravelCost(3, 1.5),
+                    oneWay: false,
+                    hidden: false);
+                map.AddEdge(edge);
+                var found = false;
+                foreach (var candidate in map.EdgesFrom(hub))
+                {
+                    if (candidate.EdgeId == "edge_test")
+                    {
+                        found = true;
+                    }
+                }
+
+                True(found, "ребро добавлено");
+                Throws<DataException>(() => map.AddLocation(location), "дубль локации");
+                Throws<DataException>(() => map.AddEdge(edge), "дубль ребра");
+            });
+        }
+
+
         private void TravelTests(IWorldGenerator generator, ITravelService travel)
         {
             Check("переход: не списывает выносливость и двигает время", () =>
@@ -416,6 +459,41 @@ namespace AnomalyPath.Tests
                 location.MarkCleared();
                 True(location.Visited, "посещена");
                 True(location.Cleared, "зачищена");
+            });
+
+            Check("хаб: последний посещённый хаб обновляется и восстанавливается", () =>
+            {
+                var map = new WorldMap(
+                    1,
+                    new List<LocationInstance>
+                    {
+                        new LocationInstance("hub_a", "loc_hub", 1, "bg", LocationNodeType.Hub, 0, 0),
+                        new LocationInstance("hub_b", "loc_hub", 2, "bg", LocationNodeType.Hub, 0, 0),
+                        new LocationInstance("route", "loc_route", 3, "bg", LocationNodeType.Route, 1, 0.2)
+                    },
+                    new List<WorldEdge>(),
+                    "hub_a",
+                    10,
+                    6,
+                    22);
+                var state = WorldState.Start(map);
+                Equal("hub_a", state.LastHubId, "стартовый хаб");
+
+                state.MoveTo("hub_b");
+                Equal("hub_b", state.LastHubId, "новый хаб");
+                state.MoveTo("route");
+                Equal("hub_b", state.LastHubId, "дикая локация хаб не меняет");
+
+                var restored = new WorldState(
+                    map, "route", 5, 10, new WorldClock(1, 8, 6, 22), WeatherKind.Clear, "hub_a");
+                Equal("hub_a", restored.LastHubId, "хаб из сейва");
+
+                var fallback = new WorldState(map, "route", 5, 10, new WorldClock(1, 8, 6, 22));
+                Equal("hub_a", fallback.LastHubId, "старый сейв без хаба");
+
+                Throws<DataException>(
+                    () => new WorldState(map, "route", 5, 10, new WorldClock(1, 8, 6, 22), WeatherKind.Clear, "route"),
+                    "сохранённый хаб не хаб");
             });
         }
 

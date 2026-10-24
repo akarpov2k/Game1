@@ -10,12 +10,11 @@ namespace AnomalyPath.Core.Combat
     {
         /// <summary>Создаёт настройки боя.</summary>
         /// <param name="damageFormulaId">Формула урона.</param>
+        /// <param name="xpFormulaId">Формула опыта за победу.</param>
         /// <param name="clampMin">Нижняя граница результата по умолчанию.</param>
         /// <param name="clampMax">Верхняя граница результата по умолчанию.</param>
         /// <param name="apRestore">Режим восстановления ОД.</param>
         /// <param name="apPerTurn">Сколько ОД восстанавливается при частичном режиме.</param>
-        /// <param name="initiative">Правило инициативы.</param>
-        /// <param name="initiativeFormulaId">Формула инициативы, если она включена.</param>
         /// <param name="zoneShiftFree">Сколько зон можно пройти бесплатно за ход.</param>
         /// <param name="zoneShiftApCost">Цена сдвига сверх бесплатного.</param>
         /// <param name="attackApCost">Цена атаки в ОД.</param>
@@ -25,12 +24,11 @@ namespace AnomalyPath.Core.Combat
         /// <param name="reloadApCost">Цена перезарядки в ОД.</param>
         public CombatSettingsTemplate(
             string damageFormulaId,
+            string xpFormulaId,
             double? clampMin,
             double? clampMax,
             ApRestoreKind apRestore,
             int apPerTurn,
-            InitiativeKind initiative,
-            string? initiativeFormulaId,
             int zoneShiftFree,
             int zoneShiftApCost,
             int attackApCost,
@@ -40,12 +38,11 @@ namespace AnomalyPath.Core.Combat
             int reloadApCost)
         {
             DamageFormulaId = damageFormulaId;
+            XpFormulaId = xpFormulaId;
             ClampMin = clampMin;
             ClampMax = clampMax;
             ApRestore = apRestore;
             ApPerTurn = apPerTurn;
-            Initiative = initiative;
-            InitiativeFormulaId = initiativeFormulaId;
             ZoneShiftFree = zoneShiftFree;
             ZoneShiftApCost = zoneShiftApCost;
             AttackApCost = attackApCost;
@@ -70,6 +67,9 @@ namespace AnomalyPath.Core.Combat
         /// <summary>Формула урона.</summary>
         public string DamageFormulaId { get; }
 
+        /// <summary>Формула опыта за победу.</summary>
+        public string XpFormulaId { get; }
+
         /// <summary>Нижняя граница результата по умолчанию.</summary>
         public double? ClampMin { get; }
 
@@ -81,12 +81,6 @@ namespace AnomalyPath.Core.Combat
 
         /// <summary>Сколько ОД восстанавливается при частичном режиме.</summary>
         public int ApPerTurn { get; }
-
-        /// <summary>Правило инициативы.</summary>
-        public InitiativeKind Initiative { get; }
-
-        /// <summary>Формула инициативы.</summary>
-        public string? InitiativeFormulaId { get; }
 
         /// <summary>Сколько зон можно пройти бесплатно за ход.</summary>
         public int ZoneShiftFree { get; }
@@ -105,6 +99,7 @@ namespace AnomalyPath.Core.Combat
         public static CombatSettingsTemplate FromJson(JsonValue value, string sourcePath)
         {
             var damageFormulaId = DataMap.RequireString(value, "damageFormulaId", sourcePath);
+            var xpFormulaId = DataMap.RequireString(value, "xpFormulaId", sourcePath);
 
             var apRestoreCode = DataMap.RequireString(value, "apRestore", sourcePath);
             if (!SchemaEnum.TryParse(apRestoreCode, out ApRestoreKind apRestore))
@@ -112,20 +107,13 @@ namespace AnomalyPath.Core.Combat
                 throw new DataException(sourcePath, CoreErrors.UnknownApRestore, apRestoreCode);
             }
 
-            var initiativeCode = DataMap.RequireString(value, "initiative", sourcePath);
-            if (!InitiativeCodec.TryParse(initiativeCode, out InitiativeKind initiative))
-            {
-                throw new DataException(sourcePath, CoreErrors.UnknownInitiative, initiativeCode);
-            }
-
             return new CombatSettingsTemplate(
                 damageFormulaId,
+                xpFormulaId,
                 DataMap.OptionalDouble(value, "clampMin"),
                 DataMap.OptionalDouble(value, "clampMax"),
                 apRestore,
                 DataMap.OptionalInt(value, "apPerTurn", 0),
-                initiative,
-                DataMap.OptionalString(value, "initiativeFormulaId"),
                 DataMap.RequireInt(value, "zoneShiftFree", sourcePath),
                 DataMap.RequireInt(value, "zoneShiftApCost", sourcePath),
                 DataMap.RequireInt(value, "attackApCost", sourcePath),

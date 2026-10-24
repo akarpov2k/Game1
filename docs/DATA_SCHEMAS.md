@@ -3,7 +3,7 @@
 Дополнение к [GAME_MANIFEST.md](GAME_MANIFEST.md). Здесь только структура данных: файлы, поля, типы, правила.
 Поведение и баланс — в манифесте. Код читает эти схемы, а не наоборот.
 
-**Статус:** черновик v0.36 (2026-10-23). Соответствует манифесту v0.85.
+**Статус:** черновик v0.46 (2026-10-24). Соответствует манифесту v1.13.
 
 ---
 
@@ -13,35 +13,56 @@
 
 | § | Раздел | Строка |
 | --- | --- | --- |
-| 0 | Что нового в v0.36 | 40 |
-| 1 | Соглашения | 71 |
-| 2 | Данные и состояние | 114 |
-| 3 | Файлы данных, каталоги, моды | 173 |
-| 4 | Item | 509 |
-| 5 | Габариты и поворот | 748 |
-| 6 | Стеки | 756 |
-| 7 | GridContainer | 769 |
-| 8 | ItemInstance (состояние) | 779 |
-| 9 | Переполнение | 811 |
-| 10 | Снаряжение и слоты | 822 |
-| 11 | Бой: классы, скиллы, статусы, эффекты | 857 |
-| 12 | Актёры: базовая сущность и наследники | 1084 |
-| 13 | События и выборы | 1194 |
-| 14 | Локации | 1244 |
-| 15 | Фракции, квесты, диалоги, открытия | 1449 |
-| 16 | Крафт и ремонт: `Recipe` | 1534 |
-| 17 | Сейв | 1553 |
-| 18 | Открытые вопросы по данным | 1674 |
-| 19 | Правила валидации | 1694 |
-| 20 | Примеры | 1882 |
-| 21 | Наборы снаряжения и новая игра | 2697 |
-| 22 | Ники для новой игры (`nicks`) | 2772 |
+| 0 | Что нового в v0.46 | 41 |
+| 1 | Соглашения | 92 |
+| 2 | Данные и состояние | 137 |
+| 3 | Файлы данных, каталоги, моды | 196 |
+| 4 | Item | 533 |
+| 5 | Габариты и поворот | 772 |
+| 6 | Стеки | 780 |
+| 7 | GridContainer | 793 |
+| 8 | ItemInstance (состояние) | 803 |
+| 9 | Переполнение | 835 |
+| 10 | Снаряжение и слоты | 846 |
+| 11 | Бой: классы, скиллы, статусы, эффекты | 881 |
+| 12 | Актёры: базовая сущность и наследники | 1110 |
+| 13 | События и выборы | 1228 |
+| 14 | Локации | 1278 |
+| 15 | Фракции, квесты, диалоги, открытия | 1484 |
+| 16 | Крафт и ремонт: `Recipe` | 1566 |
+| 17 | Сейв | 1585 |
+| 18 | Открытые вопросы по данным | 1724 |
+| 19 | Правила валидации | 1743 |
+| 20 | Примеры | 1949 |
+| 21 | Наборы снаряжения и новая игра | 2759 |
+| 22 | Ники для новой игры (`nicks`) | 2834 |
+| 23 | Прокачка: дерево талантов (`talents`) | 2858 |
 
-## 0. Что нового в v0.36
+## 0. Что нового в v0.46
 
-Правила данных ужесточены: значения схемы (`category`, `material`, `damageKind`, `type`, `rarity`, `loss`, `deathMode`, `insuranceAppliesTo`, `apRestore`, `initiative`, `result`, `price.mode`, `locationKind`, `nodeType`, `via`, `tags`) — enum-коды, а не произвольные строки; `material` у брони/шлема и `damageTypeId` у оружия обязательны; `GameRules` получил настройки новой игры (`tradeDifficulty`, `tradeDifficultyMax`, `tradeDifficultyStep`, `lootLossStep`, `nicknameMaxLength`), в коде этих чисел нет.
+**Результат боя.** У врага появился опыт `combat.xp` (обязателен для `enemy`, ≥ 1). Опыт за победу считает формула `formula_combat_xp`: `round(enemyXp * (1 + locationTier * 5 / 100))`, ссылка — `CombatSettings.xpFormulaId`. Опыт складывается в `player.xp`; уровни пока не повышаются. Смерть обычная: страховка и потеря вещей по прежним правилам, затем здоровье = `rules.respawnPercent` от максимума, еда и вода не выше того же процента, игрок возвращается в последний посещённый хаб. Хаб хранится в `world.lastHubId` (сейв v9), старые сейвы без поля возвращаются в стартовый/первый хаб. В пермасмерти возрождения нет. Лут победы — пустой список до описания пула (`Enemy.lootTable`).
+
+**Сценарий боя вместо формулы инициативы.** Порядок первого хода задаёт сценарий: `ambush` — противник всегда первый, `story` — сторона из настроек сюжетной сцены, `normal` — игрок всегда первый (по умолчанию). Сценарий — параметр сервиса (`CombatScenario`), а не поле данных: `combat.json` больше не хранит `initiative` и `initiativeFormulaId`, формула `formula_ambush_chance` и её коэффициенты из схемы убраны. Сложность, уровни, тиры, время и погода первый ход не меняют.
+
+**Дерево талантов — ветки и картинки.** Новый вид сущности `talents` — одно дерево на весь проект, файл `Assets/Data/talents.json`. Все таланты лежат массивом `nodes` внутри одного файла: отдельного файла на талант нет. У таланта есть `id`, ключи названия и описания, необязательный `icon`, позиция `row`/`column`, `maxRank` (1..100), `requiredPoints` (порог по сумме вложенных в дерево очков) и массив `effects` из `stat` + `perRank`. Позиция задаёт ветки: в одной строке может быть несколько талантов, связи рисуются к соседям предыдущей строки. Характеристики: `apRestore`, `apMax`, `healthMax`, `accuracy`, `staminaMax`, `luck`, `carryRows`. Очки талантов дают уровни персонажа (левелинг пока не реализован), в сейве v8 у игрока появились `talentPoints` и `talents` (`id → ранг`). Старые сейвы v1–v7 читаются с нулём очков и без рангов.
+
+**Предложения квестов рандомятся у торговца.** Шаблон `Quest` больше не хранит квестодателя. При первом открытии окна торговец создаёт `rules.questOffersPerTrader` (4) конкретных предложений из общего списка шаблонов; типы могут повторяться. Предложение хранится в состоянии прохождения с `giverActorId`, зафиксированной целью и номером слота; его можно принять или отменить. Активный квест тоже можно отменить. Освободившийся слот заполняется новым случайным предложением через `rules.questOfferCooldownHours` (6 часов). Два торговца независимо могут получить одинаковые цели. Сейв v7: `world.quests` (предложения, активные, завершённые и отменённые) и `world.traders[].questSlots` (время доступности слотов).
+
+**Повторяемые квесты.** Новый вид сущности `quests` (`Assets/Data/quests/`, коллекция `col_quests`). Поля: `questKind` (`repeatable`; `story` зарезервирован), `questType` (`clearLocation`, `killMutants`, `gatherArtifacts`, `findItems`), `titleKey`, `descriptionKey`, `difficulty ≥ 0`, `cooldownHours ≥ 0`, `requirements` (общий `Requirements`), `rewards` (`money`, `items`, `unlocks`) и `target` — блок, зависящий от типа:
+- `clearLocation`: `locationPool: string[]` (необязательно), `minTier`/`maxTier`; цель — дикая точка интереса, выбор с весом `spawnChance`.
+- `killMutants`: `count ≥ 1`, `poolSize ≥ 1`, `actorPool?`, `minTier`/`maxTier`; актёры — враги с ролью `mutant`.
+- `gatherArtifacts`: `count ≥ 1`, `poolSize ≥ 1`, `itemPool?`, `minTier`/`maxTier`; предметы категории `artifact`.
+- `findItems`: `itemCategories` (по умолчанию `weapon`/`armor`), `itemKinds ≥ 1`, `itemCount ≥ 1`, `itemPool?`, `npcPool?`, `npcCount ≥ 1`, `poolSize ≥ 1`, `minTier`/`maxTier`; NPC — враги с ролью `human`.
+
+Конкретная цель (экземпляр локации, мутанты, артефакты, оружие/броня, NPC) фиксируется в предложении; для зачистки экземпляр и маршрут создаются при взятии. Настройки выдачи — в `rules.json`: `maxActiveQuests` (≥ 1, 3), `questOffersPerTrader` (≥ 1, 4), `questOfferCooldownHours` (≥ 0, 6), `questCooldownHours` (≥ 0, 48). Сейв v7: `world.quests` (предложения, активные, завершённые и отменённые) и `world.traders[].questSlots`; у игрока `quests` — завершённые квесты.
+
+**Торговцы NPC.** `Actor.type = trader` получил блок `trader`: `restockHours` (≥ 1), `playerBuyModifier` и `playerSellModifier` (0 < значение ≤ 10), `requirements` и `assortment` (`[{ itemId, stock, requirements? }]`). Привязка торговца к безопасной локации задаётся **в данных хаба**: `LocationTemplate.traders: string[]`; торговец обязан быть привязан ровно к одному хабу. Товар скрыт, пока не выполнены его `requirements` (`items`, `reputation`, `quests`, `unlocks`, `tier`). Запас пополняется до `stock` раз в `restockHours` часов мира; текущий запас и время пополнения хранятся в сейве (`world.traders`). Портрет — `portrait` (id `portraits/<id>`) и `portraitMode` (`full` / `waist`). Новый вид сущности `economy` (`EconomySettings`: `rounding ≥ 1`, `minPrice ≥ 0`). Сейв v5: у игрока появились `quests`, `unlocks` и `reputation`.
+
+**Магазин оружия:** `weapon.magazine` — вместимость, обязательна и ≥ 1; новый экземпляр через `InventoryService` (торговый запас, лут) создаётся с пустым магазином, оружие стартового набора выдаётся с полным; в сейве `magazine` может быть `null` (старые сейвы читаются как разряженное оружие). Плюс к v0.36: правила данных ужесточены — значения схемы (`category`, `material`, `damageKind`, `type`, `rarity`, `loss`, `deathMode`, `insuranceAppliesTo`, `apRestore`, `result`, `price.mode`, `locationKind`, `nodeType`, `via`, `tags`) — enum-коды, а не произвольные строки; `material` у брони/шлема и `damageTypeId` у оружия обязательны; `GameRules` получил настройки новой игры (`tradeDifficulty`, `tradeDifficultyMax`, `tradeDifficultyStep`, `lootLossStep`, `nicknameMaxLength`), в коде этих чисел нет.
 
 ### Что было раньше
+
+- **v0.38:** магазины оружия: `weapon.magazine`, стартовое оружие заряжено, торговый запас разряжен, сейв v4.
 
 - **v0.35:** наборы снаряжения: явные поля `weapon`, `secondaryWeapon`, `armor`, `helmet`, `backpack`, `belt` и `consumables`; рюкзак расширяет сетку до раскладки расходников; старые `items`/`equipment` читаются.
 - **v0.34:** новая игра — `Loadout`, `GameRules.playerActorId/gridWidth/needsMax`, `world.settings` (`lootLossFactor`, `tradeDifficulty`).
@@ -95,6 +116,8 @@
 | `Recipe` | `rec_` | `rec_ak74` |
 | `Faction` | `fct_` | `fct_caravan` |
 | `Quest` | `qst_` | `qst_lost_courier` |
+| `TalentTree` | `talents` | единственная запись `talents` |
+| `TalentNode` | `tal_` | `tal_steady_hand` |
 | `Dialog` | `dlg_` | `dlg_caravan_boss` |
 | `Unlock` | `unlock_` | `unlock_rifle_shop` |
 | `Formula` | `formula_` | `formula_damage_base` |
@@ -184,6 +207,7 @@ Assets/Data/                 # базовый контент, версионир
   economy.json
   balance.json
   rules.json
+  talents.json                # всё дерево талантов одним файлом
   topology.json
   combat/settings.json
   formulas/
@@ -562,7 +586,7 @@ Mods/<modName>/
 | `armorPenetration` | number | бронебойность: насколько снижается защита цели |
 | `accuracyCoefficient` | number | коэффициент точности: пистолет 0.8, автомат 1.0, снайперка 1.5 |
 | `ignoresDistance` | bool | не штрафовать за дальнюю дистанцию (снайперские винтовки); по умолчанию `false` |
-| `magazine` | int | патронов в магазине |
+| `magazine` | int | вместимость магазина, ≥ 1; новый экземпляр из `InventoryService` (торговый запас, лут) — пустой, оружие стартового набора — полный |
 | `ammoCaliber` | string | какой калибр принимает |
 | `reloadTime` | number | в ОД |
 | `skills` | string[] | id скиллов, доступных на этом оружии (подмножество скиллов класса) |
@@ -997,13 +1021,13 @@ max(0, damage - max(0, protection - penetration))
 
 | Формула | Переменные | Зачем |
 | --- | --- | --- |
-| `formula_ambush_chance` | `danger`, `playerLevel`, `tier`, `timeOfDay`, `weather` | шанс, что первым ходит враг; факторы открыты |
 | `formula_spawn_weight` | `baseWeight`, `danger`, `tier` | вес объекта при генерации локации |
 | `formula_spawn_chance` | `baseChance`, `tier` | шанс появления локации по редкости |
 | `formula_rarity_weight` | `baseWeight`, `rarityOrder`, `locationTier`, `danger`, `enemyTier`, `playerLevel` | вес редкости при выпадении: чем выше тир локации и врага, тем вероятнее редкое |
 | `formula_route_length` | `danger`, `tier`, `locationTier` | сколько отрезков пути до точки интереса |
 | `formula_travel_cost` | `baseStamina`, `baseHours`, `length`, `danger` | стоимость перехода: выносливость и часы |
 | `formula_price` | `base`, `reputation`, `traderModifier` | цена с репутацией (раздел 4.9) |
+| `formula_combat_xp` | `enemyXp`, `locationTier` | опыт за победу: база врага × (1 + тир локации × 5 / 100) |
 
 Правило: если правило содержит арифметику и его захочется подкрутить, оно становится `Formula`, а не полем с коэффициентом. Список переменных каждой формулы фиксируется в её `variables`; код передаёт значения по этим именам.
 
@@ -1015,13 +1039,12 @@ max(0, damage - max(0, protection - penetration))
 | --- | --- | --- | --- |
 | `id` | string | да | всегда `combat` |
 | `damageFormulaId` | string | да | формула урона; по умолчанию `formula_damage_base` |
+| `xpFormulaId` | string | да | формула опыта за победу (`formula_combat_xp`): переменные `enemyXp` и `locationTier` |
 | `healFormulaId` | string | нет | формула лечения ❓ если понадобится |
 | `clampMin` | number | нет | нижняя граница результата по умолчанию |
 | `clampMax` | number | нет | верхняя граница результата по умолчанию |
 | `apRestore` | enum | да | `full` — полностью каждый ход (принято); `partial` — по `apPerTurn`; `none` — только запас на бой |
 | `apPerTurn` | int | нет | сколько ОД восстанавливается при `apRestore = partial` ⏸ |
-| `initiative` | enum | да | `playerFirst` — игрок всегда первый; `formula` — порядок считает `initiativeFormulaId` (принято) |
-| `initiativeFormulaId` | string | нет | формула засады; обязательна при `initiative = formula` |
 | `zoneShiftFree` | int | да | сколько зон можно пройти бесплатно за ход (принято: 1) |
 | `zoneShiftApCost` | number | нет | цена сдвига сверх бесплатного, в ОД ⏸ |
 | `attackApCost` | int | нет | цена атаки в ОД; по умолчанию 1 |
@@ -1033,7 +1056,8 @@ max(0, damage - max(0, protection - penetration))
 Правила:
 
 - `CombatSettings` не содержит чисел баланса — только ссылки на формулы, режимы и границы, чтобы смена правила была правкой одного поля.
-- При `initiative = formula` шанс засады считает `formula_ambush_chance` от факторов (сложность локации, уровень игрока, тир, время суток, погода); список переменных открыт. Как именно засада применяется (один бросок на бой, на ход или на противника) — открытый вопрос реализации (манифест §13).
+- Опыт за победу — формула `xpFormulaId`: `enemyXp` берётся из `Actor.combat.xp` врага, `locationTier` — из текущего экземпляра локации. Опыт складывается в `player.xp`; уровни пока не повышаются.
+- Порядок первого хода в данных не задаётся: его выбирает вызывающий код сценарием `CombatScenario` (`normal` — игрок первый, `ambush` — противник первый, `story` — сторону задаёт сюжетная сцена). Сценарий хранится в состоянии боя и не является настройкой `CombatSettings`.
 - Зоны дистанции — те же, что у `Skill.range` (`melee`, `close`, `mid`, `far`), отдельных настроек не требуют.
 - Сдвиг по зонам: `zoneShiftFree` зон за ход бесплатно, дальше — по `zoneShiftApCost`. Это правило боя, а не структура: меняется здесь, в данных.
 
@@ -1064,22 +1088,24 @@ max(0, damage - max(0, protection - penetration))
   "constants": {
     "damage_floor": 0,
     "durability_per_shot": 0.5,
-    "rarity_curve": 0.15,
-    "ambush_base": 0.2,
-    "ambush_danger": 0.3,
-    "ambush_tier_step": 0.1,
-    "ambush_cap": 0.9
+    "rarity_curve": 0.15
   }
 }
 ```
 
-Формула засады с константами вместо литералов:
+Константа `rarity_curve` используется формулой `formula_rarity_weight`: поменяв её в `balance.json`, вы меняете поведение всех выпадений — код не трогается. Если правило стало ненужным, его `expression` заменяется на `"value": 0`, и поведение становится фиксированным без правки кода.
 
-```
-clamp(ambush_base + danger * ambush_danger + max(0, tier - playerLevel) * ambush_tier_step, 0, ambush_cap)
-```
+### 11.9. `EconomySettings` (вид `economy`)
 
-Поменяв `ambush_danger` в `balance.json`, вы меняете поведение всех боёв — код не трогается. Если формула стала не нужна, её `expression` заменяется на `"value": 0`, и поведение становится фиксированным без правки кода.
+Файл: `Assets/Data/economy.json`, ровно одна запись.
+
+| Поле | Тип | Смысл |
+| --- | --- | --- |
+| `id` | string | всегда `economy` |
+| `rounding` | int | шаг округления цены, ≥ 1 |
+| `minPrice` | int | минимальная цена, ≥ 0 |
+
+Правило: итоговая цена округляется до `rounding` (половина — от нуля) и не опускается ниже `minPrice`; конкретные числа — данные.
 
 ## 12. Актёры: базовая сущность и наследники
 
@@ -1102,7 +1128,8 @@ Actor                      (общие поля, раздел 12.1)
 | `type` | enum | да | `npc`, `trader`, `enemy` |
 | `nameKey` | string | да | ключ локализации имени |
 | `descriptionKey` | string | нет | ключ локализации описания |
-| `portrait` | string | нет | путь к портрету |
+| `portrait` | string | нет | id портрета в каталоге спрайтов: `portraits/trd_hub_smuggler` |
+| `portraitMode` | enum | нет | `full` — в полный рост (по умолчанию), `waist` — по пояс |
 | `factionId` | string? | нет | чей; `null` — одиночка или дикий |
 | `locationId` | string? | нет | где стоит в мире; `null` у тех, кто появляется через `SpawnEntry` |
 | `tags` | string[] | нет | свободные метки |
@@ -1121,11 +1148,13 @@ Actor                      (общие поля, раздел 12.1)
 | `level` | int | уровень актёра; по умолчанию 1 |
 | `accuracy` | number | базовая меткость актёра 0..1; по умолчанию 0.8 |
 | `accuracyBonus` | number | бонус меткости от талантов; по умолчанию 0 |
+| `xp` | int | опыт за победу над актёром; **обязателен и ≥ 1** для `enemy`, у остальных не используется |
 | `ai` | enum | `aggressive`, `cautious`, `ranged`, `passive` ❓ набор |
 
 Правила:
 
 - У `enemy` блок обязателен, у `npc`/`trader` — нет. Персонаж без `combat` в бой не вступает и не может быть целью атаки.
+- У `enemy` обязателен `combat.xp ≥ 1`: это база опыта за победу; коэффициент локации и формула — в `CombatSettings.xpFormulaId`.
 - **Враг живёт по общим правилам:** у него есть патроны, он тратит их на скиллы с `ammoCost > 0` и перезаряжается. Отличие от игрока — только механики выживания (еда, вода, сон) к нему не применяются.
 - `ammo` обязателен, если хотя бы один скилл врага имеет `ammoCost > 0`; иначе поле можно не задавать.
 - В бою магазин врага заполняется до `magazineSize`, патроны тратятся по `ammoCost`, перезарядка берёт из `reserve` и стоит ОД.
@@ -1150,16 +1179,21 @@ Actor                      (общие поля, раздел 12.1)
 
 | Поле | Тип | Смысл |
 | --- | --- | --- |
-| `assortment` | `[{ itemId, stock, restock }]` | что продаёт |
-| `playerBuyModifier` | number | множитель цены, по которой **игрок покупает** у торговца |
-| `playerSellModifier` | number | множитель цены, по которой **игрок продаёт** торговцу |
+| `assortment` | `[{ itemId, stock, requirements? }]` | что продаёт; `stock ≥ 1` — полный запас при пополнении |
+| `restockHours` | int | период пополнения в часах мира, ≥ 1 |
+| `playerBuyModifier` | number | множитель цены, по которой **игрок покупает** у торговца, `0 < значение ≤ 10` |
+| `playerSellModifier` | number | множитель цены, по которой **игрок продаёт** торговцу, `0 < значение ≤ 10` |
 | `requirements` | Requirements | когда торговец доступен |
 
 Правила:
 
-- `type = trader` требует `assortment`; `roles` обязан содержать `trader`.
-- Имя, портрет, локация и фракция — из базовых полей, не дублируются.
-- ✅ РЕШЕНО: у торговцев **ограниченный запас с пополнением**. Поля `stock` и `restock` — данные; правило пополнения (период, объём) задаётся в `Trader` и `EconomySettings`, числа — `⏸`.
+- `type = trader` требует блок `trader`; `roles` обязан содержать `trader`.
+- Имя, описание, портрет, локация и фракция — из базовых полей, не дублируются.
+- **Привязка к хабу задаётся в данных локации:** `LocationTemplate.traders` (раздел 14.1). Торговец обязан быть привязан ровно к одному хабу; привязка к `wild`/`special` — ошибка загрузки. Если `locationId` у торговца задан, он обязан совпадать с этим хабом.
+- **Товар может быть скрыт условиями:** `assortment[].requirements` — тот же `Requirements` (раздел 13.3). Пока условия не выполнены, товар не показывается и не продаётся.
+- **Запас с пополнением:** при первом обращении `stock` заполняется полностью; каждые `restockHours` часов мира запас снова становится полным. Текущий запас и `lastRestockAt` (абсолютное время мира в часах) хранятся в сейве (`world.traders`).
+- **Цена:** `price.buy` (или `price.base` при `mode = reputation`) × `playerBuyModifier`; продажа — `price.sell` (или `price.base`) × `playerSellModifier`. Округление и минимум — `EconomySettings` (раздел 11.9). Усложнение торговли из настроек новой игры повышает цену покупки.
+- ✅ РЕШЕНО: у торговцев **ограниченный запас с пополнением**; числа — данные.
 
 ### 12.5. `Enemy` (`type = enemy`)
 
@@ -1168,7 +1202,7 @@ Actor                      (общие поля, раздел 12.1)
 | Поле | Тип | Смысл |
 | --- | --- | --- |
 | `combat` | CombatBlock | **обязателен** |
-| `lootTable` | string? | что выпадает |
+| `lootTable` | string? | что выпадает; пул лута ещё не описан, победа пока возвращает пустой список |
 
 Правило: враг не знает, где он появился. Привязка к местности и уникальность экземпляра — свойства `SpawnEntry` (раздел 14.2), поэтому `locationId` у `enemy` обычно `null`.
 
@@ -1259,6 +1293,7 @@ Actor                      (общие поля, раздел 12.1)
 | `connections` | Connection[] | переходы: куда и каким путём (раздел 14.1.1) |
 | `approachLength` | `[int, int]`? | сколько отрезков пути ведёт именно к этой локации; переопределяет `Topology.routeLength` |
 | `fixedEvents` | string[] | события, которые появляются всегда |
+| `traders` | string[] | id торговцев, привязанных к этому хабу; только для `locationKind = hub` |
 | `rarity` | enum | `common`, `uncommon`, `rare`, `unique` |
 | `spawnChance` | number | 0..1, шанс появления при генерации; для `rare` меньше, для `common` — 1 |
 | `unique` | bool | квестовая локация: один экземпляр на прохождение |
@@ -1463,40 +1498,37 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 ### 15.2. `Quest`
 
+Реализованы повторяемые квесты торговцев (`questKind = repeatable`). Сюжетные квесты (`story`) зарезервированы схемой, но пока не выдаются.
+
 | Поле | Тип | Смысл |
 | --- | --- | --- |
-| `id` | string | `qst_lost_courier` |
-| `factionId` | string | чей квест |
-| `giverActorId` | string | кто выдаёт: `Actor` с `type = npc` или `trader` |
-| `kind` | enum | `story` — сюжетный, `repeatable` — повторяемый |
-| `repeat` | object | для `repeatable`: `{ type: "life" \| "timed", cooldownDays?: number, duration?: number }` |
-| `titleKey` | string | «Пропавший курьер» |
+| `id` | string | `qst_clear_house` |
+| `questKind` | enum | `repeatable` (реализовано), `story` (зарезервировано) |
+| `questType` | string | `clearLocation`, `killMutants`, `gatherArtifacts`, `findItems` |
+| `titleKey` | string | «Зачистить дом» |
 | `descriptionKey` | string | 1–3 предложения |
-| `stages` | Stage[] | этапы по порядку |
-| `rewards` | Reward | награда |
+| `difficulty` | int | сложность и тир пула цели, ≥ 0 |
+| `cooldownHours` | int | откат после сдачи, ≥ 0; 0 — из `rules.questCooldownHours` |
 | `requirements` | Requirements | условия выдачи |
-| `consequences` | Effect[] | последствия провала |
+| `target` | object | блок цели, зависит от `questType` |
+| `rewards` | object | `{ money, items: [{ itemId, count }], unlocks: string[] }` |
 
-`Stage`: `{ id, objective, targetId, count, textKey }`, где `objective` ∈ `find`, `deliver`, `kill`, `gather`, `visit`, `talk`.
+Блоки `target`:
 
-Соответствие «этап → тип цели» (по нему валидатор проверяет `targetId`):
-
-| `objective` | `targetId` указывает на |
-| --- | --- |
-| `find` | `Item` |
-| `deliver` | `Item` + получатель (`giverActorId`) |
-| `kill` | `Actor` (`type = enemy`) |
-| `gather` | `Item` |
-| `visit` | `LocationTemplate` |
-| `talk` | `Actor` (`type = npc` или `trader`) |
-
-`Reward`: `{ items: [{ itemId, count }], reputation: [{ factionId, delta }], unlocks: string[], money: int }`.
+| `questType` | Поля | Смысл |
+| --- | --- | --- |
+| `clearLocation` | `locationPool?: string[]`, `minTier`, `maxTier` | дикая точка интереса; пул необязателен — тогда все подходящие |
+| `killMutants` | `count`, `poolSize`, `actorPool?: string[]`, `minTier`, `maxTier` | враги с ролью `mutant`; `count` — сколько убить, `poolSize` — сколько разных типов попадает в квест |
+| `gatherArtifacts` | `count`, `poolSize`, `itemPool?: string[]`, `minTier`, `maxTier` | артефакты; `count` — сколько всего собрать |
+| `findItems` | `itemCategories?: string[]`, `itemKinds`, `itemCount`, `itemPool?: string[]`, `npcPool?: string[]`, `npcCount`, `poolSize`, `minTier`, `maxTier` | оружие/броня любых прочности и качества + убийство NPC с ролью `human` |
 
 Правила:
 
-- **Сюжетный квест (`story`) не проваливается.** Его можно только пройти; `consequences` у него — последствия событий, а не провала.
-- **Повторяемый (`repeatable`) провалиться может** и бывает двух видов: `type = "life"` — один заход на жизнь: смерть игрока проваливает квест, после воскрешения и выхода из любого хаба начинается откат на `cooldownDays` игровых дней (срок зависит от сложности и награды); `type = "timed"` — ограничен сроком (`duration` во времени мира). Сданный повторяемый квест тоже уходит в откат.
-- Провал и отказ от квеста теряют репутацию фракции (раздел 15.1, манифест §9).
+- **Предложения создаются при открытии окна.** Шаблоны квестов общие; торговец создаёт `rules.questOffersPerTrader` (4) конкретных предложений, тип может повторяться. Предложение хранит `giverActorId`, номер слота и зафиксированную цель; его можно принять или отменить. Активный квест тоже можно отменить. Слот, освобождённый принятием/отменой, заполняется новым случайным предложением через `rules.questOfferCooldownHours` (6 часов). Два торговца независимо могут получить одинаковые цели; разнообразие целей — через тир локации в будущем.
+- **Цель фиксируется при выдаче предложения.** Для `clearLocation` выбирается шаблон из пула с весом `spawnChance`; при взятии используется подходящий существующий экземпляр, а если его нет — создаётся новый экземпляр с маршрутом от хаба. Для остальных типов сразу выбираются конкретные актёры/предметы. Предложение хранится в сейве вместе с целью.
+- **Прогресс.** `clearLocation` — событие `NotifyLocationCleared`; `killMutants` и NPC в `findItems` — `NotifyActorKilled`; `gatherArtifacts` и предметы в `findItems` считаются по инвентарю. Предметы принимаются по id и количеству, без проверки прочности, качества и варианта; при сдаче изымаются.
+- **Сдача.** Только тому же торговцу; награда выдаётся один раз, квест попадает в `player.quests`, начинается откат. Одновременно можно держать `rules.maxActiveQuests`.
+- **Сюжетные квесты** (`story`) по-прежнему не проваливаются; их этапы, `giverActorId`, `factionId`, `consequences` и `repeat` — будущая схема, в текущем загрузчике не используются.
 
 ### 15.3. `Unlock`
 
@@ -1552,7 +1584,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 ## 17. Сейв
 
-Один файл, JSON, в `Application.persistentDataPath`. Формат **v4** сохраняет **мир и игрока**; сейвы v1 (world-only) читаются: блок `player` в них отсутствует. Запись атомарная: `save.json.tmp` → замена, предыдущая версия остаётся в `save.json.bak`; список слотов строится по файлам `*.json`.
+Один файл, JSON, в `Application.persistentDataPath`. Формат **v9** сохраняет **мир и игрока**; сейвы v1 (world-only) читаются: блок `player` в них отсутствует. Запись атомарная: `save.json.tmp` → замена, предыдущая версия остаётся в `save.json.bak`; список слотов строится по файлам `*.json`. Сейвы v1–v8 читаются: недостающие `traders`, `quests`, `questSerial`, `unlocks`, `reputation`, `talentPoints`, `talents` и `lastHubId` считаются пустыми (для `lastHubId` берётся стартовый или первый хаб карты).
 
 | Поле | Тип | Смысл |
 | --- | --- | --- |
@@ -1570,6 +1602,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | --- | --- | --- |
 | `startLocationId` | string | стартовая локация новой игры |
 | `currentLocationId` | string | где игрок сейчас |
+| `lastHubId` | string? | последний посещённый хаб, куда игрок вернётся после смерти; в сейвах до v9 отсутствует |
 | `stamina` | int | текущая выносливость |
 | `staminaMax` | int | максимум выносливости |
 | `startingStamina` | int | стартовая выносливость мира |
@@ -1581,15 +1614,23 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `locations` | LocationSave[] | экземпляры локаций |
 | `edges` | EdgeSave[] | рёбра переходов со стоимостью |
 | `settings` | object? | выбранные на старте настройки: `insuranceChance` (0..1), `tradeDifficulty` (≥ 0) и `permadeath` (bool). Сейвы до v4 хранили страховку как `lootLossFactor`, поле читается для миграции |
+| `traders` | TraderSave[]? | запас торговцев; в сейвах до v5 отсутствует |
+| `questSerial` | int | счётчик выданных квестов для уникальных id целей; в сейвах до v6 отсутствует |
+| `quests` | QuestSave[]? | взятые, сданные и проваленные квесты; в сейвах до v6 отсутствует |
 
 `LocationSave`: `{ instanceId, templateId, seed, background, nodeType, tier, danger, visited, cleared }`.
 
 `EdgeSave`: `{ edgeId, fromId, toId, via, length, stamina, hours, oneWay, hidden }`.
 
+`QuestSave`: `{ questId, giverActorId, status, acceptedAt, cooldownUntil, completedAt, locationTemplateId?, locationInstanceId?, actorIds: string[], items: [{ itemId, count }], killCount, cleared, requiredCount, slot }`. `status` — `offered` (предложение), `active`, `completed`, `cancelled` или `failed`; `slot` — номер предложения у торговца (0..3). `TraderSave`: `{ actorId, lastRestockAt, stock, questSlots }`, где `questSlots` — абсолютные часы доступности слотов.
+
 Правила:
 
 - `instanceId` уникален в пределах сейва; все `fromId`/`toId` рёбер существуют среди локаций.
-- `currentLocationId` и `startLocationId` существуют среди локаций.
+- `currentLocationId` и `startLocationId` существуют среди локаций; `lastHubId`, если задан, существует и является хабом.
+- `traders[].actorId` уникален и существует среди актёров с `type = trader`; `lastRestockAt ≥ −1` (−1 — пополнения ещё не было); остатки `stock[].count ≥ 1`. Пустой список — запас создаётся при первом обращении.
+- `quests[].questId` существует среди шаблонов квестов; `status` — известное значение; `slot ≥ 0`; `requiredCount ≥ 1`; `killCount ≥ 0`; `locationInstanceId`, если задан, существует среди локаций; `items[].count ≥ 1`. Старые сейвы без блока читаются с пустым журналом и `questSerial = 0`.
+- `traders[].questSlots[]` — неотрицательные часы; слоты квестов дополняются до `rules.questOffersPerTrader` при первом открытии.
 - Стоимость ребра сохраняется целиком: правка `topology.json` не меняет уже сохранённый мир.
 - Неизвестная погода — ошибка загрузки; неизвестная версия `schemaVersion`/`saveVersion` — ошибка с отказом загрузки.
 
@@ -1607,8 +1648,13 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `equipment` | EquipmentSave | слоты, быстрые слоты и артефакты |
 | `skills` | string[] | выученные скиллы |
 | `needs` | `{ hunger, thirst, sleep, max }` | потребности: еда, вода, сон |
+| `quests` | string[] | завершённые квесты; отсутствует в сейвах до v5 |
+| `unlocks` | string[] | полученные открытия; отсутствует в сейвах до v5 |
+| `reputation` | `{ [factionId]: int }` | репутация по фракциям; отсутствует в сейвах до v5 |
+| `talentPoints` | int | свободные очки талантов; отсутствует в сейвах до v8 |
+| `talents` | `{ [talentId]: int }` | вложенные ранги талантов; отсутствует в сейвах до v8 |
 
-`ItemSave`: `{ instanceId, itemId, stack, durability, durabilityMax, variantKey, magazine }`; `null` у необязательных полей.
+`ItemSave`: `{ instanceId, itemId, stack, durability, durabilityMax, variantKey, magazine }`; `null` у необязательных полей; для оружия `magazine = null` или отсутствие поля — пустой магазин.
 
 `InventorySave`: `{ id, width, rows, placements: [{ instanceId, x, y, rotated, overflow }] }`.
 
@@ -1620,19 +1666,22 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - Предмет, которого нет в данных, не теряется: он восстанавливается в переполнении.
 - Если позиция больше не помещается в сетку (изменились габариты или ширина), предмет уходит в переполнение.
 - `stamina` и позиция игрока не дублируются в `PlayerSave`: ими владеет `SaveWorld`.
-- `modifiers` пока не сохраняются: появятся вместе с прокачкой и её модификаторами.
+- `modifiers` отдельно не сохраняются: они считаются из рангов талантов и данных дерева при загрузке.
+- `quests`, `unlocks` и `reputation` — прогресс, а не описание: условия товаров торговца (раздел 12.4) читают именно его.
+- `talentPoints ≥ 0`, `talents[talentId] ≥ 0`; неизвестный `talentId` не ломает загрузку, но не даёт бонусов, а ранг выше `maxRank` зажимается сервисом.
 
 `WorldState`:
 
 | Поле | Тип | Смысл |
 | --- | --- | --- |
 | `locations` | LocationInstance[] | все сгенерированные экземпляры |
+| `lastHubId` | string? | последний хаб, точка возврата после смерти; в сейвах до v9 отсутствует |
 | `reputation` | `{ [factionId]: int }` | репутация по фракциям |
 | `quests` | `[{ questId, stageId, status, progress }]` | `status` ∈ `active`, `done`, `failed` |
 | `unlocked` | string[] | полученные `unlock_` id |
 | `flags` | `{ [key]: value }` | флаги событий и сюжета |
 | `actorStates` | `[{ objectId, actorId, alive, hostile }]` | состояние экземпляров персонажей: ключ — `objectId` объекта на локации, `actorId` — шаблон |
-| `traders` | `[{ actorId, stock: [{ itemId, count }] }]` | текущие запасы торговцев |
+| `traders` | `[{ actorId, lastRestockAt, stock: [{ itemId, count }] }]` | текущие запасы торговцев и абсолютное время последнего пополнения в часах мира; пусто/отсутствует — запас создаётся при первом обращении |
 | `time` | `{ day, hours, phase }` | время мира: двигается при переходах и отдыхе |
 | `weather` | string | текущая погода: `clear` / `rain` / `fog`; фаза суток — в `time.phase` (`day` / `night`) |
 | `settings` | object | выбранные на старте настройки прохождения (`insuranceChance`, `tradeDifficulty`, `permadeath`) |
@@ -1668,28 +1717,28 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `nicknameMaxLength` | int | предел длины ника |
 | `previewMaxRows` | int | предел рядов в окне предпросмотра набора |
 | `savePageSize` | int | число ячеек сохранения на странице |
+| `respawnPercent` | number | доля максимума для здоровья и потолка еды/воды после обычной смерти, 0 < значение ≤ 1 (принято 0,3); в пермасмерти не применяется |
 
 Правило: `GameRules` — данные, а не код; числа меняются без пересборки, а сейв хранит только выбор игрока.
 
 ## 18. Открытые вопросы по данным
 
 1. **Цены:** конкретные `priceTiers` фракций, множители торговцев и правило округления на границах.
-2. **Время и погода:** какие фазы, как считаются, что меняют кроме засады.
+2. **Время и погода:** какие фазы, как считаются, что меняют кроме меткости и видимости.
 3. **Питание:** ставки расхода еды, воды и сна; что происходит при нуле и есть ли смерть от голода.
 4. **Полный список типов урона** и какие типы наносят аномалии и мутанты (наполнение данных).
 5. **Квесты «за жизнь»:** что ограничивает — число выполнений, смерть или тир.
 6. **Диалоги:** структура узлов, условия вариантов, влияние на репутацию.
 7. **Прочие формулы:** критический удар, лечение, сопротивление — какие нужны и с какими переменными.
 8. **Ресурс перемещения:** как называется и как восстанавливается.
-9. **Засада:** как применяется шанс — один бросок на бой, на ход или на противника; список факторов.
-10. **Враждебность NPC:** атака игрока как повод, возврат отношений.
-11. **Ремонт:** сколько прочности восстанавливает набор и станок, чем отличаются.
-12. **Торговцы:** объём запаса и период пополнения.
-13. **Склад в хабе:** нужен ли и какого размера.
-14. **Android и WebGL:** когда и с какими ограничениями (сейчас целевая — Windows).
-15. **Диапазоны `statRolls`** по шести ступеням — баланс; форма задана.
+9. **Враждебность NPC:** атака игрока как повод, возврат отношений.
+10. **Ремонт:** сколько прочности восстанавливает набор и станок, чем отличаются.
+11. **Торговцы:** объём запаса и период пополнения.
+12. **Склад в хабе:** нужен ли и какого размера.
+13. **Android и WebGL:** когда и с какими ограничениями (сейчас целевая — Windows).
+14. **Диапазоны `statRolls`** по шести ступеням — баланс; форма задана.
 
-Закрыто и вынесено в схемы: стаки по `(itemId, durability)`, вес (отсутствует), ОД (полностью каждый ход), дистанция (зоны, один сдвиг бесплатно), износ (выстрел/попадание), ремонт (набор + станок), слоты артефактов (сумма), авторазмещение переполнения, модификаторы с убывающей отдачей, враждебность NPC (состояние в сейве), смерть (возврат в хаб, полная потеря инвентаря кроме неутрачиваемых, независимая страховка надетых вещей), карта (хабы + радиальные вылазки), редкость и уникальность локаций, квесты (сюжетные не проваливаются; повторяемые двух видов), 4 тира, крафт только в хабах, торговцы с пополнением, все вычисления — формулы в данных, редкость только у оружия, брони и артефактов.
+Закрыто и вынесено в схемы: стаки по `(itemId, durability)`, вес (отсутствует), ОД (полностью каждый ход), порядок первого хода (сценарий боя, не бросок), дистанция (зоны, один сдвиг бесплатно), износ (выстрел/попадание), ремонт (набор + станок), слоты артефактов (сумма), авторазмещение переполнения, модификаторы с убывающей отдачей, враждебность NPC (состояние в сейве), смерть (возврат в хаб, полная потеря инвентаря кроме неутрачиваемых, независимая страховка надетых вещей), карта (хабы + радиальные вылазки), редкость и уникальность локаций, квесты (сюжетные не проваливаются; повторяемые двух видов), 4 тира, крафт только в хабах, торговцы с пополнением, все вычисления — формулы в данных, редкость только у оружия, брони и артефактов.
 
 ## 19. Правила валидации
 
@@ -1729,11 +1778,15 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 - `classId` → `WeaponClass`; `itemId` → `Item`; `lootTable` → `LootTable`; `templateId` → `LocationTemplate`; `spawnId` → `SpawnEntry`; `factionId` → `Faction`; `questId` → `Quest`; `statusId` → `StatusEffect`; `unlock_` id → `Unlock`; `damageTypeId` → `DamageType`.
 - `actorId` → `Actor`; допустимый `type` зависит от поля: `giverActorId` — `npc` или `trader`, `actorId` у `SpawnEntry` и в сейве — `npc`, `trader` или `enemy`.
+- `LocationTemplate.traders[]` → `Actor` с `type = trader`; каждый торговец привязан ровно к одному хабу.
+- `quests[].target.locationPool[]` → `LocationTemplate` с `nodeType = site`, `locationKind = wild`, `unique = false`; `actorPool[]`/`npcPool[]` → `Actor` с `type = enemy` и ролью `mutant`/`human`; `itemPool[]` → `Item` нужной категории; `rewards.items[].itemId` → `Item`. Пул, из которого нельзя выбрать ни одной цели, — ошибка.
+- `rules.maxActiveQuests ≥ 1`, `questOffersPerTrader ≥ 1`, `questOfferCooldownHours ≥ 0`, `questCooldownHours ≥ 0`; `cooldownHours ≥ 0` у квеста; `difficulty ≥ 0`; `count`, `poolSize`, `itemKinds`, `itemCount`, `npcCount` ≥ 1; `minTier ≥ 0` и `maxTier ≥ minTier`.
+- `assortment[].itemId` → `Item`; у товара обязательна цена покупки (`price.buy` или `price.base`).
 - `eventId` → `Event`.
 - `dialogueId` → `Dialog`; `speakerActorId` → `Actor`.
 - `rarity` и `rarityWeights[].rarityId` → `Rarity`; `features[]` → `Feature`; `skills[]` у экземпляра → `Skill`.
-- `damageFormulaId` и `healFormulaId` → `Formula`.
-- `initiativeFormulaId`, `formula_spawn_weight`, `formula_spawn_chance`, `formula_rarity_weight` → `Formula`.
+- `damageFormulaId`, `xpFormulaId` и `healFormulaId` → `Formula`.
+- `formula_spawn_weight`, `formula_spawn_chance`, `formula_rarity_weight` → `Formula`.
 
 **Предметы**
 
@@ -1747,7 +1800,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - `Feature.categories[]` ⊆ `{weapon, armor, artifact}` и содержит категорию предмета, которому выпала особенность.
 - `category = "weapon"` требует блок `weapon`; блок без соответствующей категории — ошибка.
 - `accuracy` ∈ 0..1; `penetration ≥ 0`; `armorPenetration ≥ 0`; `damageModifier > 0`.
-- `weapon.ammoCaliber` входит в `classId.ammoCalibers`.
+- `weapon.ammoCaliber` входит в `classId.ammoCalibers`; `weapon.magazine ≥ 1`.
 - `weapon.skills` ⊆ `classId.skills`.
 - Для `category = "ammo"` обязателен `caliber`; у каждого `weapon.ammoCaliber` есть хотя бы один патрон.
 - `durabilityMax ≥ 1` у оружия, брони и любого предмета с износом.
@@ -1783,11 +1836,16 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 **Актёры**
 
 - `type` ∈ `npc`, `trader`, `enemy`; значение определяет, какой блок наследника обязателен.
-- `type = enemy` требует `combat` и `ai` внутри него.
-- `type = trader` требует `assortment` и `roles`, содержащий `trader`.
+- `type = enemy` требует `combat` и `ai` внутри него, а также `combat.xp ≥ 1`.
+- `type = trader` требует блок `trader` и `roles`, содержащий `trader`.
+- `portraitMode`, если задан, ∈ `full`, `waist`; `portrait`, если задан, — id вида `portraits/<id>`.
+- `assortment` непуст; `stock ≥ 1`; `restockHours ≥ 1`; `playerBuyModifier` и `playerSellModifier` > 0 и ≤ 10.
+- `assortment[].itemId` существует; у предмета есть цена покупки. `assortment[].requirements` разбирается по правилам `Requirements`.
+- `LocationTemplate.traders` допустим только при `locationKind = hub`; каждый id существует, имеет `type = trader` и привязан не более чем к одному хабу; торговец без привязки — ошибка. `Actor.locationId` торговца, если задан, совпадает с этим хабом.
+- `EconomySettings` ровно одна запись: `rounding ≥ 1`, `minPrice ≥ 0`.
 - `type = npc` не требует ни `combat`, ни `roles`.
 - `type = npc` или `trader` с блоком `combat`: `ai` ∈ `passive`, `cautious`; `aggressive` и `ranged` у неагрессивных запрещены.
-- `tier` внутри `combat` ≥ 0; `health > 0`; `ap ≥ 0`; ключи `protection` — существующие `DamageType`.
+- `tier` внутри `combat` ≥ 0; `health > 0`; `ap ≥ 0`; `combat.xp ≥ 1` у `enemy`; ключи `protection` — существующие `DamageType`.
 - `roles` у `trader` обязательно содержит `trader`; обратное верно: `roles` с `trader` только у `type = trader`.
 - `lootTable` допустим только у `enemy`.
 - `combat.ammo` обязателен, если хоть один скилл врага имеет `ammoCost > 0`; `magazineSize ≥ 1`, `reserve ≥ 0`.
@@ -1804,8 +1862,8 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - `result` обязателен; `clampMin ≤ clampMax`, если заданы обе границы.
 - `BalanceSettings` ровно одна; имена констант — `snake_case`; неиспользованная константа — предупреждение.
 - `CombatSettings` ровно одна, `damageFormulaId` обязателен и разрешается в `Formula`.
+- `CombatSettings.xpFormulaId` обязателен и разрешается в `Formula`; формула опыта обязана объявлять `enemyXp` и `locationTier`.
 - `CombatSettings.apRestore` ∈ `full`, `partial`, `none`; при `partial` обязателен `apPerTurn ≥ 1`.
-- `CombatSettings.initiative` ∈ `playerFirst`, `formula`; при `formula` обязателен `initiativeFormulaId`.
 - `zoneShiftFree ≥ 0`; `zoneShiftApCost ≥ 0`.
 - Формула урона обязана объявлять как минимум `damage`; остальные переменные — по контракту раздела 11.6.
 
@@ -1848,6 +1906,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 - `GameRules` ровно одна.
 - `insuranceChance` ∈ 0..1; `insuranceStep > 0`. При `permadeath` страховка не применяется.
+- `respawnPercent` ∈ (0, 1]: здоровье после обычной смерти и потолок еды/воды; в пермасмерти не применяется.
 - `baseRows ≥ 1`, `gridWidth ≥ 1`, `needsMax ≥ 1`, `tierCount ≥ 1`.
 - `playerActorId` ссылается на существующего актёра.
 - Сейв хранит выбранные `settings`: `insuranceChance` ∈ 0..1, `tradeDifficulty` ≥ 0, `permadeath` — bool; старое поле `lootLossFactor` читается как `insuranceChance`.
@@ -1866,6 +1925,14 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - `rolls[0] ≤ rolls[1]`, `rolls[0] ≥ 1`.
 - `choices` не пуст; все `effects` ссылаются на существующие id.
 - `connections[].toId` ссылаются на существующие `LocationTemplate`, сами связи проверяются блоком «Связность локаций».
+
+**Таланты**
+
+- Запись вида `talents` одна; отсутствие файла или вторая запись — ошибка.
+- `id` таланта и пара `(row, column)` уникальны.
+- `maxRank` ∈ 1..100; `requiredPoints ≥ 0` и не больше суммы `maxRank` талантов с меньшей `row`.
+- `effects` непуст; `stat` — известный код; одна характеристика в таланте не повторяется; `perRank > 0`, для целых характеристик — целое.
+- В сейве `talentPoints ≥ 0`, `talents[id] ≥ 0`; неизвестный талант не ломает загрузку, ранг выше `maxRank` зажимается сервисом.
 
 **Сейв**
 
@@ -2060,6 +2127,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
     "tier": 1,
     "health": 30,
     "ap": 4,
+    "xp": 25,
     "protection": { "dmg_bullet": 1 },
     "skills": ["skill_bite"],
     "ai": "aggressive"
@@ -2143,30 +2211,27 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 ```json
 {
-  "id": "combat",
-  "damageFormulaId": "formula_damage_base",
+  "id": "formula_combat_xp",
+  "expression": "round(enemyXp * (1 + locationTier * 5 / 100))",
+  "variables": [
+    { "name": "enemyXp", "descriptionKey": "formula.var.enemyXp" },
+    { "name": "locationTier", "descriptionKey": "formula.var.locationTier" }
+  ],
+  "result": "int",
   "clampMin": 0,
-  "apRestore": "full",
-  "initiative": "formula",
-  "initiativeFormulaId": "formula_ambush_chance",
-  "zoneShiftFree": 1,
-  "zoneShiftApCost": 1
+  "descriptionKey": "formula.formula_combat_xp.desc"
 }
 ```
 
 ```json
 {
-  "id": "formula_ambush_chance",
-  "expression": "clamp(ambush_base + danger * ambush_danger + max(0, tier - playerLevel) * ambush_tier_step, 0, ambush_cap)",
-  "variables": [
-    { "name": "danger", "descriptionKey": "formula.var.danger" },
-    { "name": "tier", "descriptionKey": "formula.var.tier" },
-    { "name": "playerLevel", "descriptionKey": "formula.var.playerLevel" }
-  ],
-  "result": "float",
+  "id": "combat",
+  "damageFormulaId": "formula_damage_base",
+  "xpFormulaId": "formula_combat_xp",
   "clampMin": 0,
-  "clampMax": 1,
-  "descriptionKey": "formula.formula_ambush_chance.desc"
+  "apRestore": "full",
+  "zoneShiftFree": 1,
+  "zoneShiftApCost": 1
 }
 ```
 
@@ -2204,16 +2269,12 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
   "constants": {
     "damage_floor": 0,
     "durability_per_shot": 0.5,
-    "rarity_curve": 0.15,
-    "ambush_base": 0.2,
-    "ambush_danger": 0.3,
-    "ambush_tier_step": 0.1,
-    "ambush_cap": 0.9
+    "rarity_curve": 0.15
   }
 }
 ```
 
-Три вида записи — `expression`, `value`, `table` — взаимозаменяемы: правило можно свести к числу, число развернуть в таблицу, таблицу заменить выражением. Идентификатор и все ссылки на него сохраняются, код не меняется. Смена `damageFormulaId` на `formula_damage_soft` меняет поведение боя без правки кода; `apRestore`, `initiative` и `zoneShiftFree` — тоже данные. Балансные коэффициенты вынесены в `balance.constants`, поэтому правка `ambush_danger` меняет все бои сразу.
+Три вида записи — `expression`, `value`, `table` — взаимозаменяемы: правило можно свести к числу, число развернуть в таблицу, таблицу заменить выражением. Идентификатор и все ссылки на него сохраняются, код не меняется. Смена `damageFormulaId` на `formula_damage_soft` меняет поведение боя без правки кода; `apRestore` и `zoneShiftFree` — тоже данные. Балансные коэффициенты вынесены в `balance.constants`, поэтому правка константы меняет все формулы сразу.
 
 ### 20.10. Экономика
 
@@ -2354,6 +2415,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
   "id": "rules",
   "insuranceChance": 0.15,
   "insuranceStep": 0.05,
+  "respawnPercent": 0.3,
   "baseRows": 4,
   "tierCount": 4
 }
@@ -2792,4 +2854,107 @@ Mods/hardcore_loot/
 - `names` непуст, каждый элемент — непустая строка; иначе ошибка проверки данных.
 - Случайный ник выбирается детерминированно по seed новой игры (`INicknameGenerator`).
 - Ник игрока хранится в `player.name` сейва; старый сейв без поля читается, ник остаётся пустым.
+
+## 23. Прокачка: дерево талантов (`talents`)
+
+**Один файл — всё дерево.** `Assets/Data/talents.json` (вид `talents`, id `talents`) содержит заголовок, описание и массив талантов. Отдельного файла на талант нет: новый талант — элемент массива `nodes`, а не новый класс и не новый файл. Ветки задаются координатами `row`/`column`, а не отдельными полями-родителями: связь рисуется к талантам предыдущей строки в соседних колонках. В каталог файл добавляется напрямую (без коллекции).
+
+| Поле дерева | Тип | Обязательное | Смысл |
+| --- | --- | --- | --- |
+| `id` | string | да | id записи, `talents` |
+| `titleKey` | string | да | ключ названия дерева |
+| `descriptionKey` | string | да | ключ описания дерева |
+| `nodes` | `TalentNode[]` | да | непустой массив талантов |
+
+`TalentNode`:
+
+| Поле | Тип | Обязательное | Смысл |
+| --- | --- | --- | --- |
+| `id` | string | да | `tal_…`, уникален в дереве |
+| `titleKey` | string | да | ключ названия |
+| `descriptionKey` | string | да | ключ описания |
+| `icon` | string | нет | id картинки из каталога спрайтов, `icons/tal_…`; пусто — карточка без картинки |
+| `row` | int | да | строка дерева, ≥ 0; ветки идут вниз |
+| `column` | int | да | колонка дерева, ≥ 0; корень демо-дерева — 1 |
+| `maxRank` | int | да | предельный ранг, 1..100 |
+| `requiredPoints` | int | да | сколько очков должно быть вложено в дерево до открытия, ≥ 0 |
+| `effects` | `TalentEffect[]` | да | непустой массив эффектов |
+
+`TalentEffect`:
+
+| Поле | Тип | Обязательное | Смысл |
+| --- | --- | --- | --- |
+| `stat` | enum | да | характеристика эффекта |
+| `perRank` | number | да | прибавка за один ранг, > 0 |
+
+Коды `stat`:
+
+| Код | Смысл | Потребитель |
+| --- | --- | --- |
+| `apRestore` | +ОД к восстановлению за ход | бой, частичный режим `apRestore: partial` |
+| `apMax` | +максимум ОД | бой |
+| `healthMax` | +максимум здоровья | бой |
+| `accuracy` | +меткость (доля, например `0.01`) | бой |
+| `staminaMax` | +максимум выносливости | зарезервировано |
+| `luck` | +удача | зарезервировано |
+| `carryRows` | +строки инвентаря | зарезервировано |
+
+Пример:
+
+```json
+{
+  "schemaVersion": 1,
+  "kind": "talents",
+  "id": "talents",
+  "titleKey": "talent.tree.title",
+  "descriptionKey": "talent.tree.description",
+  "nodes": [
+    {
+      "id": "tal_steady_hand",
+      "titleKey": "talent.tal_steady_hand.title",
+      "descriptionKey": "talent.tal_steady_hand.description",
+      "icon": "icons/tal_steady_hand",
+      "row": 0,
+      "column": 1,
+      "maxRank": 5,
+      "requiredPoints": 0,
+      "effects": [{ "stat": "accuracy", "perRank": 0.01 }]
+    },
+    {
+      "id": "tal_second_wind",
+      "titleKey": "talent.tal_second_wind.title",
+      "descriptionKey": "talent.tal_second_wind.description",
+      "icon": "icons/tal_second_wind",
+      "row": 1,
+      "column": 0,
+      "maxRank": 3,
+      "requiredPoints": 5,
+      "effects": [{ "stat": "apRestore", "perRank": 1 }]
+    },
+    {
+      "id": "tal_toughness",
+      "titleKey": "talent.tal_toughness.title",
+      "descriptionKey": "talent.tal_toughness.description",
+      "icon": "icons/tal_toughness",
+      "row": 1,
+      "column": 2,
+      "maxRank": 4,
+      "requiredPoints": 5,
+      "effects": [{ "stat": "healthMax", "perRank": 2 }]
+    }
+  ]
+}
+```
+
+Правила:
+
+- **Одно дерево.** Две записи вида `talents` — ошибка; отсутствие файла — ошибка проверки данных.
+- **Уникальность.** `id` таланта и пара `(row, column)` уникальны в дереве; иначе ошибка.
+- **Ветки.** Позиция задаётся `row`/`column`; в одной строке может быть несколько талантов, поэтому дерево ветвится без отдельных полей-родителей. Связи на экране рисуются к талантам предыдущей строки в соседних колонках, иначе — к ближайшему.
+- **Картинка.** `icon` необязателен: если id нет в каталоге спрайтов, карточка рисует цветную заглушку и остаётся работоспособной. Заглушки создаёт редакторный инструмент, каталог собирается отдельной командой.
+- **Порог достижим.** `requiredPoints` не больше суммы `maxRank` всех талантов с меньшей `row`; иначе порог недостижим и данные не проходят проверку. Стартовые таланты (`requiredPoints = 0`) обязаны существовать, иначе дерево не открывается.
+- **Эффекты.** Хотя бы один эффект; одна и та же характеристика в одном таланте не повторяется. `perRank > 0`; для целых характеристик (`apRestore`, `apMax`, `healthMax`, `staminaMax`, `luck`, `carryRows`) `perRank` обязан быть целым, `accuracy` может быть дробной.
+- **Прогресс.** Очки выдаются за уровни персонажа; левелинг пока не реализован, `PlayerState.talentPoints` и `ITalentService.GrantPoints` — точки подключения. Изучение списывает одно очко и повышает ранг; откат не предусмотрен.
+- **Сейв.** Ранги и свободные очки живут в `player.talentPoints` и `player.talents` (`id → ранг`), сейв v9. Неизвестный `talentId` в сейве не ломает загрузку, но бонусов не даёт; ранг выше `maxRank` зажимается.
+- **Эффекты — данные.** Новый талант с уже поддержанной характеристикой не требует правки кода; новая характеристика — новый код `stat` в перечислении и его потребитель.
 

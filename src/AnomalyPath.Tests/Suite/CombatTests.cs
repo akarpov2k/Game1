@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Services;
+using AnomalyPath.Core.Talents;
 
 namespace AnomalyPath.Tests
 {
@@ -30,7 +31,7 @@ namespace AnomalyPath.Tests
 
             Check("бой: актёры загружены", () =>
             {
-                Equal(3, actors.All.Count, "актёры");
+                Equal(8, actors.All.Count, "актёры");
                 Equal(45, actors.Get("enemy_bandit").Combat!.Health, "здоровье бандита");
                 Equal(0.8, actors.Get("actor_player").Combat!.Accuracy, "меткость игрока");
             });
@@ -39,6 +40,41 @@ namespace AnomalyPath.Tests
             {
                 var state = Start(combat, actors, equipment, settings);
                 True(ReferenceEquals(state.Current, state.Player), "первый ход игрока");
+                Equal(CombatScenarioKind.Normal, state.Scenario.Kind, "обычный сценарий");
+                Equal(CombatStartSide.Player, state.Scenario.First, "первый ход игрока");
+            });
+
+            Check("бой: засада — противник ходит первым", () =>
+            {
+                var state = combat.Start(
+                    actors.Get("actor_player"), new Equipment("player", settings.QuickSlots),
+                    actors.Get("enemy_bandit"), DistanceZone.Mid, CombatScenario.Ambush);
+                True(ReferenceEquals(state.Current, state.Enemy), "первый ход противника");
+                Equal(CombatScenarioKind.Ambush, state.Scenario.Kind, "сценарий");
+                Equal(CombatStartSide.Enemy, state.Scenario.First, "сторона первого хода");
+            });
+
+            Check("бой: сюжетный сценарий — первым ходит заданная сторона", () =>
+            {
+                var enemyFirst = combat.Start(
+                    actors.Get("actor_player"), new Equipment("player", settings.QuickSlots),
+                    actors.Get("enemy_bandit"), DistanceZone.Mid,
+                    CombatScenario.Story(CombatStartSide.Enemy));
+                True(ReferenceEquals(enemyFirst.Current, enemyFirst.Enemy), "первым ходит противник");
+                Equal(CombatScenarioKind.Story, enemyFirst.Scenario.Kind, "сценарий");
+
+                var playerFirst = combat.Start(
+                    actors.Get("actor_player"), new Equipment("player", settings.QuickSlots),
+                    actors.Get("enemy_bandit"), DistanceZone.Mid,
+                    CombatScenario.Story(CombatStartSide.Player));
+                True(ReferenceEquals(playerFirst.Current, playerFirst.Player), "первым ходит игрок");
+                Equal(CombatStartSide.Player, playerFirst.Scenario.First, "сторона первого хода");
+            });
+
+            Check("бой: неизвестная сторона сюжетного сценария отклоняется", () =>
+            {
+                Throws<System.ArgumentOutOfRangeException>(
+                    () => CombatScenario.Story((CombatStartSide)99), "сторона");
             });
 
             Check("меткость: автомат на средней дистанции 80%", () =>
@@ -70,6 +106,45 @@ namespace AnomalyPath.Tests
                     actors.Get("actor_player"), new Equipment("player", settings.QuickSlots),
                     actors.Get("enemy_bandit"), DistanceZone.Far);
                 Equal(1.0, combat.HitChance(state, Weapon("wpn_sv98")), "0.8 × 1.5");
+            });
+
+            Check("бой: таланты добавляют меткость, ОД и здоровье", () =>
+            {
+                var state = combat.Start(
+                    actors.Get("actor_player"),
+                    new Equipment("player", settings.QuickSlots),
+                    actors.Get("enemy_bandit"),
+                    DistanceZone.Mid,
+                    playerModifiers: new TalentModifiers(accuracy: 0.1, apMax: 2, healthMax: 10));
+                Equal(10, state.Player.MaxAp, "максимум ОД");
+                Equal(10, state.Player.Ap, "текущие ОД");
+                Equal(110, state.Player.MaxHealth, "максимум здоровья");
+                Equal(0.9, combat.HitChance(state, Weapon("wpn_ak74")), "меткость");
+            });
+
+            Check("бой: талант восстанавливает ОД за ход при частичном режиме", () =>
+            {
+                var partial = new CombatService(
+                    services.Resolve<IItemRepository>(),
+                    services.Resolve<IDamageTypeRepository>(),
+                    services.Resolve<IEquipmentService>(),
+                    services.Resolve<IArmorWearService>(),
+                    services.Resolve<IFormulaRepository>(),
+                    Settings(ApRestoreKind.Partial, 0),
+                    BalanceTemplate.Empty,
+                    new StubRandom(0.99),
+                    services.Resolve<IInventoryService>());
+                var state = partial.Start(
+                    actors.Get("actor_player"),
+                    new Equipment("player", settings.QuickSlots),
+                    actors.Get("enemy_bandit"),
+                    DistanceZone.Mid,
+                    playerModifiers: new TalentModifiers(apRestore: 1));
+                True(partial.TryAttack(state, Weapon("wpn_ak74"), out _), "атака");
+                Equal(7, state.Player.Ap, "ОД после атаки");
+                partial.EndTurn(state);
+                partial.EndTurn(state);
+                Equal(8, state.Player.Ap, "бонус таланта восстановил ОД");
             });
 
             Check("бой: урон вычитает защиту цели", () =>
@@ -209,6 +284,40 @@ namespace AnomalyPath.Tests
                 Equal(7, state.Player.Ap, "ОД не потрачены");
             });
 
+            Check("перезарядка берёт патроны из самых маленьких стопок", () =>
+            {
+                var state = Start(combat, actors, equipment, settings);
+                var inventory = services.Resolve<IInventoryService>();
+                var grid = new GridContainer("ammo", 4, 4);
+                var template = services.Resolve<IItemRepository>().Get("ammo_545");
+                var large = new ItemInstance("large", "ammo_545", 5);
+                grid.Place(large, template, 0, 0, false);
+                var small = new ItemInstance("small", "ammo_545", 2);
+                grid.Place(small, template, 1, 0, false);
+                var weapon = new ItemInstance("w", "wpn_ak74", 1, 100, 100, null, 25);
+
+                True(combat.TryReload(state, weapon, grid), "перезарядка");
+
+                Equal(30, weapon.MagazineRounds, "магазин полон");
+                Equal(2, large.Stack, "из большей стопки взяли остаток");
+                True(grid.Find("small") == null, "меньшая стопка израсходована");
+                Equal(2, inventory.Count(grid, "ammo_545"), "патроны в инвентаре");
+            });
+
+            Check("перезарядка учитывает патроны, оставшиеся в магазине", () =>
+            {
+                var state = Start(combat, actors, equipment, settings);
+                var grid = new GridContainer("ammo", 4, 4);
+                services.Resolve<IInventoryService>().TryAdd(grid, "ammo_545", 30, out _);
+                var weapon = new ItemInstance("w", "wpn_ak74", 1, 100, 100, null, 10);
+
+                True(combat.TryReload(state, weapon, grid), "перезарядка");
+
+                Equal(30, weapon.MagazineRounds, "магазин полон");
+                Equal(10, services.Resolve<IInventoryService>().Count(grid, "ammo_545"), "взято ровно недостающее");
+                Equal(7, state.Player.Ap, "ОД за перезарядку");
+            });
+
             Check("перезарядка врага: пустой магазин заряжается полностью за ОД", () =>
             {
                 var shooterActor = new ActorTemplate(
@@ -309,14 +418,15 @@ namespace AnomalyPath.Tests
                 services.Resolve<IInventoryService>());
         }
 
-        private static CombatSettingsTemplate Settings() => new CombatSettingsTemplate(
+        private static CombatSettingsTemplate Settings(
+            ApRestoreKind restore = ApRestoreKind.Full,
+            int perTurn = 0) => new CombatSettingsTemplate(
             "formula_damage_base",
+            "formula_combat_xp",
             0,
             null,
-            ApRestoreKind.Full,
-            0,
-            InitiativeKind.PlayerFirst,
-            null,
+            restore,
+            perTurn,
             1,
             1,
             1,
@@ -325,7 +435,15 @@ namespace AnomalyPath.Tests
             0.8,
             1);
 
-        private static ItemInstance Weapon(string id) => new ItemInstance("w", id, 1, 100, 100);
+        private static ItemInstance Weapon(string id) =>
+            new ItemInstance("w", id, 1, 100, 100, null, MagazineSize(id));
+
+        private static int MagazineSize(string id) => id switch
+        {
+            "wpn_pm" => 8,
+            "wpn_sv98" => 10,
+            _ => 30,
+        };
 
         private static CombatState Start(
             ICombatService combat,

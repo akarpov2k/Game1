@@ -13,5 +13,6 @@
   "connections": [],
   "rarity": "common",
   "spawnChance": 1,
-  "unique": false
+  "unique": false,
+  "traders": ["trd_hub_smuggler", "trd_hub_medic"]
 }

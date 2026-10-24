@@ -67,12 +67,13 @@ namespace AnomalyPath.Runtime.Screens.Character
             try
             {
                 var rules = _host.Rules.Rules;
+                var bonus = _host.Talents.GetModifiers(player).HealthMax;
                 if (rules == null)
                 {
-                    return Math.Max(1, player.Health);
+                    return Math.Max(1, player.Health + bonus);
                 }
 
-                return _host.Actors.Get(rules.PlayerActorId).Combat?.Health ?? Math.Max(1, player.Health);
+                return (_host.Actors.Get(rules.PlayerActorId).Combat?.Health ?? Math.Max(1, player.Health)) + bonus;
             }
             catch (Exception)
             {

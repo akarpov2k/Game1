@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "kind": "quests",
+  "id": "qst_find_armor",
+  "questKind": "repeatable",
+  "questType": "findItems",
+  "titleKey": "quest.qst_find_armor.title",
+  "descriptionKey": "quest.qst_find_armor.desc",
+  "difficulty": 1,
+  "cooldownHours": 24,
+  "requirements": { "tier": 1 },
+  "target": {
+    "itemCategories": ["armor"],
+    "itemKinds": 1,
+    "itemCount": 1,
+    "minTier": 1,
+    "maxTier": 2,
+    "npcCount": 2,
+    "npcPool": ["enemy_bandit", "enemy_merc"],
+    "poolSize": 1
+  },
+  "rewards": { "money": 300 }
+}

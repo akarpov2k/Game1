@@ -18,13 +18,15 @@ namespace AnomalyPath.Core.Inventory
         /// <param name="durability">Текущая прочность, если предмет изнашивается.</param>
         /// <param name="durabilityMax">Максимум прочности на момент создания.</param>
         /// <param name="variantKey">Вариант предмета (редкость, скиллы).</param>
+        /// <param name="magazine">Патроны в магазине; <c>null</c> у не-оружия.</param>
         public ItemInstance(
             string instanceId,
             string itemId,
             int stack,
             int? durability = null,
             int? durabilityMax = null,
-            string? variantKey = null)
+            string? variantKey = null,
+            int? magazine = null)
         {
             if (string.IsNullOrWhiteSpace(instanceId))
             {
@@ -46,6 +48,7 @@ namespace AnomalyPath.Core.Inventory
             Durability = durability;
             DurabilityMax = durabilityMax;
             VariantKey = variantKey;
+            Magazine = magazine;
         }
 
         /// <summary>Уникальный id экземпляра.</summary>
@@ -66,17 +69,11 @@ namespace AnomalyPath.Core.Inventory
         /// <summary><c>true</c>, если прочность на нуле: предмет сломан и не участвует в расчётах.</summary>
         public bool IsBroken => Durability.HasValue && Durability.Value <= 0;
 
-        /// <summary>Патроны в магазине; <c>null</c>, пока магазин не инициализирован.</summary>
+        /// <summary>Патроны в магазине; <c>null</c> — магазин не инициализирован и считается пустым.</summary>
         public int? Magazine { get; internal set; }
 
-        /// <summary>Инициализирует магазин и возвращает текущее число патронов.</summary>
-        /// <param name="size">Размер магазина.</param>
-        /// <returns>Патронов в магазине.</returns>
-        public int EnsureMagazine(int size)
-        {
-            Magazine ??= size;
-            return Magazine.Value;
-        }
+        /// <summary>Патронов в магазине; неизвестный магазин считается пустым.</summary>
+        public int MagazineRounds => Magazine ?? 0;
 
         /// <summary>Ключ варианта: редкость и раскатанные характеристики.</summary>
         public string? VariantKey { get; }

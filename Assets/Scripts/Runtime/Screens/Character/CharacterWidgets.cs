@@ -88,7 +88,7 @@ namespace AnomalyPath.Runtime.Screens.Character
         public static ItemTemplate? Template(IUiHost host, ItemInstance item) =>
             ItemPresentation.Template(host, item);
 
-        /// <summary>Подпись предмета: название, количество, прочность.</summary>
+        /// <summary>Подпись предмета: название, количество, патроны в магазине, прочность.</summary>
         /// <param name="host">Хост интерфейса.</param>
         /// <param name="item">Экземпляр.</param>
         /// <returns>Текст для слота или клетки.</returns>

@@ -4,6 +4,7 @@
   "id": "rules",
   "insuranceChance": 0.15,
   "insuranceStep": 0.05,
+  "respawnPercent": 0.3,
   "baseRows": 4,
   "gridWidth": 8,
   "needsMax": 100,
@@ -15,5 +16,9 @@
   "nicknameMaxLength": 24,
   "previewMaxRows": 32,
   "savePageSize": 6,
+  "maxActiveQuests": 3,
+  "questOffersPerTrader": 4,
+  "questOfferCooldownHours": 6,
+  "questCooldownHours": 48,
   "tierCount": 4
 }

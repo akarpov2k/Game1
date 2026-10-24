@@ -1,8 +1,8 @@
 ﻿<Solution>
   <Project Path="AnomalyPath.Runtime.csproj" />
+  <Project Path="AnomalyPath.Tests.EditMode.csproj" />
   <Project Path="AnomalyPath.Core.csproj" />
   <Project Path="AnomalyPath.Editor.csproj" />
-  <Project Path="AnomalyPath.Tests.EditMode.csproj" />
   <Project Path="AnomalyPath.Tests.PlayMode.csproj" />
   <Project Path="Unity.2D.Welcome.csproj" />
 </Solution>

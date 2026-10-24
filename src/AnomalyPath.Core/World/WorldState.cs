@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Localization;
 
@@ -15,6 +16,7 @@ namespace AnomalyPath.Core.World
         /// <param name="staminaMax">Максимум выносливости.</param>
         /// <param name="clock">Часы мира.</param>
         /// <param name="weather">Текущая погода.</param>
+        /// <param name="lastHubId">Последний посещённый хаб; <c>null</c> — определить по карте.</param>
         /// <exception cref="DataException">Локация не найдена или выносливость вне границ.</exception>
         public WorldState(
             WorldMap map,
@@ -22,7 +24,8 @@ namespace AnomalyPath.Core.World
             int stamina,
             int staminaMax,
             WorldClock clock,
-            WeatherKind weather = WeatherKind.Clear)
+            WeatherKind weather = WeatherKind.Clear,
+            string? lastHubId = null)
         {
             Map = map ?? throw new ArgumentNullException(nameof(map));
             Clock = clock ?? throw new ArgumentNullException(nameof(clock));
@@ -40,6 +43,7 @@ namespace AnomalyPath.Core.World
             Stamina = stamina;
             StaminaMax = staminaMax;
             Weather = weather;
+            LastHubId = ResolveLastHub(map, currentLocationId, lastHubId);
             Map.GetLocation(currentLocationId).MarkVisited();
         }
 
@@ -51,6 +55,9 @@ namespace AnomalyPath.Core.World
 
         /// <summary>Где находится игрок.</summary>
         public string CurrentLocationId { get; private set; }
+
+        /// <summary>Последний посещённый хаб: точка возврата после смерти.</summary>
+        public string LastHubId { get; private set; }
 
         /// <summary>Текущая выносливость.</summary>
         public int Stamina { get; private set; }
@@ -111,10 +118,53 @@ namespace AnomalyPath.Core.World
 
             CurrentLocationId = locationId;
             location.MarkVisited();
+            if (location.NodeType == LocationNodeType.Hub)
+            {
+                LastHubId = locationId;
+            }
         }
 
         /// <summary>Меняет погоду.</summary>
         /// <param name="weather">Новая погода.</param>
         public void SetWeather(WeatherKind weather) => Weather = weather;
+
+        private static string ResolveLastHub(WorldMap map, string currentLocationId, string? lastHubId)
+        {
+            if (lastHubId != null)
+            {
+                if (!map.TryGetLocation(lastHubId, out var savedHub) ||
+                    savedHub == null ||
+                    savedHub.NodeType != LocationNodeType.Hub)
+                {
+                    throw new DataException(lastHubId, CoreErrors.WorldInstanceNotFound, lastHubId);
+                }
+
+                return lastHubId;
+            }
+
+            if (map.TryGetLocation(currentLocationId, out var current) &&
+                current != null &&
+                current.NodeType == LocationNodeType.Hub)
+            {
+                return currentLocationId;
+            }
+
+            var hubs = new List<LocationInstance>();
+            foreach (var location in map.Locations)
+            {
+                if (location.NodeType == LocationNodeType.Hub)
+                {
+                    hubs.Add(location);
+                }
+            }
+
+            if (hubs.Count == 0)
+            {
+                throw new DataException("world", CoreErrors.WorldNoHub);
+            }
+
+            hubs.Sort((left, right) => string.CompareOrdinal(left.InstanceId, right.InstanceId));
+            return hubs[0].InstanceId;
+        }
     }
 }

@@ -5,8 +5,10 @@ using System.Globalization;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Json;
+using AnomalyPath.Core.Quests;
 using AnomalyPath.Core.Save;
 using AnomalyPath.Core.Session;
+using AnomalyPath.Core.Trade;
 using AnomalyPath.Core.World;
 
 namespace AnomalyPath.Core.Services
@@ -60,7 +62,11 @@ namespace AnomalyPath.Core.Services
                     : new NewGameSettingsSaveData(
                         state.Settings.InsuranceChance,
                         state.Settings.TradeDifficulty,
-                        state.Settings.Permadeath));
+                        state.Settings.Permadeath),
+                ToTraderData(state.Traders),
+                ToQuestData(state.Quests),
+                state.QuestSerial,
+                world.LastHubId);
             var game = new SaveGame(
                 SaveGame.CurrentSchemaVersion,
                 SaveGame.CurrentSaveVersion,
@@ -127,7 +133,14 @@ namespace AnomalyPath.Core.Services
                 world.NightStartHour);
             var clock = new WorldClock(world.Day, world.Hours, world.DayStartHour, world.NightStartHour);
             var weather = WeatherCodec.FromCode(world.Weather, slot);
-            var state = new WorldState(map, world.CurrentLocationId, world.Stamina, world.StaminaMax, clock, weather);
+            var state = new WorldState(
+                map,
+                world.CurrentLocationId,
+                world.Stamina,
+                world.StaminaMax,
+                clock,
+                weather,
+                world.LastHubId);
             var player = game.Player == null
                 ? null
                 : PlayerSaveMapper.FromSaveData(game.Player, _items, slot);
@@ -137,7 +150,7 @@ namespace AnomalyPath.Core.Services
                     game.World.Settings.InsuranceChance,
                     game.World.Settings.TradeDifficulty,
                     permadeath: game.World.Settings.Permadeath);
-            return new GameState(state, player, settings);
+            return new GameState(state, player, settings, LoadTraders(game.World.Traders), LoadQuests(game.World.Quests), game.World.QuestSerial);
         }
 
         /// <inheritdoc />
@@ -213,6 +226,110 @@ namespace AnomalyPath.Core.Services
                     edge.Cost.Hours,
                     edge.OneWay,
                     edge.Hidden));
+            }
+
+            return result;
+        }
+
+        private static IReadOnlyList<TraderSaveData> ToTraderData(IReadOnlyList<TraderState> traders)
+        {
+            var result = new List<TraderSaveData>();
+            foreach (var trader in traders)
+            {
+                var stock = new List<TraderStockSaveData>();
+                foreach (var pair in trader.Stock)
+                {
+                    stock.Add(new TraderStockSaveData(pair.Key, pair.Value));
+                }
+
+                stock.Sort((left, right) => string.CompareOrdinal(left.ItemId, right.ItemId));
+                result.Add(new TraderSaveData(
+                    trader.ActorId,
+                    trader.LastRestockAt,
+                    stock,
+                    trader.QuestSlotAvailableAt));
+            }
+
+            result.Sort((left, right) => string.CompareOrdinal(left.ActorId, right.ActorId));
+            return result;
+        }
+
+        private static IReadOnlyList<TraderState> LoadTraders(IReadOnlyList<TraderSaveData> traders)
+        {
+            var result = new List<TraderState>();
+            foreach (var data in traders)
+            {
+                var state = new TraderState(data.ActorId, data.QuestSlots);
+                foreach (var item in data.Stock)
+                {
+                    state.SetStock(item.ItemId, item.Count);
+                }
+
+                state.MarkRestocked(data.LastRestockAt);
+                result.Add(state);
+            }
+
+            return result;
+        }
+
+        private static IReadOnlyList<QuestSaveData> ToQuestData(IReadOnlyList<QuestState> quests)
+        {
+            var result = new List<QuestSaveData>();
+            foreach (var quest in quests)
+            {
+                var items = new List<QuestItemSaveData>();
+                foreach (var item in quest.Items)
+                {
+                    items.Add(new QuestItemSaveData(item.ItemId, item.Count));
+                }
+
+                result.Add(new QuestSaveData(
+                    quest.QuestId,
+                    quest.GiverActorId,
+                    quest.Status,
+                    quest.AcceptedAt,
+                    quest.CooldownUntil,
+                    quest.CompletedAt,
+                    quest.LocationTemplateId,
+                    quest.LocationInstanceId,
+                    quest.ActorIds,
+                    items,
+                    quest.KillCount,
+                    quest.Cleared,
+                    quest.RequiredCount,
+                    quest.Slot));
+            }
+
+            result.Sort((left, right) => string.CompareOrdinal(left.QuestId, right.QuestId));
+            return result;
+        }
+
+        private static IReadOnlyList<QuestState> LoadQuests(IReadOnlyList<QuestSaveData> quests)
+        {
+            var result = new List<QuestState>();
+            foreach (var data in quests)
+            {
+                var items = new List<QuestItemTarget>();
+                foreach (var item in data.Items)
+                {
+                    items.Add(new QuestItemTarget(item.ItemId, item.Count));
+                }
+
+                result.Add(new QuestState(
+                    data.QuestId,
+                    data.GiverActorId,
+                    data.Status,
+                    data.AcceptedAt,
+                    data.CooldownUntil,
+                    data.CompletedAt,
+                    data.LocationTemplateId,
+                    data.LocationInstanceId,
+                    data.ActorIds,
+                    items,
+                    data.KillCount,
+                    data.Cleared,
+                    data.RequiredCount,
+                    data.Slot));
             }
 
             return result;

@@ -18,6 +18,9 @@ namespace AnomalyPath.Core.Services
         private readonly ISaveService _saves;
         private readonly INewGameService _newGame;
         private readonly IDeathService _death;
+        private readonly ICombatOutcomeService _outcomes;
+        private readonly IQuestService? _quests;
+        private readonly ITalentService? _talents;
 
         /// <summary>Создаёт сервис сессии.</summary>
         /// <param name="travel">Переходы по миру.</param>
@@ -25,19 +28,28 @@ namespace AnomalyPath.Core.Services
         /// <param name="saves">Сохранение и загрузка состояния.</param>
         /// <param name="newGame">Создание новой игры.</param>
         /// <param name="death">Последствия смерти для вещей.</param>
+        /// <param name="outcomes">Итог боя: опыт, лут и респавн.</param>
+        /// <param name="quests">Квесты: учёт убийств в бою; <c>null</c> — не учитывать.</param>
+        /// <param name="talents">Таланты: бонусы игрока в бою; <c>null</c> — без бонусов.</param>
         /// <exception cref="ArgumentNullException">Зависимость не задана.</exception>
         public GameSessionService(
             ITravelService travel,
             ICombatService combat,
             ISaveService saves,
             INewGameService newGame,
-            IDeathService death)
+            IDeathService death,
+            ICombatOutcomeService outcomes,
+            IQuestService? quests = null,
+            ITalentService? talents = null)
         {
             _travel = travel ?? throw new ArgumentNullException(nameof(travel));
             _combat = combat ?? throw new ArgumentNullException(nameof(combat));
             _saves = saves ?? throw new ArgumentNullException(nameof(saves));
             _newGame = newGame ?? throw new ArgumentNullException(nameof(newGame));
             _death = death ?? throw new ArgumentNullException(nameof(death));
+            _outcomes = outcomes ?? throw new ArgumentNullException(nameof(outcomes));
+            _quests = quests;
+            _talents = talents;
         }
 
         /// <inheritdoc />
@@ -82,6 +94,17 @@ namespace AnomalyPath.Core.Services
         }
 
         /// <inheritdoc />
+        public CombatOutcome ApplyCombatOutcome(GameSession session)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            return _outcomes.Resolve(session);
+        }
+
+        /// <inheritdoc />
         public IReadOnlyList<WorldEdge> AvailableEdges(GameSession session)
         {
             if (session == null)
@@ -112,7 +135,8 @@ namespace AnomalyPath.Core.Services
             GameSession session,
             ActorTemplate playerActor,
             ActorTemplate enemy,
-            DistanceZone distance)
+            DistanceZone distance,
+            CombatScenario? scenario = null)
         {
             if (session == null)
             {
@@ -130,7 +154,13 @@ namespace AnomalyPath.Core.Services
                 return false;
             }
 
-            session.SetCombat(_combat.Start(playerActor, player.Equipment, enemy, distance));
+            session.SetCombat(_combat.Start(
+                playerActor,
+                player.Equipment,
+                enemy,
+                distance,
+                scenario,
+                _talents?.GetModifiers(player)));
             return true;
         }
 
@@ -143,7 +173,13 @@ namespace AnomalyPath.Core.Services
                 throw new ArgumentNullException(nameof(session));
             }
 
-            return session.Combat != null && _combat.TryAttack(session.Combat, weapon, out result);
+            var attacked = session.Combat != null && _combat.TryAttack(session.Combat, weapon, out result);
+            if (attacked && result.Killed && _quests != null && session.Combat != null)
+            {
+                _quests.NotifyActorKilled(session, session.Combat.Enemy.Template.Id);
+            }
+
+            return attacked;
         }
 
         /// <inheritdoc />

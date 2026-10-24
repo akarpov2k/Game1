@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "quests",
+  "id": "qst_gather_artifacts",
+  "questKind": "repeatable",
+  "questType": "gatherArtifacts",
+  "titleKey": "quest.qst_gather_artifacts.title",
+  "descriptionKey": "quest.qst_gather_artifacts.desc",
+  "difficulty": 4,
+  "cooldownHours": 48,
+  "requirements": { "tier": 2 },
+  "target": {
+    "count": 2,
+    "poolSize": 2,
+    "minTier": 4,
+    "maxTier": 4
+  },
+  "rewards": { "money": 450 }
+}

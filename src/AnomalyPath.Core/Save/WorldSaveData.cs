@@ -4,7 +4,6 @@ using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.World;
-
 namespace AnomalyPath.Core.Save
 {
     /// <summary>Снимок мира в сохранении: карта, текущее положение, время и погода.</summary>
@@ -24,6 +23,10 @@ namespace AnomalyPath.Core.Save
         /// <param name="locations">Экземпляры локаций.</param>
         /// <param name="edges">Рёбра переходов.</param>
         /// <param name="settings">Настройки новой игры или <c>null</c> для старых сейвов.</param>
+        /// <param name="traders">Состояние торговцев или <c>null</c> для старых сейвов.</param>
+        /// <param name="quests">Состояние квестов или <c>null</c> для старых сейвов.</param>
+        /// <param name="questSerial">Счётчик выданных квестов.</param>
+        /// <param name="lastHubId">Последний посещённый хаб; <c>null</c> в старых сейвах.</param>
         public WorldSaveData(
             string startLocationId,
             string currentLocationId,
@@ -37,7 +40,11 @@ namespace AnomalyPath.Core.Save
             string weather,
             IReadOnlyList<LocationSaveData> locations,
             IReadOnlyList<EdgeSaveData> edges,
-            NewGameSettingsSaveData? settings = null)
+            NewGameSettingsSaveData? settings = null,
+            IReadOnlyList<TraderSaveData>? traders = null,
+            IReadOnlyList<QuestSaveData>? quests = null,
+            int questSerial = 0,
+            string? lastHubId = null)
         {
             StartLocationId = startLocationId;
             CurrentLocationId = currentLocationId;
@@ -52,6 +59,10 @@ namespace AnomalyPath.Core.Save
             Locations = locations;
             Edges = edges;
             Settings = settings;
+            Traders = traders ?? new List<TraderSaveData>();
+            Quests = quests ?? new List<QuestSaveData>();
+            QuestSerial = questSerial;
+            LastHubId = lastHubId;
         }
 
         /// <summary>Стартовая локация.</summary>
@@ -93,6 +104,18 @@ namespace AnomalyPath.Core.Save
         /// <summary>Настройки новой игры или <c>null</c>.</summary>
         public NewGameSettingsSaveData? Settings { get; }
 
+        /// <summary>Состояние торговцев.</summary>
+        public IReadOnlyList<TraderSaveData> Traders { get; }
+
+        /// <summary>Состояние квестов.</summary>
+        public IReadOnlyList<QuestSaveData> Quests { get; }
+
+        /// <summary>Счётчик выданных квестов.</summary>
+        public int QuestSerial { get; }
+
+        /// <summary>Последний посещённый хаб; <c>null</c> в старых сейвах.</summary>
+        public string? LastHubId { get; }
+
         /// <summary>Сериализует снимок в JSON-узел.</summary>
         /// <returns>Объект сохранения мира.</returns>
         public JsonValue ToJson()
@@ -100,6 +123,10 @@ namespace AnomalyPath.Core.Save
             var value = JsonValue.NewObject();
             value.Members["startLocationId"] = JsonValue.FromString(StartLocationId);
             value.Members["currentLocationId"] = JsonValue.FromString(CurrentLocationId);
+            if (LastHubId != null)
+            {
+                value.Members["lastHubId"] = JsonValue.FromString(LastHubId);
+            }
             value.Members["stamina"] = JsonValue.FromNumber(Stamina);
             value.Members["staminaMax"] = JsonValue.FromNumber(StaminaMax);
             value.Members["startingStamina"] = JsonValue.FromNumber(StartingStamina);
@@ -127,6 +154,21 @@ namespace AnomalyPath.Core.Save
                 value.Members["settings"] = Settings.ToJson();
             }
 
+            var traders = JsonValue.NewArray();
+            foreach (var trader in Traders)
+            {
+                traders.Items.Add(trader.ToJson());
+            }
+
+            value.Members["traders"] = traders;
+            value.Members["questSerial"] = JsonValue.FromNumber(QuestSerial);
+            var quests = JsonValue.NewArray();
+            foreach (var quest in Quests)
+            {
+                quests.Items.Add(quest.ToJson());
+            }
+
+            value.Members["quests"] = quests;
             return value;
         }
 
@@ -162,6 +204,15 @@ namespace AnomalyPath.Core.Save
                 settings = NewGameSettingsSaveData.FromJson(settingsValue, sourcePath);
             }
 
+            var traders = ReadTraders(value, sourcePath);
+            var questSerial = DataMap.OptionalInt(value, "questSerial", 0);
+            if (questSerial < 0)
+            {
+                throw new DataException(sourcePath, CoreErrors.SaveMissingField, "questSerial");
+            }
+
+            var quests = ReadQuests(value, sourcePath);
+            var lastHubId = DataMap.OptionalString(value, "lastHubId");
             return new WorldSaveData(
                 startLocationId,
                 currentLocationId,
@@ -175,7 +226,53 @@ namespace AnomalyPath.Core.Save
                 weather,
                 locations,
                 edges,
-                settings);
+                settings,
+                traders,
+                quests,
+                questSerial,
+                lastHubId);
+        }
+
+        private static IReadOnlyList<QuestSaveData> ReadQuests(JsonValue value, string sourcePath)
+        {
+            var result = new List<QuestSaveData>();
+            if (!value.TryGet("quests", out var quests) || !quests.IsArray)
+            {
+                return result;
+            }
+
+            foreach (var item in quests.Items)
+            {
+                if (!item.IsObject)
+                {
+                    throw new DataException(sourcePath, CoreErrors.JsonNotObject);
+                }
+
+                result.Add(QuestSaveData.FromJson(item, sourcePath));
+            }
+
+            return result;
+        }
+
+        private static IReadOnlyList<TraderSaveData> ReadTraders(JsonValue value, string sourcePath)
+        {
+            var result = new List<TraderSaveData>();
+            if (!value.TryGet("traders", out var traders) || !traders.IsArray)
+            {
+                return result;
+            }
+
+            foreach (var item in traders.Items)
+            {
+                if (!item.IsObject)
+                {
+                    throw new DataException(sourcePath, CoreErrors.JsonNotObject);
+                }
+
+                result.Add(TraderSaveData.FromJson(item, sourcePath));
+            }
+
+            return result;
         }
 
         private static IReadOnlyList<LocationSaveData> ReadLocations(

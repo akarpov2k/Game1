@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "actors",
+  "id": "mutant_bear",
+  "type": "enemy",
+  "nameKey": "actor.mutant_bear.name",
+  "roles": ["mutant"],
+  "combat": {
+    "tier": 3,
+    "level": 3,
+    "health": 100,
+    "ap": 6,
+    "xp": 100,
+    "protection": { "dmg_rupture": 5, "dmg_bullet": 2 },
+    "ai": "aggressive",
+    "accuracy": 0.75
+  }
+}

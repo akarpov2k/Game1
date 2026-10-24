@@ -138,13 +138,14 @@ namespace AnomalyPath.Tests
                 WithFixture(
                     new Dictionary<string, string>
                     {
-                        ["catalog.json"] = Catalog("items/col.json", "combat.json", "equipment.json", "topology.json"),
+                        ["catalog.json"] = Catalog("items/col.json", "combat.json", "equipment.json", "topology.json", "talents.json"),
                         ["items/col.json"] = Collection("items/a.json"),
                         ["items/a.json"] = Weapon("wpn_a"),
                         ["items/orphan.json"] = Weapon("wpn_orphan"),
                         ["combat.json"] = CombatJson(),
                         ["equipment.json"] = EquipmentJson(),
-                        ["topology.json"] = TopologyJson()
+                        ["topology.json"] = TopologyJson(),
+                        ["talents.json"] = TalentsJson()
                     },
                     root =>
                     {

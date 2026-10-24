@@ -31,6 +31,11 @@ namespace AnomalyPath.Core.Rules
         /// <param name="nicknameMaxLength">Максимальная длина ника.</param>
         /// <param name="previewMaxRows">Предел рядов в окне предпросмотра набора.</param>
         /// <param name="savePageSize">Число ячеек сохранения на странице.</param>
+        /// <param name="respawnPercent">Доля здоровья и потолка еды/воды после смерти, 0..1.</param>
+        /// <param name="maxActiveQuests">Предел одновременно взятых квестов.</param>
+        /// <param name="questOffersPerTrader">Сколько квестов показывает один торговец.</param>
+        /// <param name="questOfferCooldownHours">Задержка перед появлением нового квеста в освободившемся слоте.</param>
+        /// <param name="questCooldownHours">Откат повторяемого квеста по умолчанию.</param>
         /// <exception cref="ArgumentException">Строковые поля пусты.</exception>
         public GameRulesTemplate(
             string id,
@@ -47,7 +52,12 @@ namespace AnomalyPath.Core.Rules
             double tradeDifficultyStep,
             int nicknameMaxLength,
             int previewMaxRows,
-            int savePageSize)
+            int savePageSize,
+            double respawnPercent,
+            int maxActiveQuests = 3,
+            int questOffersPerTrader = 4,
+            int questOfferCooldownHours = 6,
+            int questCooldownHours = 48)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -78,6 +88,11 @@ namespace AnomalyPath.Core.Rules
             NicknameMaxLength = nicknameMaxLength;
             PreviewMaxRows = previewMaxRows;
             SavePageSize = savePageSize;
+            RespawnPercent = respawnPercent;
+            MaxActiveQuests = maxActiveQuests;
+            QuestOffersPerTrader = questOffersPerTrader;
+            QuestOfferCooldownHours = questOfferCooldownHours;
+            QuestCooldownHours = questCooldownHours;
         }
 
         /// <summary>Идентификатор записи, всегда <c>rules</c>.</summary>
@@ -128,6 +143,21 @@ namespace AnomalyPath.Core.Rules
 
         /// <summary>Число ячеек сохранения на странице.</summary>
         public int SavePageSize { get; }
+
+        /// <summary>Доля здоровья и потолка еды/воды после смерти, 0..1.</summary>
+        public double RespawnPercent { get; }
+
+        /// <summary>Предел одновременно взятых квестов.</summary>
+        public int MaxActiveQuests { get; }
+
+        /// <summary>Сколько квестов показывает один торговец.</summary>
+        public int QuestOffersPerTrader { get; }
+
+        /// <summary>Задержка перед появлением нового квеста в освободившемся слоте в часах мира.</summary>
+        public int QuestOfferCooldownHours { get; }
+
+        /// <summary>Откат повторяемого квеста по умолчанию в часах мира.</summary>
+        public int QuestCooldownHours { get; }
 
         /// <summary>Читает правила из записи данных.</summary>
         /// <param name="value">Запись вида <c>rules</c>.</param>
@@ -221,6 +251,36 @@ namespace AnomalyPath.Core.Rules
                 throw new DataException(path, CoreErrors.RulesRange, "savePageSize");
             }
 
+            var respawnPercent = DataMap.RequireDouble(value, "respawnPercent", path);
+            if (respawnPercent <= 0 || respawnPercent > 1)
+            {
+                throw new DataException(path, CoreErrors.RulesChance, "respawnPercent");
+            }
+
+            var maxActiveQuests = DataMap.OptionalInt(value, "maxActiveQuests", 3);
+            if (maxActiveQuests < 1)
+            {
+                throw new DataException(path, CoreErrors.RulesRange, "maxActiveQuests");
+            }
+
+            var questOffersPerTrader = DataMap.OptionalInt(value, "questOffersPerTrader", 4);
+            if (questOffersPerTrader < 1)
+            {
+                throw new DataException(path, CoreErrors.RulesRange, "questOffersPerTrader");
+            }
+
+            var questOfferCooldownHours = DataMap.OptionalInt(value, "questOfferCooldownHours", 6);
+            if (questOfferCooldownHours < 0)
+            {
+                throw new DataException(path, CoreErrors.RulesRange, "questOfferCooldownHours");
+            }
+
+            var questCooldownHours = DataMap.OptionalInt(value, "questCooldownHours", 48);
+            if (questCooldownHours < 0)
+            {
+                throw new DataException(path, CoreErrors.RulesRange, "questCooldownHours");
+            }
+
             return new GameRulesTemplate(
                 id,
                 insuranceChance,
@@ -236,7 +296,12 @@ namespace AnomalyPath.Core.Rules
                 tradeDifficultyStep,
                 nicknameMaxLength,
                 previewMaxRows,
-                savePageSize);
+                savePageSize,
+                respawnPercent,
+                maxActiveQuests,
+                questOffersPerTrader,
+                questOfferCooldownHours,
+                questCooldownHours);
         }
     }
 }

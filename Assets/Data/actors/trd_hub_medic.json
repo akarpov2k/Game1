@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "kind": "actors",
+  "id": "trd_hub_medic",
+  "type": "trader",
+  "nameKey": "actor.trd_hub_medic.name",
+  "descriptionKey": "actor.trd_hub_medic.desc",
+  "portrait": "portraits/trd_hub_medic",
+  "portraitMode": "waist",
+  "roles": ["trader"],
+  "trader": {
+    "restockHours": 24,
+    "playerBuyModifier": 1.0,
+    "playerSellModifier": 0.6,
+    "assortment": [
+      { "itemId": "itm_helmet_light", "stock": 3 },
+      { "itemId": "itm_armor_plate", "stock": 2 },
+      { "itemId": "itm_backpack_small", "stock": 2 },
+      { "itemId": "itm_belt_artifact", "stock": 2 },
+      { "itemId": "ammo_9x18", "stock": 40 },
+      {
+        "itemId": "itm_armor_exoskeleton",
+        "stock": 1,
+        "requirements": { "quests": ["quest_medic_supplies"] }
+      }
+    ]
+  }
+}

@@ -42,10 +42,32 @@ namespace AnomalyPath.Editor.Art
             internal int FootprintHeight { get; }
         }
 
+        /// <summary>Ид портрета актёра и его кадрирование.</summary>
+        internal sealed class PortraitId
+        {
+            /// <summary>Создаёт описание портрета.</summary>
+            /// <param name="id">Id вида <c>portraits/trd_hub_smuggler</c>.</param>
+            /// <param name="mode">Режим: <c>full</c> или <c>waist</c>.</param>
+            internal PortraitId(string id, string mode)
+            {
+                Id = id;
+                Mode = mode;
+            }
+
+            /// <summary>Id портрета.</summary>
+            internal string Id { get; }
+
+            /// <summary>Режим кадрирования.</summary>
+            internal string Mode { get; }
+        }
+
         private const string DataRoot = "Assets/Data";
         private const int MaxExtendsDepth = 6;
 
         private static readonly Regex IconPattern = new Regex("\"icon\"\\s*:\\s*\"([^\"]+)\"", RegexOptions.Compiled);
+        private static readonly Regex KindPattern = new Regex("\"kind\"\\s*:\\s*\"([^\"]+)\"", RegexOptions.Compiled);
+        private static readonly Regex PortraitPattern = new Regex("\"portrait\"\\s*:\\s*\"([^\"]+)\"", RegexOptions.Compiled);
+        private static readonly Regex PortraitModePattern = new Regex("\"portraitMode\"\\s*:\\s*\"([^\"]+)\"", RegexOptions.Compiled);
         private static readonly Regex CategoryPattern = new Regex("\"category\"\\s*:\\s*\"([^\"]+)\"", RegexOptions.Compiled);
         private static readonly Regex ExtendsPattern = new Regex("\"extends\"\\s*:\\s*\"([^\"]+)\"", RegexOptions.Compiled);
         private static readonly Regex FootprintPattern =
@@ -89,10 +111,38 @@ namespace AnomalyPath.Editor.Art
             return result;
         }
 
+        /// <summary>Возвращает все id портретов актёров из данных без повторов.</summary>
+        /// <returns>Список портретов с режимом кадрирования.</returns>
+        internal static IReadOnlyList<PortraitId> Portraits()
+        {
+            var result = new List<PortraitId>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var file in Files())
+            {
+                var text = Read(file);
+                if (text == null)
+                {
+                    continue;
+                }
+
+                var portrait = PortraitPattern.Match(text);
+                if (!portrait.Success || !seen.Add(portrait.Groups[1].Value))
+                {
+                    continue;
+                }
+
+                var mode = PortraitModePattern.Match(text);
+                result.Add(new PortraitId(
+                    portrait.Groups[1].Value,
+                    mode.Success ? mode.Groups[1].Value : "full"));
+            }
+
+            return result;
+        }
+
         /// <summary>Возвращает все id фонов локаций из данных без повторов.</summary>
         /// <returns>Список id фонов.</returns>
-        internal static IReadOnlyList<string> Backgrounds()
-        {
+        internal static IReadOnlyList<string> Backgrounds()        {
             var result = new List<string>();
             var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (var file in Files())
@@ -118,8 +168,16 @@ namespace AnomalyPath.Editor.Art
             return result;
         }
 
-        private static string ResolveCategory(string text) =>
-            ResolveValue(text, CategoryPattern)?.Groups[1].Value ?? "other";
+        private static string ResolveCategory(string text)
+        {
+            var kind = KindPattern.Match(text);
+            if (kind.Success && string.Equals(kind.Groups[1].Value, "talents", StringComparison.Ordinal))
+            {
+                return "talent";
+            }
+
+            return ResolveValue(text, CategoryPattern)?.Groups[1].Value ?? "other";
+        }
 
         private static Match? ResolveValue(string text, Regex pattern)
         {

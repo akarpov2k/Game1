@@ -124,6 +124,9 @@ namespace AnomalyPath.Core.Localization
         /// <summary>Категория weapon без блока weapon.</summary>
         public const string WeaponWithoutBlock = "error.weapon_without_block";
 
+        /// <summary>Вместимость магазина оружия меньше одного патрона.</summary>
+        public const string WeaponMagazineInvalid = "error.weapon_magazine_invalid";
+
         /// <summary>Предмет не найден в репозитории.</summary>
         public const string ItemNotFound = "error.item_not_found";
 
@@ -195,9 +198,6 @@ namespace AnomalyPath.Core.Localization
 
         /// <summary>Неизвестный режим восстановления ОД.</summary>
         public const string UnknownApRestore = "error.unknown_ap_restore";
-
-        /// <summary>Неизвестное правило инициативы.</summary>
-        public const string UnknownInitiative = "error.unknown_initiative";
 
         /// <summary>Проверка данных пройдена.</summary>
         public const string ValidationOk = "validation.ok";
@@ -366,5 +366,158 @@ namespace AnomalyPath.Core.Localization
 
         /// <summary>В каталоге спрайтов нет иконок, на которые ссылаются данные.</summary>
         public const string SpriteMissing = "error.sprite_missing";
+
+        /// <summary>Неизвестный режим портрета.</summary>
+        public const string UnknownPortraitMode = "error.unknown_portrait_mode";
+
+        /// <summary>Торговец описан без блока торговли.</summary>
+        public const string TraderWithoutBlock = "error.trader_without_block";
+
+        /// <summary>У торговца нет роли <c>trader</c>.</summary>
+        public const string TraderWithoutRole = "error.trader_without_role";
+
+        /// <summary>Блок торговли задан не торговцу.</summary>
+        public const string TraderBlockOnNonTrader = "error.trader_block_on_non_trader";
+
+        /// <summary>Роль торговца задана актёру, который не является торговцем.</summary>
+        public const string TraderRoleOnNonTrader = "error.trader_role_on_non_trader";
+
+        /// <summary>Ассортимент торговца пуст.</summary>
+        public const string TraderAssortmentEmpty = "error.trader_assortment_empty";
+
+        /// <summary>Период пополнения торговца меньше часа.</summary>
+        public const string TraderRestockHours = "error.trader_restock_hours";
+
+        /// <summary>Множитель цены торговца вне диапазона.</summary>
+        public const string TraderModifierRange = "error.trader_modifier_range";
+
+        /// <summary>Количество товара в ассортименте меньше единицы.</summary>
+        public const string TraderOfferStock = "error.trader_offer_stock";
+
+        /// <summary>Товар торговца не найден среди предметов.</summary>
+        public const string TraderOfferItemMissing = "error.trader_offer_item_missing";
+
+        /// <summary>У товара торговца нет цены.</summary>
+        public const string TraderOfferPriceMissing = "error.trader_offer_price_missing";
+
+        /// <summary>Торговец не привязан ни к одному хабу.</summary>
+        public const string TraderNotBound = "error.trader_not_bound";
+
+        /// <summary>Торговец привязан к небезопасной локации.</summary>
+        public const string TraderBoundToNonHub = "error.trader_bound_to_non_hub";
+
+        /// <summary>Торговец привязан более чем к одному хабу.</summary>
+        public const string TraderDuplicateBinding = "error.trader_duplicate_binding";
+
+        /// <summary>Локация торговца расходится с привязкой к хабу.</summary>
+        public const string TraderLocationMismatch = "error.trader_location_mismatch";
+
+        /// <summary>Торговец не найден.</summary>
+        public const string TradeTraderNotFound = "error.trade_trader_not_found";
+
+        /// <summary>Актёр не является торговцем.</summary>
+        public const string TradeNotTrader = "error.trade_not_trader";
+
+        /// <summary>Торговец недоступен по условиям.</summary>
+        public const string TradeUnavailable = "error.trade_unavailable";
+
+        /// <summary>Торговец находится в другой локации.</summary>
+        public const string TradeWrongLocation = "error.trade_wrong_location";
+
+        /// <summary>Товар отсутствует в ассортименте торговца.</summary>
+        public const string TradeOfferNotFound = "error.trade_offer_not_found";
+
+        /// <summary>Не хватает денег на покупку.</summary>
+        public const string TradeNotEnoughMoney = "error.trade_not_enough_money";
+
+        /// <summary>Товара не хватает на складе.</summary>
+        public const string TradeNoStock = "error.trade_no_stock";
+
+        /// <summary>В инвентаре нет места для покупки.</summary>
+        public const string TradeNoRoom = "error.trade_no_room";
+
+        /// <summary>Предмет для продажи не найден.</summary>
+        public const string TradeItemNotFound = "error.trade_item_not_found";
+
+        /// <summary>Предмет нельзя продать: у него нет цены продажи.</summary>
+        public const string TradeItemNotSellable = "error.trade_item_not_sellable";
+
+        /// <summary>Некорректное количество товара в сделке.</summary>
+        public const string TradeCount = "error.trade_count";
+
+        /// <summary>Отсутствует обязательный объект.</summary>
+        public const string MissingObjectField = "error.missing_object_field";
+
+        /// <summary>Неизвестный вид квеста.</summary>
+        public const string UnknownQuestKind = "error.unknown_quest_kind";
+
+        /// <summary>Неизвестный тип цели квеста.</summary>
+        public const string UnknownQuestType = "error.unknown_quest_type";
+
+        /// <summary>Неизвестное состояние квеста в сохранении.</summary>
+        public const string UnknownQuestStatus = "error.unknown_quest_status";
+
+        /// <summary>Квест не найден.</summary>
+        public const string QuestNotFound = "error.quest_not_found";
+
+        /// <summary>Диапазон тиров цели квеста задан неверно.</summary>
+        public const string QuestTierRange = "error.quest_tier_range";
+
+        /// <summary>Пул целей квеста не дал ни одного кандидата.</summary>
+        public const string QuestTargetPool = "error.quest_target_pool";
+
+        /// <summary>Цель зачистки должна быть дикой точкой интереса.</summary>
+        public const string QuestLocationNotSite = "error.quest_location_not_site";
+
+        /// <summary>Цель квеста должна быть врагом с нужной ролью.</summary>
+        public const string QuestActorRole = "error.quest_actor_role";
+
+        /// <summary>Цель квеста должна быть предметом нужной категории.</summary>
+        public const string QuestItemCategory = "error.quest_item_category";
+
+        /// <summary>Предмет награды квеста не найден.</summary>
+        public const string QuestRewardItemMissing = "error.quest_reward_item_missing";
+
+        /// <summary>Талант не найден в дереве.</summary>
+        public const string TalentNotFound = "error.talent_not_found";
+
+        /// <summary>В дереве талантов нет ни одного таланта.</summary>
+        public const string TalentTreeEmpty = "error.talent_tree_empty";
+
+        /// <summary>Дерево талантов должно быть единственным.</summary>
+        public const string TalentTreeMultiple = "error.talent_tree_multiple";
+
+        /// <summary>Идентификатор таланта повторяется.</summary>
+        public const string TalentNodeDuplicate = "error.talent_node_duplicate";
+
+        /// <summary>Позиция таланта в дереве повторяется.</summary>
+        public const string TalentPositionDuplicate = "error.talent_position_duplicate";
+
+        /// <summary>Строка или колонка таланта отрицательна.</summary>
+        public const string TalentPosition = "error.talent_position";
+
+        /// <summary>Максимальный ранг таланта вне допустимого диапазона.</summary>
+        public const string TalentMaxRank = "error.talent_max_rank";
+
+        /// <summary>У таланта нет ни одного эффекта.</summary>
+        public const string TalentNoEffects = "error.talent_no_effects";
+
+        /// <summary>Одна и та же характеристика указана у таланта дважды.</summary>
+        public const string TalentEffectDuplicate = "error.talent_effect_duplicate";
+
+        /// <summary>Неизвестная характеристика таланта.</summary>
+        public const string UnknownTalentStat = "error.unknown_talent_stat";
+
+        /// <summary>Значение эффекта таланта не положительное или не целое.</summary>
+        public const string TalentEffectValue = "error.talent_effect_value";
+
+        /// <summary>Талант требует больше очков, чем можно вложить до него.</summary>
+        public const string TalentGate = "error.talent_gate";
+
+        /// <summary>Окно округления цены меньше единицы.</summary>
+        public const string EconomyRounding = "error.economy_rounding";
+
+        /// <summary>Минимальная цена отрицательна.</summary>
+        public const string EconomyMinPrice = "error.economy_min_price";
     }
 }

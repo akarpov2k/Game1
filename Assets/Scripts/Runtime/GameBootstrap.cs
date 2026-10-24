@@ -61,7 +61,10 @@ namespace AnomalyPath.Runtime
                 Services.Resolve<ICombatService>(),
                 saves,
                 Services.Resolve<INewGameService>(),
-                Services.Resolve<IDeathService>()));
+                Services.Resolve<IDeathService>(),
+                Services.Resolve<ICombatOutcomeService>(),
+                Services.Resolve<IQuestService>(),
+                Services.Resolve<ITalentService>()));
         }
     }
 }

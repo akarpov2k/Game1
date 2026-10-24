@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "actors",
+  "id": "mutant_wolf",
+  "type": "enemy",
+  "nameKey": "actor.mutant_wolf.name",
+  "roles": ["mutant"],
+  "combat": {
+    "tier": 1,
+    "level": 1,
+    "health": 40,
+    "ap": 5,
+    "xp": 30,
+    "protection": { "dmg_rupture": 2 },
+    "ai": "aggressive",
+    "accuracy": 0.8
+  }
+}

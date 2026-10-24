@@ -7,6 +7,7 @@ using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Localization;
+using AnomalyPath.Core.Talents;
 using AnomalyPath.Core.Templates;
 using EquipmentState = AnomalyPath.Core.Inventory.Equipment;
 
@@ -60,7 +61,13 @@ namespace AnomalyPath.Core.Services
         }
 
         /// <inheritdoc />
-        public CombatState Start(ActorTemplate playerActor, EquipmentState playerEquipment, ActorTemplate enemy, DistanceZone distance)
+        public CombatState Start(
+            ActorTemplate playerActor,
+            EquipmentState playerEquipment,
+            ActorTemplate enemy,
+            DistanceZone distance,
+            CombatScenario? scenario = null,
+            TalentModifiers? playerModifiers = null)
         {
             if (playerActor == null)
             {
@@ -77,28 +84,9 @@ namespace AnomalyPath.Core.Services
                 throw new ArgumentNullException(nameof(enemy));
             }
 
-            var player = new Combatant(playerActor, playerEquipment);
+            var player = new Combatant(playerActor, playerEquipment, playerModifiers);
             var opponent = new Combatant(enemy);
-            var first = player;
-            if (_settings.Initiative == InitiativeKind.Formula && _settings.InitiativeFormulaId != null)
-            {
-                var variables = new Dictionary<string, double>(StringComparer.Ordinal)
-                {
-                    ["playerTier"] = playerActor.Combat?.Tier ?? 1,
-                    ["enemyTier"] = enemy.Combat?.Tier ?? 1,
-                    ["distance"] = (int)distance,
-                    ["round"] = 1
-                };
-
-                var formula = _formulas.Get(_settings.InitiativeFormulaId);
-                var roll = formula.Evaluate(variables, _balance.Constants, 0, 1);
-                if (roll < 0.5)
-                {
-                    first = opponent;
-                }
-            }
-
-            return new CombatState(player, opponent, distance, first);
+            return new CombatState(player, opponent, distance, scenario ?? CombatScenario.Normal);
         }
 
         /// <inheritdoc />
@@ -128,7 +116,7 @@ namespace AnomalyPath.Core.Services
                 return false;
             }
 
-            var magazine = weapon.EnsureMagazine(template.Weapon.Magazine);
+            var magazine = weapon.MagazineRounds;
             if (magazine <= 0)
             {
                 if (attacker.Template.Type != ActorType.Enemy || attacker.Ap < _settings.ReloadApCost)
@@ -211,7 +199,7 @@ namespace AnomalyPath.Core.Services
             }
 
             var size = template.Weapon.Magazine;
-            var current = weapon.EnsureMagazine(size);
+            var current = weapon.MagazineRounds;
             var need = size - current;
             if (need <= 0)
             {
@@ -257,7 +245,8 @@ namespace AnomalyPath.Core.Services
             }
 
             var combat = attacker.Template.Combat;
-            var accuracy = (combat?.Accuracy ?? 0.8) + (combat?.AccuracyBonus ?? 0) + attacker.PityBonus;
+            var accuracy = (combat?.Accuracy ?? 0.8) + (combat?.AccuracyBonus ?? 0) +
+                           attacker.AccuracyBonus + attacker.PityBonus;
             var distance = template.Weapon.IgnoresDistance ? 1.0 : DistanceMultiplier(state.Distance);
             var chance = accuracy * template.Weapon.AccuracyCoefficient * distance;
             return Math.Clamp(chance, 0, 1);
@@ -266,7 +255,7 @@ namespace AnomalyPath.Core.Services
         private double BaseChance(Combatant attacker, WeaponBlock weapon)
         {
             var combat = attacker.Template.Combat;
-            var accuracy = (combat?.Accuracy ?? 0.8) + (combat?.AccuracyBonus ?? 0);
+            var accuracy = (combat?.Accuracy ?? 0.8) + (combat?.AccuracyBonus ?? 0) + attacker.AccuracyBonus;
             return Math.Clamp(accuracy * weapon.AccuracyCoefficient, 0, 1);
         }
 
@@ -345,7 +334,9 @@ namespace AnomalyPath.Core.Services
         private int RestoreAp(Combatant combatant) => _settings.ApRestore switch
         {
             ApRestoreKind.None => combatant.Ap,
-            ApRestoreKind.Partial => Math.Min(combatant.MaxAp, combatant.Ap + _settings.ApPerTurn),
+            ApRestoreKind.Partial => Math.Min(
+                combatant.MaxAp,
+                combatant.Ap + _settings.ApPerTurn + combatant.ApRestoreBonus),
             _ => combatant.MaxAp
         };
 

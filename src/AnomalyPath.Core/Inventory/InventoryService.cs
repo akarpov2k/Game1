@@ -27,7 +27,7 @@ namespace AnomalyPath.Core.Inventory
 
         /// <inheritdoc />
         public bool TryAdd(GridContainer container, string itemId, int count, out IReadOnlyList<ItemInstance> overflow) =>
-            TryAdd(container, itemId, count, null, null, out overflow);
+            TryAdd(container, itemId, count, null, null, null, out overflow);
 
         /// <inheritdoc />
         public bool TryAdd(
@@ -36,6 +36,17 @@ namespace AnomalyPath.Core.Inventory
             int count,
             int? durability,
             string? variantKey,
+            out IReadOnlyList<ItemInstance> overflow) =>
+            TryAdd(container, itemId, count, durability, variantKey, null, out overflow);
+
+        /// <inheritdoc />
+        public bool TryAdd(
+            GridContainer container,
+            string itemId,
+            int count,
+            int? durability,
+            string? variantKey,
+            int? magazine,
             out IReadOnlyList<ItemInstance> overflow)
         {
             if (container == null)
@@ -60,6 +71,13 @@ namespace AnomalyPath.Core.Inventory
                 durabilityValue = durabilityMax;
             }
 
+            var magazineValue = magazine;
+            if (template.Weapon != null && !magazineValue.HasValue)
+            {
+                // Запас торговца и лут создаются разряженными; стартовый набор заряжает оружие сам.
+                magazineValue = 0;
+            }
+
             var remaining = count;
             StackIntoExisting(container, itemId, durabilityValue, variantKey, stackSize, ref remaining);
 
@@ -69,7 +87,14 @@ namespace AnomalyPath.Core.Inventory
                 var take = Math.Min(stackSize, remaining);
                 remaining -= take;
 
-                var instance = new ItemInstance(_ids.Next(), itemId, take, durabilityValue, durabilityMax, variantKey);
+                var instance = new ItemInstance(
+                    _ids.Next(),
+                    itemId,
+                    take,
+                    durabilityValue,
+                    durabilityMax,
+                    variantKey,
+                    magazineValue);
                 if (!TryPlaceFirst(container, instance, template))
                 {
                     container.AddOverflow(instance);
@@ -144,7 +169,6 @@ namespace AnomalyPath.Core.Inventory
         }
 
         /// <inheritdoc />
-        /// <inheritdoc />
         public int TakeAmmo(GridContainer container, string caliber, int count)
         {
             if (container == null)
@@ -157,8 +181,7 @@ namespace AnomalyPath.Core.Inventory
                 return 0;
             }
 
-            var taken = 0;
-            var ordered = new List<ItemInstance>();
+            var candidates = new List<ItemInstance>();
             foreach (var item in container.Items)
             {
                 if (item.Overflow || item.Stack <= 0)
@@ -172,17 +195,20 @@ namespace AnomalyPath.Core.Inventory
                     continue;
                 }
 
-                if (item.Stack < template.MaxStack)
-                {
-                    ordered.Insert(0, item);
-                }
-                else
-                {
-                    ordered.Add(item);
-                }
+                candidates.Add(item);
             }
 
-            foreach (var item in ordered)
+            // Самые маленькие стопки расходуются первыми: неполные уходят раньше полных.
+            candidates.Sort((left, right) =>
+            {
+                var byStack = left.Stack.CompareTo(right.Stack);
+                return byStack != 0
+                    ? byStack
+                    : string.CompareOrdinal(left.InstanceId, right.InstanceId);
+            });
+
+            var taken = 0;
+            foreach (var item in candidates)
             {
                 if (taken >= count)
                 {
@@ -199,6 +225,41 @@ namespace AnomalyPath.Core.Inventory
             }
 
             return taken;
+        }
+
+        /// <inheritdoc />
+        public int TakeAmmoFrom(GridContainer container, string instanceId, int count)
+        {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
+            if (count <= 0)
+            {
+                return 0;
+            }
+
+            var item = container.Find(instanceId);
+            if (item == null || item.Overflow || item.Stack <= 0)
+            {
+                return 0;
+            }
+
+            var template = _items.Get(item.ItemId);
+            if (template.Category != ItemCategory.Ammo)
+            {
+                return 0;
+            }
+
+            var take = Math.Min(item.Stack, count);
+            item.Stack -= take;
+            if (item.Stack <= 0)
+            {
+                Remove(container, item.InstanceId);
+            }
+
+            return take;
         }
 
         /// <inheritdoc />

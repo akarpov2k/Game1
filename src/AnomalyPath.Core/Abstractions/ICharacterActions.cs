@@ -7,7 +7,7 @@ using EquipmentState = AnomalyPath.Core.Inventory.Equipment;
 namespace AnomalyPath.Core.Abstractions
 {
     /// <summary>
-    /// Действия с предметами игрока: надеть, снять, надеть и снять артефакт, разрядить оружие,
+    /// Действия с предметами игрока: надеть, снять, надеть и снять артефакт, зарядить и разрядить оружие,
     /// разобрать (тестовый режим) и выбросить. Меняют переданные состояния и не трогают UI.
     /// </summary>
     public interface ICharacterActions
@@ -40,6 +40,28 @@ namespace AnomalyPath.Core.Abstractions
         /// <param name="index">Индекс слота артефакта.</param>
         /// <returns>Итог действия; при ошибке состояние не меняется.</returns>
         CharacterActionResult UnequipArtifact(GridContainer inventory, EquipmentState equipment, int index);
+
+        /// <summary>Досылает патроны в оружие из инвентаря, начиная с самых маленьких стопок.</summary>
+        /// <param name="inventory">Сетка инвентаря.</param>
+        /// <param name="equipment">Экипировка.</param>
+        /// <param name="instanceId">Id экземпляра оружия (в инвентаре или в экипировке).</param>
+        /// <param name="rounds">Сколько патронов удалось дослать.</param>
+        /// <returns>Итог действия; при ошибке состояние не меняется.</returns>
+        CharacterActionResult Load(GridContainer inventory, EquipmentState equipment, string instanceId, out int rounds);
+
+        /// <summary>Досылает патроны в оружие из конкретной стопки инвентаря.</summary>
+        /// <param name="inventory">Сетка инвентаря.</param>
+        /// <param name="equipment">Экипировка.</param>
+        /// <param name="weaponInstanceId">Id экземпляра оружия.</param>
+        /// <param name="ammoInstanceId">Id стопки патронов в инвентаре.</param>
+        /// <param name="rounds">Сколько патронов удалось дослать.</param>
+        /// <returns>Итог действия; при ошибке состояние не меняется.</returns>
+        CharacterActionResult LoadFrom(
+            GridContainer inventory,
+            EquipmentState equipment,
+            string weaponInstanceId,
+            string ammoInstanceId,
+            out int rounds);
 
         /// <summary>Разряжает оружие: патроны из магазина возвращаются в инвентарь.</summary>
         /// <param name="inventory">Сетка инвентаря.</param>

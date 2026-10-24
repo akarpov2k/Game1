@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "actors",
+  "id": "trd_hub_smuggler",
+  "type": "trader",
+  "nameKey": "actor.trd_hub_smuggler.name",
+  "descriptionKey": "actor.trd_hub_smuggler.desc",
+  "portrait": "portraits/trd_hub_smuggler",
+  "portraitMode": "full",
+  "roles": ["trader"],
+  "trader": {
+    "restockHours": 12,
+    "playerBuyModifier": 1.1,
+    "playerSellModifier": 0.5,
+    "assortment": [
+      { "itemId": "wpn_pm", "stock": 3 },
+      { "itemId": "ammo_9x18", "stock": 60 },
+      { "itemId": "itm_armor_jacket", "stock": 2 },
+      { "itemId": "wpn_ak74", "stock": 2 },
+      { "itemId": "ammo_545", "stock": 90 },
+      {
+        "itemId": "wpn_akm",
+        "stock": 1,
+        "requirements": { "quests": ["quest_caravan_deal"] }
+      },
+      {
+        "itemId": "wpn_sv98",
+        "stock": 1,
+        "requirements": { "unlocks": ["unlock_smuggler_premium"] }
+      }
+    ]
+  }
+}

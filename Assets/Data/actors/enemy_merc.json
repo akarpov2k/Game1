@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "actors",
+  "id": "enemy_merc",
+  "type": "enemy",
+  "nameKey": "actor.enemy_merc.name",
+  "roles": ["human"],
+  "combat": {
+    "tier": 2,
+    "level": 2,
+    "health": 55,
+    "ap": 7,
+    "xp": 60,
+    "protection": { "dmg_bullet": 4 },
+    "ai": "aggressive",
+    "accuracy": 0.8
+  }
+}

@@ -89,6 +89,42 @@ namespace AnomalyPath.Runtime.Screens.Character
                 player => _host.Actions.UnequipArtifact(player.Inventory, player.Equipment, index),
                 UiTextKey.Character_Action_Unequipped);
 
+        /// <summary>Заряжает оружие из инвентаря, начиная с самых маленьких стопок.</summary>
+        /// <param name="instanceId">Id экземпляра.</param>
+        public void Load(string instanceId)
+        {
+            var player = Player;
+            if (player == null)
+            {
+                NotifyNoGame();
+                return;
+            }
+
+            var result = _host.Actions.Load(player.Inventory, player.Equipment, instanceId, out var rounds);
+            Finish(result, UiTextKey.Character_Action_Loaded, rounds);
+        }
+
+        /// <summary>Заряжает оружие из конкретной стопки патронов.</summary>
+        /// <param name="weaponInstanceId">Id оружия.</param>
+        /// <param name="ammoInstanceId">Id стопки патронов.</param>
+        public void LoadFrom(string weaponInstanceId, string ammoInstanceId)
+        {
+            var player = Player;
+            if (player == null)
+            {
+                NotifyNoGame();
+                return;
+            }
+
+            var result = _host.Actions.LoadFrom(
+                player.Inventory,
+                player.Equipment,
+                weaponInstanceId,
+                ammoInstanceId,
+                out var rounds);
+            Finish(result, UiTextKey.Character_Action_Loaded, rounds);
+        }
+
         /// <summary>Разряжает оружие в инвентарь.</summary>
         /// <param name="instanceId">Id экземпляра.</param>
         public void Unload(string instanceId)
@@ -184,6 +220,14 @@ namespace AnomalyPath.Runtime.Screens.Character
             CharacterActionResult.NotAWeapon => UiText.Get(_host.Texts, UiTextKey.Character_Result_Not_A_Weapon),
             CharacterActionResult.NothingToUnload =>
                 UiText.Get(_host.Texts, UiTextKey.Character_Result_Nothing_To_Unload),
+            CharacterActionResult.MagazineFull =>
+                UiText.Get(_host.Texts, UiTextKey.Character_Result_Magazine_Full),
+            CharacterActionResult.NotAmmo =>
+                UiText.Get(_host.Texts, UiTextKey.Character_Result_Not_Ammo),
+            CharacterActionResult.AmmoCaliberMismatch =>
+                UiText.Get(_host.Texts, UiTextKey.Character_Result_Ammo_Caliber_Mismatch),
+            CharacterActionResult.NoAmmo =>
+                UiText.Get(_host.Texts, UiTextKey.Character_Result_No_Ammo),
             CharacterActionResult.AmmoTemplateMissing =>
                 UiText.Get(_host.Texts, UiTextKey.Character_Result_Ammo_Missing),
             _ => UiText.Get(_host.Texts, UiTextKey.Character_Result_Failed),

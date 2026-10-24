@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using AnomalyPath.Core.Quests;
 using AnomalyPath.Core.World;
 using AnomalyPath.Runtime.Screens;
 using AnomalyPath.Runtime.Ui.Core;
@@ -247,7 +248,13 @@ namespace AnomalyPath.Runtime.Screens.Game
             }
 
             var edges = _host.Sessions.AvailableEdges(session);
-            var actions = new List<PlayAction>(edges.Count);
+            var actions = new List<PlayAction>(edges.Count + 1);
+            AddTraderActions(session, location, actions);
+            AddQuestActions(session, location, actions);
+            actions.Add(new PlayAction(
+                "Quests",
+                UiText.Get(_host.Texts, UiTextKey.Game_Quests),
+                () => _host.ShowQuests(null)));
             foreach (var edge in edges)
             {
                 var destination = world.Map.GetLocation(edge.ToId);
@@ -260,6 +267,70 @@ namespace AnomalyPath.Runtime.Screens.Game
             }
 
             _actions.SetActions(actions, UiText.Get(_host.Texts, UiTextKey.Game_No_Actions));
+        }
+
+        private void AddTraderActions(
+            AnomalyPath.Core.Session.GameSession session,
+            LocationInstance location,
+            List<PlayAction> actions)
+        {
+            var template = _host.Locations.Get(location.TemplateId);
+            if (template.LocationKind != LocationKind.Hub)
+            {
+                return;
+            }
+
+            foreach (var traderId in template.Traders)
+            {
+                if (!_host.Trade.IsAvailable(session, traderId))
+                {
+                    continue;
+                }
+
+                var actor = _host.Actors.Get(traderId);
+                var label = UiText.Format(
+                    _host.Texts,
+                    UiTextKey.Game_Trade,
+                    _host.Texts.Get(actor.NameKey));
+                var id = traderId;
+                actions.Add(new PlayAction("Trade_" + id, label, () => _host.ShowTrader(id)));
+            }
+        }
+
+        private void AddQuestActions(
+            AnomalyPath.Core.Session.GameSession session,
+            LocationInstance location,
+            List<PlayAction> actions)
+        {
+            foreach (var quest in _host.Quests.GetActive(session))
+            {
+                if (quest.Cleared ||
+                    !string.Equals(quest.LocationInstanceId, location.InstanceId, StringComparison.Ordinal) ||
+                    !_host.Quests.TryGetTemplate(quest.QuestId, out var template) ||
+                    template.Type != QuestType.ClearLocation)
+                {
+                    continue;
+                }
+
+                var questId = quest.QuestId;
+                actions.Add(new PlayAction(
+                    "QuestClear_" + questId,
+                    UiText.Get(_host.Texts, UiTextKey.Game_Clear_Location),
+                    () => ClearQuest(questId, location.InstanceId)));
+            }
+        }
+
+        private void ClearQuest(string questId, string locationInstanceId)
+        {
+            var session = _host.Session;
+            if (session == null)
+            {
+                return;
+            }
+
+            _host.Quests.NotifyLocationCleared(session, locationInstanceId);
+            Show();
+            ShowToast(UiText.Get(_host.Texts, UiTextKey.Game_Cleared));
         }
 
         private void Travel(string edgeId)

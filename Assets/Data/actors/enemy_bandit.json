@@ -4,11 +4,13 @@
   "id": "enemy_bandit",
   "type": "enemy",
   "nameKey": "actor.enemy_bandit.name",
+  "roles": ["human"],
   "combat": {
     "tier": 1,
     "level": 1,
     "health": 45,
     "ap": 6,
+    "xp": 40,
     "protection": { "dmg_bullet": 2 },
     "ai": "aggressive",
     "accuracy": 0.7

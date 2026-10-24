@@ -26,6 +26,7 @@ namespace AnomalyPath.Core.World
         /// <param name="rarity">Редкость локации из <see cref="LocationRarity"/>.</param>
         /// <param name="spawnChance">Шанс появления от 0 до 1.</param>
         /// <param name="unique">Квестовая уникальная локация.</param>
+        /// <param name="traders">Id торговцев, привязанных к этому хабу.</param>
         /// <exception cref="ArgumentException">Id пуст или значение перечисления не определено.</exception>
         public LocationTemplate(
             string id,
@@ -42,7 +43,8 @@ namespace AnomalyPath.Core.World
             IReadOnlyList<string> fixedEvents,
             LocationRarity rarity,
             double spawnChance,
-            bool unique)
+            bool unique,
+            IReadOnlyList<string>? traders = null)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -100,6 +102,7 @@ namespace AnomalyPath.Core.World
             Rarity = rarity;
             SpawnChance = spawnChance;
             Unique = unique;
+            Traders = traders ?? Array.Empty<string>();
         }
 
         /// <summary>Идентификатор.</summary>
@@ -146,6 +149,9 @@ namespace AnomalyPath.Core.World
 
         /// <summary>Квестовая уникальная локация.</summary>
         public bool Unique { get; }
+
+        /// <summary>Id торговцев, привязанных к хабу.</summary>
+        public IReadOnlyList<string> Traders { get; }
 
         /// <summary>Читает шаблон локации из записи данных.</summary>
         /// <param name="value">Загруженная запись.</param>
@@ -221,6 +227,7 @@ namespace AnomalyPath.Core.World
                 throw new DataException(sourcePath, CoreErrors.WorldUniqueRarity, id);
             }
 
+            var traders = DataMap.OptionalStringArray(value, "traders");
             return new LocationTemplate(
                 id,
                 titleKey,
@@ -236,7 +243,8 @@ namespace AnomalyPath.Core.World
                 fixedEvents,
                 rarity,
                 spawnChance,
-                unique);
+                unique,
+                traders);
         }
 
         private static IReadOnlyList<LocationTag> ReadTags(JsonValue value, string sourcePath)

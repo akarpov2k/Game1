@@ -266,12 +266,18 @@ namespace AnomalyPath.Core.Templates
                 throw new DataException(sourcePath, CoreErrors.WeaponWithoutBlock, itemId);
             }
 
+            var magazine = DataMap.RequireInt(value, "magazine", sourcePath);
+            if (magazine < 1)
+            {
+                throw new DataException(sourcePath, CoreErrors.WeaponMagazineInvalid, itemId);
+            }
+
             return new WeaponBlock(
                 DataMap.RequireString(value, "classId", sourcePath),
                 DataMap.RequireDouble(value, "damage", sourcePath),
                 DataMap.OptionalDouble(value, "accuracyCoefficient") ?? DataMap.RequireDouble(value, "accuracy", sourcePath),
             DataMap.OptionalBool(value, "ignoresDistance", false),
-                DataMap.RequireInt(value, "magazine", sourcePath),
+                magazine,
                 DataMap.RequireString(value, "ammoCaliber", sourcePath),
                 DataMap.RequireDouble(value, "reloadTime", sourcePath),
                 DataMap.RequireString(value, "damageTypeId", sourcePath),

@@ -16,16 +16,22 @@ namespace AnomalyPath.Runtime.Ui.Items
         public static ItemTemplate? Template(IUiHost host, ItemInstance item) =>
             host.Items.TryGet(item.ItemId, out var template) ? template : null;
 
-        /// <summary>Подпись предмета: название, количество, прочность.</summary>
+        /// <summary>Подпись предмета: название, количество, патроны в магазине, прочность.</summary>
         /// <param name="host">Хост интерфейса.</param>
         /// <param name="item">Экземпляр.</param>
         /// <returns>Текст для слота или клетки.</returns>
         public static string Describe(IUiHost host, ItemInstance item)
         {
-            var name = Template(host, item) is { } template ? host.Texts.Get(template.NameKey) : item.ItemId;
+            var template = Template(host, item);
+            var name = template != null ? host.Texts.Get(template.NameKey) : item.ItemId;
             if (item.Stack > 1)
             {
                 name += " ×" + item.Stack;
+            }
+
+            if (template?.Weapon != null)
+            {
+                name += $" · {item.MagazineRounds}/{template.Weapon.Magazine}";
             }
 
             if (item.Durability.HasValue && item.DurabilityMax.HasValue && item.DurabilityMax.Value > 0)

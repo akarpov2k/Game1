@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "kind": "talents",
+  "id": "talents",
+  "titleKey": "talent.tree.title",
+  "descriptionKey": "talent.tree.description",
+  "nodes": [
+    {
+      "id": "tal_steady_hand",
+      "titleKey": "talent.tal_steady_hand.title",
+      "descriptionKey": "talent.tal_steady_hand.description",
+      "icon": "icons/tal_steady_hand",
+      "row": 0,
+      "column": 1,
+      "maxRank": 5,
+      "requiredPoints": 0,
+      "effects": [
+        {
+          "stat": "accuracy",
+          "perRank": 0.01
+        }
+      ]
+    },
+    {
+      "id": "tal_second_wind",
+      "titleKey": "talent.tal_second_wind.title",
+      "descriptionKey": "talent.tal_second_wind.description",
+      "icon": "icons/tal_second_wind",
+      "row": 1,
+      "column": 0,
+      "maxRank": 3,
+      "requiredPoints": 5,
+      "effects": [
+        {
+          "stat": "apRestore",
+          "perRank": 1
+        }
+      ]
+    },
+    {
+      "id": "tal_toughness",
+      "titleKey": "talent.tal_toughness.title",
+      "descriptionKey": "talent.tal_toughness.description",
+      "icon": "icons/tal_toughness",
+      "row": 1,
+      "column": 2,
+      "maxRank": 4,
+      "requiredPoints": 5,
+      "effects": [
+        {
+          "stat": "healthMax",
+          "perRank": 2
+        }
+      ]
+    },
+    {
+      "id": "tal_endurance",
+      "titleKey": "talent.tal_endurance.title",
+      "descriptionKey": "talent.tal_endurance.description",
+      "icon": "icons/tal_endurance",
+      "row": 2,
+      "column": 0,
+      "maxRank": 5,
+      "requiredPoints": 8,
+      "effects": [
+        {
+          "stat": "apMax",
+          "perRank": 1
+        }
+      ]
+    },
+    {
+      "id": "tal_luck",
+      "titleKey": "talent.tal_luck.title",
+      "descriptionKey": "talent.tal_luck.description",
+      "icon": "icons/tal_luck",
+      "row": 2,
+      "column": 2,
+      "maxRank": 5,
+      "requiredPoints": 8,
+      "effects": [
+        {
+          "stat": "luck",
+          "perRank": 1
+        }
+      ]
+    },
+    {
+      "id": "tal_focus",
+      "titleKey": "talent.tal_focus.title",
+      "descriptionKey": "talent.tal_focus.description",
+      "icon": "icons/tal_focus",
+      "row": 3,
+      "column": 0,
+      "maxRank": 1,
+      "requiredPoints": 13,
+      "effects": [
+        {
+          "stat": "apRestore",
+          "perRank": 1
+        },
+        {
+          "stat": "apMax",
+          "perRank": 1
+        }
+      ]
+    },
+    {
+      "id": "tal_scavenger",
+      "titleKey": "talent.tal_scavenger.title",
+      "descriptionKey": "talent.tal_scavenger.description",
+      "icon": "icons/tal_scavenger",
+      "row": 3,
+      "column": 2,
+      "maxRank": 3,
+      "requiredPoints": 13,
+      "effects": [
+        {
+          "stat": "carryRows",
+          "perRank": 1
+        }
+      ]
+    },
+    {
+      "id": "tal_survivor",
+      "titleKey": "talent.tal_survivor.title",
+      "descriptionKey": "talent.tal_survivor.description",
+      "icon": "icons/tal_survivor",
+      "row": 4,
+      "column": 1,
+      "maxRank": 1,
+      "requiredPoints": 18,
+      "effects": [
+        {
+          "stat": "healthMax",
+          "perRank": 5
+        },
+        {
+          "stat": "accuracy",
+          "perRank": 0.01
+        }
+      ]
+    }
+  ]
+}

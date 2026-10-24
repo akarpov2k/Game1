@@ -9,6 +9,9 @@ using AnomalyPath.Runtime.Screens;
 using AnomalyPath.Runtime.Screens.Character;
 using AnomalyPath.Runtime.Screens.Game;
 using AnomalyPath.Runtime.Screens.Menu;
+using AnomalyPath.Runtime.Screens.Quests;
+using AnomalyPath.Runtime.Screens.Talents;
+using AnomalyPath.Runtime.Screens.Trader;
 using AnomalyPath.Runtime.Ui.Art;
 using AnomalyPath.Runtime.Ui.Core;
 using AnomalyPath.Runtime.Ui.Dialogs;
@@ -44,6 +47,9 @@ namespace AnomalyPath.Runtime
         private PlayScreen _play = null!;
         private GamePanelScreen _gamePanel = null!;
         private CharacterScreen _character = null!;
+        private TraderScreen _trader = null!;
+        private QuestScreen _quests = null!;
+        private TalentScreen _talents = null!;
         private ExitDialog _exitDialog = null!;
 
         /// <inheritdoc />
@@ -78,6 +84,15 @@ namespace AnomalyPath.Runtime
 
         /// <inheritdoc />
         public ICharacterActions Actions { get; private set; } = null!;
+
+        /// <inheritdoc />
+        public ITradeService Trade { get; private set; } = null!;
+
+        /// <inheritdoc />
+        public IQuestService Quests { get; private set; } = null!;
+
+        /// <inheritdoc />
+        public ITalentService Talents { get; private set; } = null!;
 
         /// <inheritdoc />
         public ISpriteCatalog Sprites => spriteCatalog != null ? spriteCatalog : NullSpriteCatalog.Instance;
@@ -117,6 +132,9 @@ namespace AnomalyPath.Runtime
             Equipment = services.Resolve<IEquipmentService>();
             Locations = services.Resolve<ILocationRepository>();
             Actions = services.Resolve<ICharacterActions>();
+            Trade = services.Resolve<ITradeService>();
+            Quests = services.Resolve<IQuestService>();
+            Talents = services.Resolve<ITalentService>();
             Actors = services.Resolve<IActorRepository>();
             Nicknames = services.Resolve<INicknameGenerator>();
             Rules = services.Resolve<IGameRulesRepository>();
@@ -145,6 +163,9 @@ namespace AnomalyPath.Runtime
             _play = new PlayScreen(this, canvas);
             _gamePanel = new GamePanelScreen(this, canvas);
             _character = new CharacterScreen(this, canvas);
+            _trader = new TraderScreen(this, canvas);
+            _quests = new QuestScreen(this, canvas);
+            _talents = new TalentScreen(this, canvas);
             Router.Add(_mainMenu.Panel);
             Router.Add(_newGame.Panel);
             Router.Add(_load.Panel);
@@ -153,6 +174,9 @@ namespace AnomalyPath.Runtime
             Router.Add(_play.Panel);
             Router.Add(_gamePanel.Panel);
             Router.Add(_character.Panel);
+            Router.Add(_trader.Panel);
+            Router.Add(_quests.Panel);
+            Router.Add(_talents.Panel);
             _screens.Add(_mainMenu);
             _screens.Add(_newGame);
             _screens.Add(_load);
@@ -161,6 +185,9 @@ namespace AnomalyPath.Runtime
             _screens.Add(_play);
             _screens.Add(_gamePanel);
             _screens.Add(_character);
+            _screens.Add(_trader);
+            _screens.Add(_quests);
+            _screens.Add(_talents);
 
             _exitDialog = new ExitDialog(this, canvas);
             ShowMainMenu();
@@ -258,6 +285,27 @@ namespace AnomalyPath.Runtime
         {
             _exitDialog.Hide();
             _character.Show();
+        }
+
+        /// <inheritdoc />
+        public void ShowTrader(string actorId)
+        {
+            _exitDialog.Hide();
+            _trader.Show(actorId);
+        }
+
+        /// <inheritdoc />
+        public void ShowQuests(string? traderActorId)
+        {
+            _exitDialog.Hide();
+            _quests.Show(traderActorId);
+        }
+
+        /// <inheritdoc />
+        public void ShowTalents()
+        {
+            _exitDialog.Hide();
+            _talents.Show();
         }
 
         /// <inheritdoc />

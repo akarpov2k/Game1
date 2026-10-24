@@ -201,7 +201,14 @@ namespace AnomalyPath.Core.Inventory
                     continue;
                 }
 
-                var copy = new ItemInstance(item.InstanceId, item.ItemId, item.Stack, item.Durability, item.DurabilityMax, item.VariantKey);
+                var copy = new ItemInstance(
+                    item.InstanceId,
+                    item.ItemId,
+                    item.Stack,
+                    item.Durability,
+                    item.DurabilityMax,
+                    item.VariantKey,
+                    item.Magazine);
                 copy.X = item.X;
                 copy.Y = item.Y;
                 copy.Rotated = item.Rotated;

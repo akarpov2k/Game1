@@ -63,6 +63,7 @@ namespace AnomalyPath.Tests
             {
                 var newGame = services.Resolve<INewGameService>();
                 var inventory = services.Resolve<IInventoryService>();
+                var items = services.Resolve<IItemRepository>();
                 var state = newGame.Create(42, "loadout_scout", new NewGameSettings(0.5, 1));
 
                 True(state.Player != null, "игрок");
@@ -71,6 +72,11 @@ namespace AnomalyPath.Tests
                 Equal(6, player.Inventory.Rows, "строки");
                 Equal(100, player.Needs.Max, "потребности");
                 Equal("wpn_pm", player.Equipment.Get(EquipmentSlot.Main)?.ItemId, "оружие");
+                var pistol = player.Equipment.Get(EquipmentSlot.Main)!;
+                Equal(
+                    items.Get(pistol.ItemId).Weapon!.Magazine,
+                    pistol.MagazineRounds,
+                    "стартовое оружие заряжено полностью");
                 Equal("itm_armor_jacket", player.Equipment.Get(EquipmentSlot.Armor)?.ItemId, "броня");
                 Equal("itm_helmet_light", player.Equipment.Get(EquipmentSlot.Helmet)?.ItemId, "шлем");
                 Equal("itm_backpack_small", player.Equipment.Get(EquipmentSlot.Backpack)?.ItemId, "рюкзак");
@@ -98,12 +104,17 @@ namespace AnomalyPath.Tests
             Check("набор: второй набор применяется", () =>
             {
                 var newGame = services.Resolve<INewGameService>();
+                var items = services.Resolve<IItemRepository>();
                 var state = newGame.Create(42, "loadout_rifleman", new NewGameSettings(0.5, 1));
 
                 Equal("wpn_ak74", state.Player!.Equipment.Get(EquipmentSlot.Main)?.ItemId, "оружие");
                 Equal("wpn_pm", state.Player.Equipment.Get(EquipmentSlot.Secondary)?.ItemId, "второе оружие");
                 Equal("itm_armor_plate", state.Player.Equipment.Get(EquipmentSlot.Armor)?.ItemId, "броня");
                 Equal(6, state.Player.Inventory.Rows, "строки с рюкзаком");
+                var main = state.Player.Equipment.Get(EquipmentSlot.Main)!;
+                var secondary = state.Player.Equipment.Get(EquipmentSlot.Secondary)!;
+                Equal(items.Get(main.ItemId).Weapon!.Magazine, main.MagazineRounds, "автомат заряжен");
+                Equal(items.Get(secondary.ItemId).Weapon!.Magazine, secondary.MagazineRounds, "пистолет заряжен");
             });
 
             Check("набор: стартовые деньги берутся из набора", () =>
@@ -203,6 +214,10 @@ namespace AnomalyPath.Tests
                 Equal(8, preview.Inventory.Width, "ширина сетки");
                 Equal(6, preview.Inventory.Rows, "строки с рюкзаком");
                 Equal("wpn_pm", preview.Equipment.Get(EquipmentSlot.Main)?.ItemId, "оружие");
+                Equal(
+                    services.Resolve<IItemRepository>().Get("wpn_pm").Weapon!.Magazine,
+                    preview.Equipment.Get(EquipmentSlot.Main)!.MagazineRounds,
+                    "оружие в наборе заряжено полностью");
                 Equal("itm_armor_jacket", preview.Equipment.Get(EquipmentSlot.Armor)?.ItemId, "броня");
                 Equal("itm_belt_artifact", preview.Equipment.Get(EquipmentSlot.Belt)?.ItemId, "пояс");
                 Equal(60, inventory.Count(preview.Inventory, "ammo_9x18"), "патроны 9x18");

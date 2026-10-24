@@ -65,6 +65,9 @@ namespace AnomalyPath.Core
             var equipmentSettings = LoadEquipmentSettings(data);
             var rules = GameRulesRepository.FromLoadedData(data);
             var nicknames = LoadNicknames(data);
+            var economySettings = LoadEconomy(data);
+            var quests = QuestRepository.FromLoadedData(data);
+            var talents = TalentRepository.FromLoadedData(data);
 
             var inventory = new InventoryService(items, instanceIds);
             var travel = new TravelService();
@@ -80,6 +83,10 @@ namespace AnomalyPath.Core
             container.RegisterSingleton<ILocationRepository>(locations);
             container.RegisterSingleton<ITopologyRepository>(topology);
             container.RegisterSingleton<ILoadoutRepository>(loadouts);
+            container.RegisterSingleton<IQuestRepository>(quests);
+            container.RegisterSingleton<ITalentRepository>(talents);
+            var talentService = new TalentService(talents);
+            container.RegisterSingleton<ITalentService>(talentService);
             container.RegisterSingleton<IWorldGenerator>(world);
             container.RegisterSingleton<ITravelService>(travel);
             container.RegisterSingleton<IInstanceIdGenerator>(instanceIds);
@@ -87,9 +94,17 @@ namespace AnomalyPath.Core
             container.RegisterSingleton<IEquipmentSettings>(equipmentSettings);
             container.RegisterSingleton<IGameRulesRepository>(rules);
             container.RegisterSingleton<INicknameGenerator>(nicknames);
+            container.RegisterSingleton<IEconomySettings>(economySettings);
             var deathRandom = new SeededDeathRandom(1);
             container.RegisterSingleton<IDeathRandom>(deathRandom);
-            container.RegisterSingleton<IDeathService>(new DeathService(items, deathRandom));
+            var deathService = new DeathService(items, deathRandom);
+            container.RegisterSingleton<IDeathService>(deathService);
+            container.RegisterSingleton<ICombatOutcomeService>(new CombatOutcomeService(
+                deathService,
+                rules,
+                formulas,
+                combatSettings,
+                balance));
             var equipmentService = new EquipmentService(items, inventory);
             container.RegisterSingleton<IEquipmentService>(equipmentService);
             container.RegisterSingleton<ICharacterActions>(new CharacterActions(items, inventory, equipmentService));
@@ -113,6 +128,22 @@ namespace AnomalyPath.Core
                 actors,
                 loadoutPreviews,
                 nicknames));
+            container.RegisterSingleton<ITradeService>(new TradeService(
+                actors,
+                locations,
+                items,
+                inventory,
+                economySettings,
+                rules));
+            container.RegisterSingleton<IQuestService>(new QuestService(
+                quests,
+                container.Resolve<ITradeService>(),
+                actors,
+                locations,
+                topology,
+                items,
+                inventory,
+                rules));
             return container;
         }
 
@@ -154,6 +185,14 @@ namespace AnomalyPath.Core
 
             var template = NicknameCatalogTemplate.FromJson(records[0], "nicks");
             return new NicknameGenerator(template.Names);
+        }
+
+        private static IEconomySettings LoadEconomy(LoadedData data)
+        {
+            var records = data.All("economy");
+            return records.Count == 0
+                ? Rules.EconomySettings.Default
+                : Rules.EconomySettings.FromJson(records[0], "economy");
         }
     }
 }

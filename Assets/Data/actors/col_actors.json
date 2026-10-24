@@ -6,6 +6,11 @@
   "entries": [
     "actors/actor_player.json",
     "actors/enemy_bandit.json",
-    "actors/mutant_boar.json"
+    "actors/enemy_merc.json",
+    "actors/mutant_boar.json",
+    "actors/mutant_wolf.json",
+    "actors/mutant_bear.json",
+    "actors/trd_hub_smuggler.json",
+    "actors/trd_hub_medic.json"
   ]
 }

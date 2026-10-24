@@ -30,6 +30,9 @@ namespace AnomalyPath.Editor.Art
         /// <summary>Папка тематических задников окон: id с префиксом <c>backdrops/</c>.</summary>
         public const string BackdropsFolder = "Assets/Art/Backdrops";
 
+        /// <summary>Папка портретов актёров: id с префиксом <c>portraits/</c>.</summary>
+        public const string PortraitsFolder = "Assets/Art/Portraits";
+
         /// <summary>Сцена, где лежит <c>GameScreen</c>.</summary>
         public const string MainScene = "Assets/Scenes/Main.unity";
 
@@ -77,12 +80,17 @@ namespace AnomalyPath.Editor.Art
             {
                 AssetDatabase.CreateFolder(ArtRoot, "Backdrops");
             }
+
+            if (!AssetDatabase.IsValidFolder(PortraitsFolder))
+            {
+                AssetDatabase.CreateFolder(ArtRoot, "Portraits");
+            }
         }
 
         /// <summary>Переводит PNG в режим Sprite, чтобы из них получались спрайты для uGUI.</summary>
         internal static void EnsureSpriteImporters()
         {
-            foreach (var folder in new[] { IconsFolder, BackgroundsFolder, BackdropsFolder })
+            foreach (var folder in new[] { IconsFolder, BackgroundsFolder, BackdropsFolder, PortraitsFolder })
             {
                 if (!AssetDatabase.IsValidFolder(folder))
                 {
@@ -136,6 +144,7 @@ namespace AnomalyPath.Editor.Art
             AddFolder(entries, IconsFolder, "icons/");
             AddFolder(entries, BackgroundsFolder, string.Empty);
             AddFolder(entries, BackdropsFolder, "backdrops/");
+            AddFolder(entries, PortraitsFolder, "portraits/");
             return entries;
         }
 
@@ -243,6 +252,14 @@ namespace AnomalyPath.Editor.Art
                 if (!ids.Contains(background))
                 {
                     missing.Add(background);
+                }
+            }
+
+            foreach (var portrait in DataArtIds.Portraits())
+            {
+                if (!ids.Contains(portrait.Id))
+                {
+                    missing.Add(portrait.Id);
                 }
             }
 

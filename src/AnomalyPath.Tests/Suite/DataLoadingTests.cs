@@ -51,12 +51,61 @@ namespace AnomalyPath.Tests
                 Equal(4.0, rules.Get("tierCount").Number, "tierCount");
                 Equal(0.15, rules.Get("insuranceChance").Number, "insuranceChance");
                 Equal(0.05, rules.Get("insuranceStep").Number, "insuranceStep");
+                Equal(0.3, rules.Get("respawnPercent").Number, "respawnPercent");
             });
 
             Check("загрузка: предмет по умолчанию утрачиваемый", () =>
             {
                 var items = Bootstrap.Build(_dataRoot).Resolve<IItemRepository>();
                 False(items.Get("wpn_ak74").Unlosable, "оружие утрачиваемое");
+            });
+
+            Check("загрузка: опыт врагов из данных", () =>
+            {
+                var actors = Bootstrap.Build(_dataRoot).Resolve<IActorRepository>();
+                Equal(40, actors.Get("enemy_bandit").Combat!.Xp, "опыт бандита");
+                Equal(100, actors.Get("mutant_bear").Combat!.Xp, "опыт медведя");
+            });
+
+            Check("загрузка: экономика и торговцы из данных", () =>
+            {
+                var container = Bootstrap.Build(_dataRoot);
+                var economy = container.Resolve<IEconomySettings>();
+                Equal(1, economy.Rounding, "шаг округления");
+                Equal(1, economy.MinPrice, "минимальная цена");
+                var hub = container.Resolve<ILocationRepository>().Get("loc_hub_settlement");
+                Equal(2, hub.Traders.Count, "торговцы хаба");
+                var smugger = container.Resolve<IActorRepository>().Get("trd_hub_smuggler");
+                True(smugger.Trader != null, "блок торговли");
+                Equal(12, smugger.Trader!.RestockHours, "период пополнения");
+            });
+
+            Check("загрузка: квесты и настройки квестов из данных", () =>
+            {
+                var container = Bootstrap.Build(_dataRoot);
+                var quests = container.Resolve<IQuestRepository>();
+                Equal(6, quests.All.Count, "квестов");
+                True(quests.Contains("qst_clear_house"), "квест зачистки");
+                var rules = container.Resolve<IGameRulesRepository>().Require();
+                Equal(3, rules.MaxActiveQuests, "предел активных");
+                Equal(4, rules.QuestOffersPerTrader, "слотов торговца");
+                Equal(6, rules.QuestOfferCooldownHours, "задержка нового квеста");
+                Equal(48, rules.QuestCooldownHours, "откат по умолчанию");
+            });
+
+            Check("загрузка: дерево талантов из данных", () =>
+            {
+                var container = Bootstrap.Build(_dataRoot);
+                var talents = container.Resolve<ITalentRepository>();
+                Equal("talents", talents.Tree.Id, "id дерева");
+                Equal(8, talents.Tree.Nodes.Count, "талантов");
+                True(talents.Tree.TryGetNode("tal_steady_hand", out var first), "первый талант");
+                Equal(5, first!.MaxRank, "рангов у первого");
+                Equal(0.01, first.Effects[0].PerRank, "меткость за ранг");
+                Equal("icons/tal_steady_hand", first.Icon, "картинка первого");
+                True(talents.Tree.TryGetNode("tal_toughness", out var toughness), "талант правой ветки");
+                Equal(1, toughness!.Row, "строка правой ветки");
+                Equal(2, toughness.Column, "колонка правой ветки");
             });
 
             Check("загрузка: признак «не утрачиваемый» читается из данных", () =>
@@ -80,6 +129,8 @@ namespace AnomalyPath.Tests
                 Equal(2.0, ak74.Weapon!.ReloadTime, "reloadTime из _base");
                 Equal("dmg_bullet", ak74.Weapon!.DamageTypeId, "damageTypeId из _base");
                 Equal(100, ak74.Weapon!.DurabilityMax, "durabilityMax из _base");
+                Equal(30, ak74.Weapon!.Magazine, "вместимость магазина из своего блока");
+                Equal("5.45x39", ak74.Weapon!.AmmoCaliber, "калибр из своего блока");
                 Equal(1, ak74.MaxStack, "maxStack из _base");
                 True(ak74.Rotatable, "rotatable из _base");
             });

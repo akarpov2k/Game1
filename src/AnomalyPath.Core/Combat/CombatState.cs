@@ -1,18 +1,16 @@
 #nullable enable
-using System;
-using System.Collections.Generic;
-
 namespace AnomalyPath.Core.Combat
 {
     /// <summary>Состояние боя: участники, дистанция, чей ход и номер раунда.</summary>
     public sealed class CombatState
     {
-        internal CombatState(Combatant player, Combatant enemy, DistanceZone distance, Combatant first)
+        internal CombatState(Combatant player, Combatant enemy, DistanceZone distance, CombatScenario scenario)
         {
             Player = player;
             Enemy = enemy;
             Distance = distance;
-            Current = first;
+            Scenario = scenario;
+            Current = scenario.First == CombatStartSide.Player ? player : enemy;
         }
 
         /// <summary>Игрок.</summary>
@@ -20,6 +18,9 @@ namespace AnomalyPath.Core.Combat
 
         /// <summary>Противник.</summary>
         public Combatant Enemy { get; }
+
+        /// <summary>Сценарий боя: обычный, засада или сюжетный.</summary>
+        public CombatScenario Scenario { get; }
 
         /// <summary>Текущая дистанция.</summary>
         public DistanceZone Distance { get; internal set; }

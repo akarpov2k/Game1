@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "quests",
+  "id": "qst_kill_mutants",
+  "questKind": "repeatable",
+  "questType": "killMutants",
+  "titleKey": "quest.qst_kill_mutants.title",
+  "descriptionKey": "quest.qst_kill_mutants.desc",
+  "difficulty": 1,
+  "cooldownHours": 12,
+  "requirements": { "tier": 1 },
+  "target": {
+    "count": 3,
+    "poolSize": 2,
+    "minTier": 1,
+    "maxTier": 2
+  },
+  "rewards": { "money": 250 }
+}
