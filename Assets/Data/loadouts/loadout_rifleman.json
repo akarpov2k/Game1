@@ -4,6 +4,7 @@
   "id": "loadout_rifleman",
   "nameKey": "loadout.loadout_rifleman.name",
   "descriptionKey": "loadout.loadout_rifleman.description",
+  "startingMoney": 1000,
   "weapon": "wpn_ak74",
   "secondaryWeapon": "wpn_pm",
   "armor": "itm_armor_plate",

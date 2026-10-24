@@ -1,13 +1,15 @@
 #nullable enable
 using System;
-using System.Collections.Generic;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Localization;
 
 namespace AnomalyPath.Core.Rules
 {
-    /// <summary>Правила прохождения из данных: режим смерти, потеря лута, базовая сетка и число тиров.</summary>
+    /// <summary>
+    /// Правила прохождения из данных: страховка надетых вещей, базовая сетка,
+    /// число тиров и настройки новой игры.
+    /// </summary>
     public sealed class GameRulesTemplate
     {
         /// <summary>Единственный допустимый id записи правил.</summary>
@@ -15,11 +17,8 @@ namespace AnomalyPath.Core.Rules
 
         /// <summary>Создаёт правила прохождения.</summary>
         /// <param name="id">Идентификатор записи, всегда <c>rules</c>.</param>
-        /// <param name="deathMode">Режим смерти.</param>
-        /// <param name="lootLossOptions">Варианты потери лута.</param>
-        /// <param name="defaultLootLoss">Id варианта по умолчанию.</param>
-        /// <param name="insuranceChance">Шанс страховки вещи, от 0 до 1.</param>
-        /// <param name="insuranceAppliesTo">Область действия страховки.</param>
+        /// <param name="insuranceChance">Коэффициент страховки надетой вещи по умолчанию, от 0 до 1.</param>
+        /// <param name="insuranceStep">Шаг изменения коэффициента страховки, больше 0.</param>
         /// <param name="baseRows">Строк сетки без рюкзака.</param>
         /// <param name="tierCount">Число тиров.</param>
         /// <param name="playerActorId">Актёр игрока для стартовых характеристик.</param>
@@ -29,19 +28,14 @@ namespace AnomalyPath.Core.Rules
         /// <param name="tradeDifficulty">Коэффициент усложнения торговли по умолчанию.</param>
         /// <param name="tradeDifficultyMax">Максимум усложнения торговли.</param>
         /// <param name="tradeDifficultyStep">Шаг изменения усложнения торговли.</param>
-        /// <param name="lootLossStep">Шаг изменения потери лута.</param>
         /// <param name="nicknameMaxLength">Максимальная длина ника.</param>
         /// <param name="previewMaxRows">Предел рядов в окне предпросмотра набора.</param>
         /// <param name="savePageSize">Число ячеек сохранения на странице.</param>
         /// <exception cref="ArgumentException">Строковые поля пусты.</exception>
-        /// <exception cref="ArgumentNullException">Список вариантов потери лута не задан.</exception>
         public GameRulesTemplate(
             string id,
-            DeathMode deathMode,
-            IReadOnlyList<LootLossOption> lootLossOptions,
-            string defaultLootLoss,
             double insuranceChance,
-            InsuranceScope insuranceAppliesTo,
+            double insuranceStep,
             int baseRows,
             int tierCount,
             string playerActorId,
@@ -51,7 +45,6 @@ namespace AnomalyPath.Core.Rules
             double tradeDifficulty,
             double tradeDifficultyMax,
             double tradeDifficultyStep,
-            double lootLossStep,
             int nicknameMaxLength,
             int previewMaxRows,
             int savePageSize)
@@ -63,13 +56,6 @@ namespace AnomalyPath.Core.Rules
                     nameof(id));
             }
 
-            if (string.IsNullOrWhiteSpace(defaultLootLoss))
-            {
-                throw new ArgumentException(
-                    CoreText.Format(CoreErrors.RequiredField, nameof(defaultLootLoss)),
-                    nameof(defaultLootLoss));
-            }
-
             if (string.IsNullOrWhiteSpace(playerActorId))
             {
                 throw new ArgumentException(
@@ -78,11 +64,8 @@ namespace AnomalyPath.Core.Rules
             }
 
             Id = id;
-            DeathMode = deathMode;
-            LootLossOptions = lootLossOptions ?? throw new ArgumentNullException(nameof(lootLossOptions));
-            DefaultLootLoss = defaultLootLoss;
             InsuranceChance = insuranceChance;
-            InsuranceAppliesTo = insuranceAppliesTo;
+            InsuranceStep = insuranceStep;
             BaseRows = baseRows;
             TierCount = tierCount;
             PlayerActorId = playerActorId;
@@ -92,7 +75,6 @@ namespace AnomalyPath.Core.Rules
             TradeDifficulty = tradeDifficulty;
             TradeDifficultyMax = tradeDifficultyMax;
             TradeDifficultyStep = tradeDifficultyStep;
-            LootLossStep = lootLossStep;
             NicknameMaxLength = nicknameMaxLength;
             PreviewMaxRows = previewMaxRows;
             SavePageSize = savePageSize;
@@ -101,20 +83,15 @@ namespace AnomalyPath.Core.Rules
         /// <summary>Идентификатор записи, всегда <c>rules</c>.</summary>
         public string Id { get; }
 
-        /// <summary>Режим смерти.</summary>
-        public DeathMode DeathMode { get; }
-
-        /// <summary>Варианты потери лута.</summary>
-        public IReadOnlyList<LootLossOption> LootLossOptions { get; }
-
-        /// <summary>Id варианта потери лута по умолчанию.</summary>
-        public string DefaultLootLoss { get; }
-
-        /// <summary>Шанс страховки вещи, от 0 до 1.</summary>
+        /// <summary>
+        /// Коэффициент страховки надетой вещи по умолчанию, от 0 до 1.
+        /// Применяется к каждому надетому предмету отдельным броском; 0 — не страхуется ничего,
+        /// 1 — страхуется всё.
+        /// </summary>
         public double InsuranceChance { get; }
 
-        /// <summary>Область действия страховки.</summary>
-        public InsuranceScope InsuranceAppliesTo { get; }
+        /// <summary>Шаг изменения коэффициента страховки, больше 0.</summary>
+        public double InsuranceStep { get; }
 
         /// <summary>Строк сетки без рюкзака.</summary>
         public int BaseRows { get; }
@@ -143,9 +120,6 @@ namespace AnomalyPath.Core.Rules
         /// <summary>Шаг изменения усложнения торговли.</summary>
         public double TradeDifficultyStep { get; }
 
-        /// <summary>Шаг изменения потери лута.</summary>
-        public double LootLossStep { get; }
-
         /// <summary>Максимальная длина ника.</summary>
         public int NicknameMaxLength { get; }
 
@@ -168,46 +142,16 @@ namespace AnomalyPath.Core.Rules
                 throw new DataException(path, CoreErrors.RulesId, id);
             }
 
-            var deathModeCode = DataMap.RequireString(value, "deathMode", path);
-            if (!DeathModeCodec.TryParse(deathModeCode, out DeathMode deathMode))
-            {
-                throw new DataException(path, CoreErrors.RulesUnknownDeathMode, deathModeCode);
-            }
-
-            if (!value.TryGet("lootLossOptions", out var optionsValue) ||
-                !optionsValue.IsArray ||
-                optionsValue.Items.Count == 0)
-            {
-                throw new DataException(path, CoreErrors.RulesMissingLootLoss, "lootLossOptions");
-            }
-
-            var options = new List<LootLossOption>();
-            foreach (var item in optionsValue.Items)
-            {
-                if (!item.IsObject)
-                {
-                    throw new DataException(path, CoreErrors.JsonNotObject, "lootLossOptions");
-                }
-
-                options.Add(LootLossOption.FromJson(item, path));
-            }
-
-            var defaultLootLoss = DataMap.RequireString(value, "defaultLootLoss", path);
-            if (!ContainsOption(options, defaultLootLoss))
-            {
-                throw new DataException(path, CoreErrors.RulesDefaultLootLoss, defaultLootLoss);
-            }
-
             var insuranceChance = DataMap.RequireDouble(value, "insuranceChance", path);
             if (insuranceChance < 0 || insuranceChance > 1)
             {
                 throw new DataException(path, CoreErrors.RulesChance, "insuranceChance");
             }
 
-            var insuranceCode = DataMap.RequireString(value, "insuranceAppliesTo", path);
-            if (!SchemaEnum.TryParse(insuranceCode, out InsuranceScope insuranceAppliesTo))
+            var insuranceStep = DataMap.RequireDouble(value, "insuranceStep", path);
+            if (insuranceStep <= 0)
             {
-                throw new DataException(path, CoreErrors.RulesUnknownInsuranceScope, insuranceCode);
+                throw new DataException(path, CoreErrors.PositiveValue, "insuranceStep");
             }
 
             var baseRows = DataMap.RequireInt(value, "baseRows", path);
@@ -259,12 +203,6 @@ namespace AnomalyPath.Core.Rules
                 throw new DataException(path, CoreErrors.PositiveValue, "tradeDifficultyStep");
             }
 
-            var lootLossStep = DataMap.RequireDouble(value, "lootLossStep", path);
-            if (lootLossStep <= 0)
-            {
-                throw new DataException(path, CoreErrors.PositiveValue, "lootLossStep");
-            }
-
             var nicknameMaxLength = DataMap.RequireInt(value, "nicknameMaxLength", path);
             if (nicknameMaxLength < 1)
             {
@@ -285,11 +223,8 @@ namespace AnomalyPath.Core.Rules
 
             return new GameRulesTemplate(
                 id,
-                deathMode,
-                options,
-                defaultLootLoss,
                 insuranceChance,
-                insuranceAppliesTo,
+                insuranceStep,
                 baseRows,
                 tierCount,
                 playerActorId,
@@ -299,23 +234,9 @@ namespace AnomalyPath.Core.Rules
                 tradeDifficulty,
                 tradeDifficultyMax,
                 tradeDifficultyStep,
-                lootLossStep,
                 nicknameMaxLength,
                 previewMaxRows,
                 savePageSize);
-        }
-
-        private static bool ContainsOption(IReadOnlyList<LootLossOption> options, string id)
-        {
-            foreach (var option in options)
-            {
-                if (string.Equals(option.Id, id, StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

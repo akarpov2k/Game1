@@ -47,10 +47,25 @@ namespace AnomalyPath.Tests
             Check("загрузка: правила прохождения", () =>
             {
                 True(data.TryGet("rules", "rules", out var rules), "rules не найдены");
-                Equal("hubReturn", rules.Get("deathMode").Text, "deathMode");
                 Equal(4.0, rules.Get("baseRows").Number, "baseRows");
                 Equal(4.0, rules.Get("tierCount").Number, "tierCount");
-                Equal(3, rules.Get("lootLossOptions").Items.Count, "варианты потери лута");
+                Equal(0.15, rules.Get("insuranceChance").Number, "insuranceChance");
+                Equal(0.05, rules.Get("insuranceStep").Number, "insuranceStep");
+            });
+
+            Check("загрузка: предмет по умолчанию утрачиваемый", () =>
+            {
+                var items = Bootstrap.Build(_dataRoot).Resolve<IItemRepository>();
+                False(items.Get("wpn_ak74").Unlosable, "оружие утрачиваемое");
+            });
+
+            Check("загрузка: признак «не утрачиваемый» читается из данных", () =>
+            {
+                var item = Template(
+                    "{\"kind\":\"items\",\"id\":\"quest_test\",\"nameKey\":\"n\",\"category\":\"quest\"," +
+                    "\"footprint\":[1,1],\"maxStack\":1,\"tier\":1,\"icon\":\"i\",\"unlosable\":true}");
+                True(item.Unlosable, "unlosable");
+                False(Template(TestData.CrateJson).Unlosable, "по умолчанию false");
             });
         }
 

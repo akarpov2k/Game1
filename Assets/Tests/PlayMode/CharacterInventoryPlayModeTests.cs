@@ -6,6 +6,7 @@ using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Templates;
 using AnomalyPath.Runtime;
 using AnomalyPath.Runtime.Screens.Character;
+using AnomalyPath.Runtime.Ui.Core;
 using AnomalyPath.Runtime.Ui.Items;
 using NUnit.Framework;
 using UnityEngine;
@@ -59,6 +60,35 @@ namespace AnomalyPath.Tests.PlayMode
             }
 
             Assert.AreEqual(grid.Width * grid.Rows, cells, "Число клеток должно совпадать с сеткой");
+        }
+
+        /// <summary>Валюта стоит в верхней правой плашке окна инвентаря и равна деньгам игрока.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator CharacterInventory_Money_IsInTopRightPlate()
+        {
+            yield return OpenCharacter();
+
+            var screen = Object.FindAnyObjectByType<GameScreen>();
+            Assert.IsNotNull(screen, "GameScreen не найден");
+            var frame = GameObject.Find("InventoryFrame");
+            var money = GameObject.Find("InventoryMoney");
+            Assert.IsNotNull(frame, "Нет окна инвентаря");
+            Assert.IsNotNull(money, "Нет подписи валюты");
+
+            var frameRect = WorldRect((RectTransform)frame.transform);
+            var moneyRect = WorldRect((RectTransform)money.transform);
+            Assert.Greater(moneyRect.center.x, frameRect.center.x + (frameRect.width * 0.15f),
+                "Валюта должна быть в правой плашке окна");
+            Assert.Greater(moneyRect.center.y, frameRect.yMin + (frameRect.height * 0.9f),
+                "Валюта должна быть в верхней плашке окна");
+            Assert.IsTrue(frameRect.Contains(moneyRect.center), "Валюта должна лежать внутри окна");
+
+            var player = screen!.Session!.State.Player!;
+            Assert.AreEqual(
+                UiText.Format(screen.Texts, UiTextKey.Common_Money, player.Money),
+                money!.GetComponent<Text>().text,
+                "Валюта должна быть равна деньгам игрока");
         }
 
         /// <summary>Предмет из сетки перетаскивается в свободную клетку с сохранением точки захвата.</summary>
@@ -239,6 +269,13 @@ namespace AnomalyPath.Tests.PlayMode
 
         private static Vector2 ScreenCenter(RectTransform rect) =>
             RectTransformUtility.WorldToScreenPoint(null, rect.TransformPoint(rect.rect.center));
+
+        private static Rect WorldRect(RectTransform rect)
+        {
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            return Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);
+        }
 
         private static IEnumerator OpenCharacter()
         {

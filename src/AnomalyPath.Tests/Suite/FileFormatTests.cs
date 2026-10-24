@@ -62,6 +62,24 @@ namespace AnomalyPath.Tests
                     });
             });
 
+            Check("формат: признак unlosable наследуется и перекрывается", () =>
+            {
+                WithFixture(
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("items/wpn_a.json", "items/wpn_b.json"),
+                        ["_base/base.json"] = Abstract("{\"unlosable\":true}"),
+                        ["items/wpn_a.json"] = Weapon("wpn_a", extends: "_base/base.json"),
+                        ["items/wpn_b.json"] = Weapon("wpn_b", extends: "_base/base.json", extra: ",\"unlosable\":false")
+                    },
+                    root =>
+                    {
+                        var data = new DataLoader(new FileSystemDataSource(root)).Load();
+                        True(data.OfKind("items")["wpn_a"].Get("unlosable").Bool, "унаследован");
+                        False(data.OfKind("items")["wpn_b"].Get("unlosable").Bool, "перекрыт");
+                    });
+            });
+
             Check("формат: null удаляет унаследованное поле", () =>
             {
                 WithFixture(
@@ -193,16 +211,14 @@ namespace AnomalyPath.Tests
                     {
                         ["catalog.json"] = Catalog("rules.json"),
                         ["rules.json"] = "{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"rules\"," +
-                                         "\"deathMode\":\"hubReturn\",\"lootLossOptions\":[{\"id\":\"none\"," +
-                                         "\"titleKey\":\"t.none\",\"loss\":\"none\",\"share\":0}]," +
-                                         "\"defaultLootLoss\":\"none\",\"insuranceChance\":0.15," +
-                                         "\"insuranceAppliesTo\":\"loot\",\"baseRows\":4,\"tierCount\":4}"
+                                         "\"insuranceChance\":0.15," +
+                                         "\"insuranceStep\":0.05,\"baseRows\":4,\"tierCount\":4}"
                     },
                     root =>
                     {
                         var data = new DataLoader(new FileSystemDataSource(root)).Load();
                         Equal(1, data.All("rules").Count, "rules");
-                        Equal("hubReturn", data.OfKind("rules")["rules"].Get("deathMode").Text, "deathMode");
+                        Equal(0.05, data.OfKind("rules")["rules"].Get("insuranceStep").Number, "insuranceStep");
                     });
             });
 

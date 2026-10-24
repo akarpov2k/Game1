@@ -39,6 +39,7 @@ namespace AnomalyPath.Tests
                 new LocalizationTests(source),
                 new DamageTypeTests(dataRoot),
                 new CombatTests(dataRoot),
+                new DeathTests(dataRoot),
                 new WorldTests(dataRoot),
                 new SessionTests(dataRoot),
                 new SaveTests(dataRoot),

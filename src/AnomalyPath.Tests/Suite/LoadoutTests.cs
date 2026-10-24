@@ -53,6 +53,7 @@ namespace AnomalyPath.Tests
                 Equal("itm_backpack_small", scout.Equipment[EquipmentSlot.Backpack], "backpack");
                 Equal("itm_belt_artifact", scout.Equipment[EquipmentSlot.Belt], "belt");
                 Equal(2, scout.Items.Count, "предметы");
+                Equal(1000, scout.StartingMoney ?? -1, "стартовые деньги");
             });
         }
 
@@ -76,6 +77,7 @@ namespace AnomalyPath.Tests
                 Equal("itm_belt_artifact", player.Equipment.Get(EquipmentSlot.Belt)?.ItemId, "пояс");
                 Equal(60, inventory.Count(player.Inventory, "ammo_9x18"), "патроны 9x18");
                 Equal(30, inventory.Count(player.Inventory, "ammo_545"), "патроны 5.45");
+                Equal(1000, player.Money, "деньги на старте");
                 True(state.Settings != null, "настройки");
             });
 
@@ -102,6 +104,47 @@ namespace AnomalyPath.Tests
                 Equal("wpn_pm", state.Player.Equipment.Get(EquipmentSlot.Secondary)?.ItemId, "второе оружие");
                 Equal("itm_armor_plate", state.Player.Equipment.Get(EquipmentSlot.Armor)?.ItemId, "броня");
                 Equal(6, state.Player.Inventory.Rows, "строки с рюкзаком");
+            });
+
+            Check("набор: стартовые деньги берутся из набора", () =>
+            {
+                var loadout = new LoadoutTemplate(
+                    "loadout_rich",
+                    "n",
+                    null,
+                    new List<LoadoutItem>(),
+                    new Dictionary<EquipmentSlot, string>(),
+                    2500);
+                var service = new NewGameService(
+                    services.Resolve<IGameRulesRepository>(),
+                    services.Resolve<IWorldGenerator>(),
+                    services.Resolve<IActorRepository>(),
+                    NewPreviewService(services, new[] { loadout }),
+                    services.Resolve<INicknameGenerator>());
+
+                var state = service.Create(42, "loadout_rich", new NewGameSettings(0.5, 1));
+
+                Equal(2500, state.Player!.Money, "деньги из набора");
+            });
+
+            Check("набор: без startingMoney деньги берутся из правил", () =>
+            {
+                var loadout = new LoadoutTemplate(
+                    "loadout_plain",
+                    "n",
+                    null,
+                    new List<LoadoutItem>(),
+                    new Dictionary<EquipmentSlot, string>());
+                var service = new NewGameService(
+                    services.Resolve<IGameRulesRepository>(),
+                    services.Resolve<IWorldGenerator>(),
+                    services.Resolve<IActorRepository>(),
+                    NewPreviewService(services, new[] { loadout }),
+                    services.Resolve<INicknameGenerator>());
+
+                var state = service.Create(42, "loadout_plain", new NewGameSettings(0.5, 1));
+
+                Equal(1000, state.Player!.Money, "деньги из правил");
             });
 
             Check("набор: переполнение стартового инвентаря — ошибка", () =>
@@ -314,11 +357,13 @@ namespace AnomalyPath.Tests
             Check("набор: явные поля слотов и расходников", () =>
             {
                 var json = "{\"schemaVersion\":1,\"kind\":\"loadouts\",\"id\":\"loadout_x\",\"nameKey\":\"n\"," +
+                           "\"startingMoney\":1500," +
                            "\"weapon\":\"wpn_pm\",\"secondaryWeapon\":\"wpn_pm\",\"armor\":\"itm_armor_jacket\"," +
                            "\"helmet\":\"itm_helmet_light\",\"backpack\":\"itm_backpack_small\"," +
                            "\"belt\":\"itm_belt_artifact\",\"consumables\":[{\"itemId\":\"ammo_9x18\",\"count\":1}]}";
                 var loadout = LoadoutTemplate.FromJson(JsonParser.Parse(json, "loadout_x"), "loadout_x");
 
+                Equal(1500, loadout.StartingMoney ?? -1, "startingMoney");
                 Equal("wpn_pm", loadout.Equipment[EquipmentSlot.Main], "main");
                 Equal("wpn_pm", loadout.Equipment[EquipmentSlot.Secondary], "secondary");
                 Equal("itm_armor_jacket", loadout.Equipment[EquipmentSlot.Armor], "armor");
@@ -326,6 +371,14 @@ namespace AnomalyPath.Tests
                 Equal("itm_backpack_small", loadout.Equipment[EquipmentSlot.Backpack], "backpack");
                 Equal("itm_belt_artifact", loadout.Equipment[EquipmentSlot.Belt], "belt");
                 Equal(1, loadout.Items.Count, "consumables");
+            });
+
+            Check("набор: без startingMoney сумма не задана", () =>
+            {
+                var json = "{\"schemaVersion\":1,\"kind\":\"loadouts\",\"id\":\"loadout_plain\",\"nameKey\":\"n\",\"items\":[],\"equipment\":{}}";
+                var loadout = LoadoutTemplate.FromJson(JsonParser.Parse(json, "loadout_plain"), "loadout_plain");
+
+                Equal(-1, loadout.StartingMoney ?? -1, "нет стартовых денег");
             });
 
             Check("набор: неизвестный слот — ошибка", () =>
@@ -344,6 +397,15 @@ namespace AnomalyPath.Tests
                     () => LoadoutTemplate.FromJson(JsonParser.Parse(json, "loadout_bad"), "loadout_bad"),
                     "количество");
                 Equal(CoreErrors.LoadoutCount, error.Code, "код");
+            });
+
+            Check("набор: отрицательные стартовые деньги — ошибка", () =>
+            {
+                var json = "{\"schemaVersion\":1,\"kind\":\"loadouts\",\"id\":\"loadout_bad\",\"nameKey\":\"n\",\"startingMoney\":-1,\"items\":[],\"equipment\":{}}";
+                var error = Throws<DataException>(
+                    () => LoadoutTemplate.FromJson(JsonParser.Parse(json, "loadout_bad"), "loadout_bad"),
+                    "деньги");
+                Equal(CoreErrors.NonNegative, error.Code, "код");
             });
         }
 

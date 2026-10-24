@@ -19,6 +19,22 @@ namespace AnomalyPath.Runtime.Ui.Core
         private RectTransform _content = null!;
         private Scrollbar _scrollbar = null!;
 
+        [Tooltip("Компонент прокрутки из префаба; пусто — область строится кодом через Configure")]
+        [SerializeField]
+        private ScrollRect? prefabScroll = null;
+
+        [Tooltip("Видимая область прокрутки из префаба")]
+        [SerializeField]
+        private RectTransform? prefabViewport = null;
+
+        [Tooltip("Контент прокрутки из префаба")]
+        [SerializeField]
+        private RectTransform? prefabContent = null;
+
+        [Tooltip("Полоса прокрутки из префаба")]
+        [SerializeField]
+        private Scrollbar? prefabScrollbar = null;
+
         /// <summary>Размеры области прокрутки изменились — пора пересчитать раскладку.</summary>
         public event Action? Resized;
 
@@ -33,6 +49,23 @@ namespace AnomalyPath.Runtime.Ui.Core
 
         /// <summary>Полоса прокрутки; <c>null</c> до настройки.</summary>
         public Scrollbar Bar => _scrollbar;
+
+        private void Awake()
+        {
+            if (prefabScroll == null || prefabViewport == null || prefabContent == null || prefabScrollbar == null)
+            {
+                return;
+            }
+
+            _scroll = prefabScroll;
+            _viewport = prefabViewport;
+            _content = prefabContent;
+            _scrollbar = prefabScrollbar;
+            _scroll.content = _content;
+            _scroll.viewport = _viewport;
+            _scroll.verticalScrollbar = _scrollbar;
+            LayoutRebuilder.MarkLayoutForRebuild(_content);
+        }
 
         /// <summary>Строит область прокрутки с полосой справа.</summary>
         /// <param name="barWidth">Ширина полосы прокрутки.</param>
@@ -74,6 +107,12 @@ namespace AnomalyPath.Runtime.Ui.Core
             _scroll.decelerationRate = 0.135f;
             _scroll.verticalScrollbar = _scrollbar;
             _scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+
+            // Сохраняем ссылки в сериализуемые поля: префаб, собранный этим методом, восстановит их в Awake.
+            prefabScroll = _scroll;
+            prefabViewport = _viewport;
+            prefabContent = _content;
+            prefabScrollbar = _scrollbar;
         }
 
         /// <summary>Ставит высоту контента и возвращает прокрутку к началу.</summary>
@@ -134,6 +173,7 @@ namespace AnomalyPath.Runtime.Ui.Core
         {
             if (_content != null)
             {
+                LayoutRebuilder.MarkLayoutForRebuild(_content);
                 Resized?.Invoke();
             }
         }

@@ -17,6 +17,7 @@ namespace AnomalyPath.Core.Loadouts
         /// <param name="descriptionKey">Ключ описания или <c>null</c>.</param>
         /// <param name="items">Предметы в стартовый инвентарь.</param>
         /// <param name="equipment">Предметы в слоты.</param>
+        /// <param name="startingMoney">Стартовые деньги набора; <c>null</c> — взять из правил.</param>
         /// <exception cref="ArgumentException">Id или ключ названия пуст.</exception>
         /// <exception cref="ArgumentNullException">Списки не заданы.</exception>
         public LoadoutTemplate(
@@ -24,7 +25,8 @@ namespace AnomalyPath.Core.Loadouts
             string nameKey,
             string? descriptionKey,
             IReadOnlyList<LoadoutItem> items,
-            IReadOnlyDictionary<EquipmentSlot, string> equipment)
+            IReadOnlyDictionary<EquipmentSlot, string> equipment,
+            int? startingMoney = null)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -45,6 +47,7 @@ namespace AnomalyPath.Core.Loadouts
             DescriptionKey = descriptionKey;
             Items = items ?? throw new ArgumentNullException(nameof(items));
             Equipment = equipment ?? throw new ArgumentNullException(nameof(equipment));
+            StartingMoney = startingMoney;
         }
 
         /// <summary>Идентификатор набора.</summary>
@@ -62,6 +65,9 @@ namespace AnomalyPath.Core.Loadouts
         /// <summary>Предметы, которые сразу надеваются в слоты.</summary>
         public IReadOnlyDictionary<EquipmentSlot, string> Equipment { get; }
 
+        /// <summary>Стартовые деньги набора или <c>null</c>, если сумма берётся из правил.</summary>
+        public int? StartingMoney { get; }
+
         /// <summary>Читает набор из записи данных.</summary>
         /// <param name="value">Запись вида <c>loadouts</c>.</param>
         /// <param name="path">Путь для сообщения об ошибке.</param>
@@ -74,7 +80,29 @@ namespace AnomalyPath.Core.Loadouts
             var descriptionKey = DataMap.OptionalString(value, "descriptionKey");
             var items = ReadItems(value, path);
             var equipment = ReadEquipment(value, path);
-            return new LoadoutTemplate(id, nameKey, descriptionKey, items, equipment);
+            var startingMoney = OptionalStartingMoney(value, path);
+            return new LoadoutTemplate(id, nameKey, descriptionKey, items, equipment, startingMoney);
+        }
+
+        private static int? OptionalStartingMoney(JsonValue value, string path)
+        {
+            if (!value.TryGet("startingMoney", out var money))
+            {
+                return null;
+            }
+
+            if (money.Kind != JsonKind.Number)
+            {
+                throw new DataException(path, CoreErrors.MissingNumberField, "startingMoney");
+            }
+
+            var amount = (int)Math.Round(money.Number);
+            if (amount < 0)
+            {
+                throw new DataException(path, CoreErrors.NonNegative, "startingMoney");
+            }
+
+            return amount;
         }
 
         private static IReadOnlyList<LoadoutItem> ReadItems(JsonValue value, string path)

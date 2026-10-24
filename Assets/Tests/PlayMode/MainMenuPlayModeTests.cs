@@ -394,7 +394,7 @@ namespace AnomalyPath.Tests.PlayMode
             Assert.AreEqual("—", value.GetComponent<Text>().text, "Оружие не снялось перетаскиванием");
         }
 
-        /// <summary>Поле имени заполнено по умолчанию и обновляется кнопкой случайного имени.</summary>
+        /// <summary>Ник заполнен по умолчанию, кубик выдаёт новое имя.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]
         public IEnumerator NewGame_Nickname_IsFilledAndRandomizable()
@@ -404,14 +404,14 @@ namespace AnomalyPath.Tests.PlayMode
             Click("Новая игра");
             yield return null;
 
-            var field = GameObject.Find("Input");
+            var field = GameObject.Find("NicknameInput");
             Assert.IsNotNull(field, "Нет поля имени");
             var input = field.GetComponent<TextInputField>();
             Assert.IsNotNull(input, "У поля нет TextInputField");
             Assert.IsFalse(string.IsNullOrWhiteSpace(input.Text), "Имя должно быть заполнено по умолчанию");
-            Assert.IsNotNull(GameObject.Find("Случайное имя"), "Нет кнопки случайного имени");
+            Assert.IsNotNull(GameObject.Find("DiceButton"), "Нет кнопки-кубика");
 
-            Click("Случайное имя");
+            Click("DiceButton");
             yield return null;
 
             Assert.IsFalse(string.IsNullOrWhiteSpace(input.Text), "Имя после генерации");

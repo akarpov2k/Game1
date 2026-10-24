@@ -9,79 +9,66 @@ using UnityEngine.UI;
 namespace AnomalyPath.Runtime.Screens.Menu
 {
     /// <summary>
-    /// Правая панель экрана новой игры: окно инвентаря, в которое разложены все предметы набора
-    /// как обычные экземпляры. Панель обтягивает сетку, клетки считаются от ширины, лимита ячеек нет.
+    /// Правая панель экрана старта: набор экипировки в собственной прокрутке. Клетки считаются
+    /// от ширины видимой области, высота контента — от сетки; полоса прокрутки появляется только
+    /// при переполнении и не перекрывает содержимое.
     /// </summary>
-    public sealed class NewGameInventoryFrame
+    public sealed class NewGameInventoryFrame : MonoBehaviour
     {
-        private const float GridGap = 4f;
-        private const float TitleHeight = 34f;
-        private const float TitleTop = 12f;
-        private const float GridTop = 60f;
-        private const float MinCell = 24f;
+        [Tooltip("Прокрутка панели: своя у набора, независимая от остальных областей экрана")]
+        [SerializeField]
+        private ScrollArea scroll = null!;
 
-        private readonly IUiHost _host;
-        private readonly Transform _content;
+        [Tooltip("Текстура окна из инспектора: работает до пересборки каталога спрайтов")]
+        [SerializeField]
+        private Texture2D? panelTexture = null;
+
+        [Tooltip("Подпись денег в верхней плашке окна набора")]
+        [SerializeField]
+        private Text? moneyLabel = null;
+
+        [Tooltip("Подпись пустого или ошибочного состояния")]
+        [SerializeField]
+        private Text? emptyLabel = null;
+
+        [Tooltip("Контейнер динамической сетки: клетки и предметы создаются кодом")]
+        [SerializeField]
+        private RectTransform? gridRoot = null;
+
+        [Tooltip("Зазор между клетками сетки")]
+        [SerializeField]
+        private float gridGap = 0f;
+
+        [Tooltip("Минимальный размер клетки")]
+        [SerializeField]
+        private float minCell = 0f;
+
+        [Tooltip("Внутренний отступ сетки от краёв области")]
+        [SerializeField]
+        private float padding = 0f;
+
+        [Tooltip("Толщина линий сетки поверх текстуры")]
+        [SerializeField]
+        private float gridLine = 2f;
+
+        private IUiHost _host = null!;
         private LoadoutPreview? _preview;
         private string? _error;
         private int _money;
+        private float _renderedWidth = -1f;
+        private float _renderedHeight = -1f;
+        private bool _hasPanelTexture;
+        private Sprite? _panelSprite;
 
-        /// <summary>Создаёт окно инвентаря набора.</summary>
+        /// <summary>Связывает панель с хостом интерфейса.</summary>
         /// <param name="host">Хост интерфейса.</param>
-        /// <param name="parent">Контент прокрутки экрана.</param>
-        public NewGameInventoryFrame(IUiHost host, Transform parent)
+        public void Bind(IUiHost host)
         {
             _host = host;
-            Root = new GameObject("NewGameInventoryFrame", typeof(RectTransform), typeof(Image));
-            Root.transform.SetParent(parent, false);
-            var rect = Root.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(1f, 1f);
-            rect.anchorMax = new Vector2(1f, 1f);
-            rect.pivot = new Vector2(1f, 1f);
-            rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = new Vector2(MenuMetrics.PreviewMinWidth, MenuMetrics.PreviewMinHeight);
-
-            // Рамка — это сам корень панели: она не может растянуться отдельно от содержимого.
-            var background = Root.GetComponent<Image>();
-            background.color = MenuPalette.Frame;
-            background.raycastTarget = false;
-            _content = Root.transform;
+            ApplyPanelArt();
         }
 
-        /// <summary>Корень панели.</summary>
-        public GameObject Root { get; }
-
-        /// <summary>Высота панели, при которой сетка заполняет её: заголовок, клетки по ширине и отступ.</summary>
-        /// <param name="width">Ширина панели.</param>
-        /// <returns>Нужная высота панели.</returns>
-        public float MeasureHeight(float width)
-        {
-            if (_preview == null)
-            {
-                return MenuMetrics.PreviewMinHeight;
-            }
-
-            var grid = _preview.Display;
-            var cell = CellSize(width, grid.Width);
-            var gridHeight = (grid.Rows * cell) + ((grid.Rows - 1) * GridGap);
-            var required = GridTop + gridHeight + MenuMetrics.PreviewPadding;
-            return Mathf.Max(MenuMetrics.PreviewMinHeight, required);
-        }
-
-        /// <summary>Меняет размер панели и перерисовывает содержимое.</summary>
-        /// <param name="width">Ширина.</param>
-        /// <param name="height">Высота.</param>
-        public void Resize(float width, float height)
-        {
-            var rect = (RectTransform)Root.transform;
-            rect.sizeDelta = new Vector2(Mathf.Max(1f, width), Mathf.Max(1f, height));
-            if (_preview != null || _error != null)
-            {
-                Render();
-            }
-        }
-
-        /// <summary>Перерисовывает окно инвентаря под выбранный набор.</summary>
+        /// <summary>Перерисовывает набор под выбранный комплект.</summary>
         /// <param name="preview">Разложенный набор или <c>null</c>, если показать нечего.</param>
         /// <param name="error">Сообщение об ошибке или <c>null</c>.</param>
         /// <param name="money">Стартовые деньги персонажа.</param>
@@ -93,92 +80,163 @@ namespace AnomalyPath.Runtime.Screens.Menu
             Render();
         }
 
-        private static float CellSize(float width, int columns)
+        private void LateUpdate()
         {
-            var available = Mathf.Max(1f, width - (2f * MenuMetrics.PreviewPadding));
-            var cell = Mathf.Floor((available - ((columns - 1) * GridGap)) / Mathf.Max(1, columns));
-            return Mathf.Max(MinCell, cell);
+            if (scroll == null)
+            {
+                return;
+            }
+
+            var width = scroll.ViewportWidth;
+            var height = scroll.ViewportHeight;
+            if (Mathf.Approximately(width, _renderedWidth) && Mathf.Approximately(height, _renderedHeight))
+            {
+                return;
+            }
+
+            if (_preview != null || _error != null)
+            {
+                Render();
+            }
         }
 
         private void Render()
         {
-            Clear();
-            var size = ((RectTransform)Root.transform).rect.size;
-            var width = size.x <= 1f ? MenuMetrics.PreviewMinWidth : size.x;
-            var height = size.y <= 1f ? MenuMetrics.PreviewMinHeight : size.y;
-
-            Label("PreviewTitle", UiText.Get(_host.Texts, UiTextKey.NewGame_Preview_Title), 26, TextAnchor.MiddleCenter, UiFactory.TextColor,
-                0f, TitleTop, width, TitleHeight);
-
-            if (_money > 0)
+            if (scroll == null || gridRoot == null)
             {
-                Label("PreviewMoney", UiText.Format(_host.Texts, UiTextKey.Common_Money, _money), 18, TextAnchor.MiddleRight,
-                    UiFactory.MutedTextColor, width - MenuMetrics.PreviewPadding - 180f, TitleTop, 180f, TitleHeight);
-            }
-
-            if (_preview == null)
-            {
-                Label("PreviewEmpty", _error ?? UiText.Get(_host.Texts, UiTextKey.NewGame_Preview_Empty), 18, TextAnchor.MiddleCenter,
-                    UiFactory.ToastColor, MenuMetrics.PreviewPadding, 120f,
-                    width - (2f * MenuMetrics.PreviewPadding), 80f);
                 return;
             }
 
-            DrawInventory(_preview, width, height, _error);
-        }
+            var width = Mathf.Max(1f, scroll.ViewportWidth);
+            _renderedWidth = width;
+            _renderedHeight = scroll.ViewportHeight;
 
-        private void DrawInventory(LoadoutPreview preview, float width, float height, string? error)
-        {
-            var grid = preview.Display;
-            var padding = MenuMetrics.PreviewPadding;
-            var availableWidth = Mathf.Max(1f, width - (2f * padding));
+            UpdateMoney();
+            UpdateEmpty();
 
-            // Клетки считаются от ширины: сетка заполняет панель по горизонтали, без боковых полей.
-            var cell = CellSize(width, grid.Width);
-            var gridWidth = (grid.Width * cell) + ((grid.Width - 1) * GridGap);
-            var gridHeight = (grid.Rows * cell) + ((grid.Rows - 1) * GridGap);
-            var availableHeight = Mathf.Max(1f, height - GridTop - padding);
-            var gridX = padding + ((availableWidth - gridWidth) / 2f);
-            var gridY = GridTop + Mathf.Max(0f, (availableHeight - gridHeight) / 2f);
-
-            for (var row = 0; row < grid.Rows; row++)
+            Clear();
+            if (_preview == null)
             {
-                for (var column = 0; column < grid.Width; column++)
-                {
-                    Box($"PreviewCell_{column}_{row}",
-                        gridX + (column * (cell + GridGap)),
-                        gridY + (row * (cell + GridGap)),
-                        cell, cell, MenuPalette.Cell);
-                }
+                scroll.SetContentHeight(scroll.ViewportHeight);
+                return;
             }
 
-            var hidden = 0;
+            var grid = _preview.Display;
+            var cell = CellSize(width, grid.Width);
+            var gridWidth = (grid.Width * cell) + ((grid.Width - 1) * gridGap);
+            var gridHeight = (grid.Rows * cell) + ((grid.Rows - 1) * gridGap);
+            var hidden = HiddenCount(grid, _preview.Rejected.Count);
+            var noteHeight = hidden > 0 ? 20f : 0f;
+            var contentHeight = Mathf.Max(
+                scroll.ViewportHeight,
+                padding + gridHeight + noteHeight + padding);
+
+            scroll.SetContentHeight(contentHeight);
+
+            var x = padding + Mathf.Max(0f, (width - (2f * padding) - gridWidth) / 2f);
+            var y = padding;
+            DrawCells(grid, cell, x, y);
+            DrawGridLines(gridWidth, gridHeight, grid.Width, grid.Rows, cell, x, y);
+            DrawItems(grid, cell, x, y);
+
+            if (hidden > 0)
+            {
+                var note = UiWidgets.Label(
+                    _host,
+                    gridRoot!,
+                    "PreviewNote",
+                    UiText.Format(_host.Texts, UiTextKey.Common_Not_Placed, hidden, _preview.Rejected.Count),
+                    13,
+                    TextAnchor.UpperLeft,
+                    UiFactory.ToastColor,
+                    padding,
+                    y + gridHeight + 4f,
+                    width - (2f * padding),
+                    noteHeight);
+                note.raycastTarget = false;
+            }
+        }
+
+        private static int HiddenCount(GridContainer grid, int rejected)
+        {
+            var hidden = rejected;
             foreach (var item in grid.Items)
             {
                 if (item.Overflow || item.PlacedWidth <= 0 || item.PlacedHeight <= 0)
                 {
                     hidden++;
+                }
+            }
+
+            return hidden;
+        }
+
+        private void DrawCells(GridContainer grid, float cell, float originX, float originY)
+        {
+            var color = _hasPanelTexture ? Color.clear : MenuPalette.Cell;
+            for (var row = 0; row < grid.Rows; row++)
+            {
+                for (var column = 0; column < grid.Width; column++)
+                {
+                    Box(
+                        $"PreviewCell_{column}_{row}",
+                        originX + (column * (cell + gridGap)),
+                        originY + (row * (cell + gridGap)),
+                        cell,
+                        cell,
+                        color);
+                }
+            }
+        }
+
+        private void DrawGridLines(
+            float width,
+            float height,
+            int columns,
+            int rows,
+            float cell,
+            float originX,
+            float originY)
+        {
+            var line = Mathf.Max(1f, gridLine);
+            var half = line / 2f;
+            Line("GridTop", originX - line, originY - line, width + (line * 2f), line);
+            Line("GridBottom", originX - line, originY + height, width + (line * 2f), line);
+            Line("GridLeft", originX - line, originY - line, line, height + (line * 2f));
+            Line("GridRight", originX + width, originY - line, line, height + (line * 2f));
+
+            for (var column = 1; column < columns; column++)
+            {
+                var x = originX + (column * (cell + gridGap)) - (gridGap / 2f) - half;
+                Line("GridV" + column, x, originY, line, height);
+            }
+
+            for (var row = 1; row < rows; row++)
+            {
+                var y = originY + (row * (cell + gridGap)) - (gridGap / 2f) - half;
+                Line("GridH" + row, originX, y, width, line);
+            }
+        }
+
+        private void Line(string name, float x, float y, float width, float height)
+        {
+            Box(name, x, y, width, height, MenuPalette.GridLine);
+        }
+
+        private void DrawItems(GridContainer grid, float cell, float originX, float originY)
+        {
+            foreach (var item in grid.Items)
+            {
+                if (item.Overflow || item.PlacedWidth <= 0 || item.PlacedHeight <= 0)
+                {
                     continue;
                 }
 
-                var itemWidth = (item.PlacedWidth * cell) + ((item.PlacedWidth - 1) * GridGap);
-                var itemHeight = (item.PlacedHeight * cell) + ((item.PlacedHeight - 1) * GridGap);
-                var x = gridX + (item.X * (cell + GridGap));
-                var y = gridY + (item.Y * (cell + GridGap));
-                DrawItem(item, x, y, itemWidth, itemHeight);
-            }
-
-            if (hidden > 0 || preview.Rejected.Count > 0)
-            {
-                Label("PreviewNote",
-                    UiText.Format(_host.Texts, UiTextKey.Common_Not_Placed, hidden, preview.Rejected.Count), 13, TextAnchor.UpperLeft,
-                    UiFactory.ToastColor, padding, gridY + gridHeight + 8f, availableWidth, 44f);
-            }
-
-            if (!string.IsNullOrEmpty(error))
-            {
-                Label("PreviewError", error, 13, TextAnchor.LowerLeft, UiFactory.ToastColor,
-                    padding, height - padding - 30f, availableWidth, 30f);
+                var width = (item.PlacedWidth * cell) + ((item.PlacedWidth - 1) * gridGap);
+                var height = (item.PlacedHeight * cell) + ((item.PlacedHeight - 1) * gridGap);
+                var x = originX + (item.X * (cell + gridGap));
+                var y = originY + (item.Y * (cell + gridGap));
+                DrawItem(item, x, y, width, height);
             }
         }
 
@@ -186,10 +244,18 @@ namespace AnomalyPath.Runtime.Screens.Menu
         private void DrawItem(ItemInstance item, float x, float y, float width, float height)
         {
             var suffix = item.ItemId + "_" + item.InstanceId;
-            Box("PreviewItem_" + suffix, x, y, width, height, ItemPresentation.ColorFor(_host, item));
-
             var template = ItemPresentation.Template(_host, item);
-            if (template == null || !_host.Sprites.TryGet(template.Icon, out var sprite) || sprite == null)
+            Sprite? sprite = null;
+            var hasIcon = template != null && _host.Sprites.TryGet(template.Icon, out sprite) && sprite != null;
+            Box(
+                "PreviewItem_" + suffix,
+                x,
+                y,
+                width,
+                height,
+                hasIcon ? Color.clear : ItemPresentation.ColorFor(_host, item));
+
+            if (!hasIcon)
             {
                 return;
             }
@@ -199,32 +265,115 @@ namespace AnomalyPath.Runtime.Screens.Menu
                 return;
             }
 
-            UiWidgets.Icon(_host, _content, "PreviewItemIcon_" + suffix, sprite,
-                x + 2f, y + 2f, width - 4f, height - 4f);
+            UiWidgets.ItemIcon(
+                _host,
+                gridRoot!,
+                "PreviewItemIcon_" + suffix,
+                sprite!,
+                x,
+                y,
+                width,
+                height,
+                4f);
+        }
+
+        private void ApplyPanelArt()
+        {
+            var image = GetComponent<Image>();
+            if (image != null)
+            {
+                _hasPanelTexture = ApplyPanelTexture(image);
+            }
+
+            if (moneyLabel != null)
+            {
+                InventoryPanelArt.DecorateMoney(moneyLabel);
+            }
+        }
+
+        private bool ApplyPanelTexture(Image image)
+        {
+            if (panelTexture == null)
+            {
+                return InventoryPanelArt.ApplyBackground(_host, image, MenuPalette.Frame);
+            }
+
+            if (_panelSprite == null)
+            {
+                _panelSprite = Sprite.Create(
+                    panelTexture,
+                    new Rect(0f, 0f, panelTexture.width, panelTexture.height),
+                    new Vector2(0.5f, 0.5f),
+                    100f,
+                    0,
+                    SpriteMeshType.FullRect);
+                _panelSprite.hideFlags = HideFlags.DontSave;
+            }
+
+            image.sprite = _panelSprite;
+            image.color = Color.white;
+            image.type = Image.Type.Simple;
+            image.preserveAspect = false;
+            return true;
+        }
+
+        private void OnDestroy()
+        {
+            if (_panelSprite != null)
+            {
+                Destroy(_panelSprite);
+                _panelSprite = null;
+            }
+        }
+
+        private void UpdateMoney()
+        {
+            if (moneyLabel == null)
+            {
+                return;
+            }
+
+            moneyLabel.gameObject.SetActive(true);
+            moneyLabel.text = UiText.Format(_host.Texts, UiTextKey.Common_Money, _money);
+        }
+
+        private void UpdateEmpty()
+        {
+            if (emptyLabel == null)
+            {
+                return;
+            }
+
+            var show = _preview == null;
+            emptyLabel.gameObject.SetActive(show);
+            if (show)
+            {
+                emptyLabel.text = _error ?? UiText.Get(_host.Texts, UiTextKey.NewGame_Preview_Empty);
+            }
+        }
+
+        private float CellSize(float width, int columns)
+        {
+            var available = Mathf.Max(1f, width - (2f * padding));
+            var cell = Mathf.Floor((available - ((columns - 1) * gridGap)) / Mathf.Max(1, columns));
+            return Mathf.Max(minCell, cell);
         }
 
         private Image Box(string name, float x, float y, float width, float height, Color color)
         {
-            var image = UiWidgets.Box(_host, _content, name, x, y, width, height, color);
+            var image = UiWidgets.Box(_host, gridRoot!, name, x, y, width, height, color);
             image.raycastTarget = false;
             return image;
         }
 
-        private Text Label(
-            string name,
-            string text,
-            int size,
-            TextAnchor anchor,
-            Color color,
-            float x,
-            float y,
-            float width,
-            float height) =>
-            UiWidgets.Label(_host, _content, name, text, size, anchor, color, x, y, width, height);
-
         private void Clear()
         {
-            foreach (Transform child in _content)
+            if (gridRoot == null)
+            {
+                return;
+            }
+
+            foreach (Transform child in gridRoot)
             {
                 child.gameObject.SetActive(false);
                 Object.Destroy(child.gameObject);

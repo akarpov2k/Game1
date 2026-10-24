@@ -150,6 +150,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: AnomalyPath.Runtime::AnomalyPath.Runtime.GameScreen
   spriteCatalog: {fileID: 11400000, guid: 3427e51c16d17a640b1c55677521f2e7, type: 2}
+  newGameScreenPrefab: {fileID: 2771282186432066173, guid: 6cb77086819a7664c8cdbd0d5f558369, type: 3}
 --- !u!114 &930534038
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -58,8 +58,9 @@ namespace AnomalyPath.Core.Services
                 state.Settings == null
                     ? null
                     : new NewGameSettingsSaveData(
-                        state.Settings.LootLossFactor,
-                        state.Settings.TradeDifficulty));
+                        state.Settings.InsuranceChance,
+                        state.Settings.TradeDifficulty,
+                        state.Settings.Permadeath));
             var game = new SaveGame(
                 SaveGame.CurrentSchemaVersion,
                 SaveGame.CurrentSaveVersion,
@@ -132,7 +133,10 @@ namespace AnomalyPath.Core.Services
                 : PlayerSaveMapper.FromSaveData(game.Player, _items, slot);
             var settings = game.World.Settings == null
                 ? null
-                : new NewGameSettings(game.World.Settings.LootLossFactor, game.World.Settings.TradeDifficulty);
+                : new NewGameSettings(
+                    game.World.Settings.InsuranceChance,
+                    game.World.Settings.TradeDifficulty,
+                    permadeath: game.World.Settings.Permadeath);
             return new GameState(state, player, settings);
         }
 

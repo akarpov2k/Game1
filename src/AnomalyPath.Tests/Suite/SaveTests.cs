@@ -11,6 +11,7 @@ using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Player;
 using AnomalyPath.Core.Save;
 using AnomalyPath.Core.Services;
+using AnomalyPath.Core.Session;
 using AnomalyPath.Core.World;
 using InventoryEquipment = AnomalyPath.Core.Inventory.Equipment;
 
@@ -181,6 +182,33 @@ namespace AnomalyPath.Tests
                 });
             });
 
+            Check("сейв: старое поле lootLossFactor читается как страховка", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    var settings = new NewGameSettings(0.4, 1.5);
+                    service.Save(
+                        new GameState(state, NewPlayer(items), settings),
+                        "slot_1",
+                        0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var text = File.ReadAllText(storage.GetPath("slot_1"))
+                        .Replace("\"insuranceChance\": 0.4", "\"lootLossFactor\": 0.4")
+                        .Replace("\"schemaVersion\": 4", "\"schemaVersion\": 3")
+                        .Replace("\"saveVersion\": 4", "\"saveVersion\": 3");
+                    File.WriteAllText(storage.GetPath("slot_1"), text);
+
+                    var loaded = service.Load("slot_1");
+                    Equal(0.4, loaded.Settings!.InsuranceChance, "страховка из старого поля");
+                    Equal(1.5, loaded.Settings.TradeDifficulty, "торговля");
+                    False(loaded.Settings.Permadeath, "пермасмерть по умолчанию");
+                });
+            });
+
             Check("сейв: повторная запись создаёт бэкап", () =>
             {
                 WithSaveRoot(root =>
@@ -289,8 +317,8 @@ namespace AnomalyPath.Tests
                     var service = new SaveService(storage, items);
                     service.Save(new GameState(state, null), "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"))
-                        .Replace("\"schemaVersion\": 3", "\"schemaVersion\": 1")
-                        .Replace("\"saveVersion\": 3", "\"saveVersion\": 1");
+                        .Replace("\"schemaVersion\": 4", "\"schemaVersion\": 1")
+                        .Replace("\"saveVersion\": 4", "\"saveVersion\": 1");
                     File.WriteAllText(storage.GetPath("slot_1"), text);
 
                     True(service.Load("slot_1").Player == null, "игрока нет");
@@ -373,7 +401,7 @@ namespace AnomalyPath.Tests
                     var service = new SaveService(storage, items);
                     service.Save(new GameState(state, null), "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"));
-                    File.WriteAllText(storage.GetPath("slot_1"), text.Replace("\"schemaVersion\": 3", "\"schemaVersion\": 99"));
+                    File.WriteAllText(storage.GetPath("slot_1"), text.Replace("\"schemaVersion\": 4", "\"schemaVersion\": 99"));
                     var error = Throws<DataException>(() => service.Load("slot_1"), "версия");
                     Equal("error.save_unsupported_version", error.Code, "код");
                 });

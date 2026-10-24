@@ -13,12 +13,25 @@ namespace AnomalyPath.Runtime.Ui.Core
     /// </summary>
     public sealed class TextInputField : MonoBehaviour, IPointerClickHandler
     {
-        private Text _text = null!;
-        private Text _placeholder = null!;
-        private Image _background = null!;
-        private int _maxLength = 24;
+        [Tooltip("Компонент текста поля")]
+        [SerializeField]
+        private Text? text = null;
+
+        [Tooltip("Подсказка при пустом поле")]
+        [SerializeField]
+        private Text? placeholder = null;
+
+        [Tooltip("Фон поля")]
+        [SerializeField]
+        private Image? background = null;
+
+        [Tooltip("Предел длины вводимого текста")]
+        [SerializeField]
+        private int maxLength = 24;
+
         private bool _focused;
         private bool _subscribed;
+        private bool _initialized;
         private Color _normalColor = Color.white;
         private Color _focusColor = Color.white;
         private static int _focusedCount;
@@ -31,7 +44,7 @@ namespace AnomalyPath.Runtime.Ui.Core
         public static int EscapeConsumedFrame => _escapeConsumedFrame;
 
         /// <summary>Текущий текст.</summary>
-        public string Text => _text != null ? _text.text : string.Empty;
+        public string Text => text != null ? text.text : string.Empty;
 
         /// <summary>Ставит фокус в поле, чтобы сразу принимать ввод.</summary>
         public void Focus() => SetFocused(true);
@@ -57,10 +70,11 @@ namespace AnomalyPath.Runtime.Ui.Core
         /// <param name="maxLength">Предел длины.</param>
         public void Configure(Text text, Text placeholder, Image background, int maxLength)
         {
-            _text = text;
-            _placeholder = placeholder;
-            _background = background;
-            _maxLength = maxLength < 1 ? 1 : maxLength;
+            this.text = text;
+            this.placeholder = placeholder;
+            this.background = background;
+            this.maxLength = maxLength < 1 ? 1 : maxLength;
+            _initialized = true;
             _normalColor = background.color;
             _focusColor = Color.Lerp(_normalColor, Color.white, 0.18f);
             UpdateVisual();
@@ -70,18 +84,31 @@ namespace AnomalyPath.Runtime.Ui.Core
         /// <param name="value">Новый текст.</param>
         public void SetText(string value)
         {
-            if (_text == null)
+            if (text == null)
             {
                 return;
             }
 
-            _text.text = Clamp(value ?? string.Empty);
+            text.text = Clamp(value ?? string.Empty);
             UpdateVisual();
-            Changed?.Invoke(_text.text);
+            Changed?.Invoke(text.text);
         }
 
         /// <inheritdoc />
         public void OnPointerClick(PointerEventData eventData) => SetFocused(true);
+
+        private void Awake()
+        {
+            if (_initialized || text == null || placeholder == null || background == null)
+            {
+                return;
+            }
+
+            _initialized = true;
+            _normalColor = background.color;
+            _focusColor = Color.Lerp(_normalColor, Color.white, 0.18f);
+            UpdateVisual();
+        }
 
         private void OnEnable()
         {
@@ -169,15 +196,15 @@ namespace AnomalyPath.Runtime.Ui.Core
 
         private void UpdateVisual()
         {
-            if (_text == null || _placeholder == null || _background == null)
+            if (text == null || placeholder == null || background == null)
             {
                 return;
             }
 
-            _placeholder.gameObject.SetActive(_text.text.Length == 0);
-            _background.color = _focused ? _focusColor : _normalColor;
+            placeholder.gameObject.SetActive(text.text.Length == 0);
+            background.color = _focused ? _focusColor : _normalColor;
         }
 
-        private string Clamp(string value) => value.Length > _maxLength ? value.Substring(0, _maxLength) : value;
+        private string Clamp(string value) => value.Length > maxLength ? value.Substring(0, maxLength) : value;
     }
 }

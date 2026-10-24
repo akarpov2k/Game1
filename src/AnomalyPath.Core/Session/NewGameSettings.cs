@@ -8,22 +8,30 @@ namespace AnomalyPath.Core.Session
     public sealed class NewGameSettings
     {
         /// <summary>Создаёт настройки новой игры.</summary>
-        /// <param name="lootLossFactor">Коэффициент потери лута при смерти, 0..1.</param>
+        /// <param name="insuranceChance">
+        /// Коэффициент страховки надетой вещи, 0..1: вероятность, что конкретный надетый предмет
+        /// переживёт смерть. Применяется к каждому предмету отдельным броском.
+        /// </param>
         /// <param name="tradeDifficulty">Коэффициент усложнения торговли, не меньше 0.</param>
         /// <param name="nickname">Ник персонажа; пусто — сгенерировать случайный.</param>
         /// <param name="nicknameMaxLength">Предел длины ника из правил; 0 — не проверять.</param>
+        /// <param name="permadeath">
+        /// <c>true</c> — режим постоянной смерти: при смерти удаляется всё, включая снаряжение,
+        /// а страховка не применяется. По умолчанию <c>false</c>.
+        /// </param>
         /// <exception cref="ArgumentOutOfRangeException">Значение вне допустимых границ.</exception>
         public NewGameSettings(
-            double lootLossFactor,
+            double insuranceChance,
             double tradeDifficulty,
             string? nickname = null,
-            int nicknameMaxLength = 0)
+            int nicknameMaxLength = 0,
+            bool permadeath = false)
         {
-            if (lootLossFactor < 0 || lootLossFactor > 1)
+            if (insuranceChance < 0 || insuranceChance > 1)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(lootLossFactor),
-                    CoreText.Format(CoreErrors.ChanceRange, nameof(lootLossFactor)));
+                    nameof(insuranceChance),
+                    CoreText.Format(CoreErrors.ChanceRange, nameof(insuranceChance)));
             }
 
             if (tradeDifficulty < 0)
@@ -41,18 +49,28 @@ namespace AnomalyPath.Core.Session
                     CoreText.Format(CoreErrors.NicknameLength, nicknameMaxLength));
             }
 
-            LootLossFactor = lootLossFactor;
+            InsuranceChance = insuranceChance;
             TradeDifficulty = tradeDifficulty;
             Nickname = trimmed;
+            Permadeath = permadeath;
         }
 
-        /// <summary>Коэффициент потери лута при смерти, 0..1.</summary>
-        public double LootLossFactor { get; }
+        /// <summary>
+        /// Коэффициент страховки надетой вещи, 0..1. При смерти каждый надетый предмет
+        /// проходит собственный бросок: при успехе остаётся, иначе теряется.
+        /// </summary>
+        public double InsuranceChance { get; }
 
         /// <summary>Коэффициент усложнения торговли.</summary>
         public double TradeDifficulty { get; }
 
         /// <summary>Ник персонажа; пусто — сгенерировать случайный.</summary>
         public string Nickname { get; }
+
+        /// <summary>
+        /// <c>true</c>, если выбран режим постоянной смерти: страховка не применяется,
+        /// а при смерти удаляется всё, включая снаряжение.
+        /// </summary>
+        public bool Permadeath { get; }
     }
 }

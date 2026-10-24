@@ -101,9 +101,10 @@ namespace AnomalyPath.Runtime.Screens.Character
             {
                 CharacterWidgets.Box(_host, _content, "EquipmentFrame", 0f, 0f,
                     CharacterMetrics.FrameWidth, CharacterMetrics.FrameHeight, CharacterPalette.Frame);
-                CharacterWidgets.Box(_host, _content, "InventoryFrame",
+                var inventory = CharacterWidgets.Box(_host, _content, "InventoryFrame",
                     CharacterMetrics.FrameWidth + CharacterMetrics.Gap, 0f,
                     CharacterMetrics.InventoryWidth, CharacterMetrics.FrameHeight, CharacterPalette.Frame);
+                InventoryPanelArt.ApplyBackground(_host, inventory, CharacterPalette.Frame);
                 CharacterWidgets.Label(_host, _content, "NoGame", UiText.Get(_host.Texts, UiTextKey.Common_No_Game), 20, TextAnchor.MiddleCenter,
                     UiFactory.MutedTextColor, CharacterMetrics.FrameWidth + CharacterMetrics.Gap + 20f, 20f,
                     CharacterMetrics.InventoryWidth - 40f, 40f);

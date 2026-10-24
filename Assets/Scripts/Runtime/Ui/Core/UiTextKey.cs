@@ -94,8 +94,8 @@ namespace AnomalyPath.Runtime.Ui.Core
         /// <summary>Подпись выбора набора.</summary>
         NewGame_Loadout_Label,
 
-        /// <summary>Подпись потери лута.</summary>
-        NewGame_Loot_Loss_Label,
+        /// <summary>Подпись коэффициента страховки надетых вещей.</summary>
+        NewGame_Insurance_Label,
 
         /// <summary>Подпись усложнения торговли.</summary>
         NewGame_Trade_Label,
@@ -392,6 +392,15 @@ namespace AnomalyPath.Runtime.Ui.Core
         Data_Error_Title,
 
         /// <summary>Ошибка данных: нет данных.</summary>
-        Data_Error_Missing
+        Data_Error_Missing,
+
+        /// <summary>Кнопка возврата в меню со старта игры.</summary>
+        NewGame_Back,
+
+        /// <summary>Маркер выбранного набора снаряжения.</summary>
+        NewGame_Selected_Marker,
+
+        /// <summary>Подпись режима постоянной смерти.</summary>
+        NewGame_Permadeath_Label
     }
 }

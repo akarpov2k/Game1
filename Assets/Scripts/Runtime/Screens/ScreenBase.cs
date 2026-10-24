@@ -9,7 +9,7 @@ namespace AnomalyPath.Runtime.Screens
     /// Наследники добавляют содержимое после базового конструктора — фон остаётся позади.
     /// Тему фона можно переопределить свойством <see cref="Theme"/>.
     /// </summary>
-    public abstract class ScreenBase
+    public abstract class ScreenBase : IScreen
     {
         private readonly ScreenBackdrop _backdrop;
 
@@ -21,7 +21,7 @@ namespace AnomalyPath.Runtime.Screens
         {
             Host = host;
             Panel = host.Ui.CreatePanel(panelName, canvas);
-            _backdrop = new ScreenBackdrop(host, Panel.transform);
+            _backdrop = ScreenBackdrop.Create(host, Panel.transform);
             ApplyTheme();
         }
 

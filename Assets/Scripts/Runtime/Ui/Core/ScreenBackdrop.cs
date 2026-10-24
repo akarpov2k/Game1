@@ -1,57 +1,133 @@
 #nullable enable
 using System.Collections.Generic;
+using AnomalyPath.Core.Localization;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace AnomalyPath.Runtime.Ui.Core
 {
     /// <summary>
-    /// Фон экрана: растянутая картинка из каталога спрайтов, а если её нет — градиент из цветов темы.
-    /// Фон не перехватывает клики и не мешает раскладке.
+    /// Фон экрана: картинка, заданная в инспекторе или взятая по id из каталога спрайтов,
+    /// а если картинки нет — градиент из цветов темы. Фон не перехватывает клики и не мешает раскладке.
     /// </summary>
-    public sealed class ScreenBackdrop
+    [RequireComponent(typeof(Image))]
+    public sealed class ScreenBackdrop : MonoBehaviour
     {
         private static readonly Dictionary<string, Sprite> Gradients = new Dictionary<string, Sprite>();
 
-        private readonly IUiHost _host;
-        private readonly Image _image;
+        [Tooltip("Компонент изображения задника; пусто — берётся с этого объекта")]
+        [SerializeField]
+        private Image? image = null;
 
-        /// <summary>Создаёт фон на всю панель.</summary>
+        [Tooltip("Фоновое изображение из инспектора; если задано, используется вместо темы")]
+        [SerializeField]
+        private Sprite? sprite = null;
+
+        [Tooltip("Id изображения в каталоге спрайтов; работает, если спрайт не задан")]
+        [SerializeField]
+        private string spriteId = string.Empty;
+
+        private IUiHost? _host;
+
+        /// <summary>Готовит задник к работе: запоминает хост и настраивает изображение.</summary>
         /// <param name="host">Хост интерфейса.</param>
-        /// <param name="parent">Панель экрана.</param>
-        public ScreenBackdrop(IUiHost host, Transform parent)
+        /// <param name="target">Компонент изображения; <c>null</c> — взять с этого объекта.</param>
+        public void Initialize(IUiHost host, Image? target = null)
         {
             _host = host;
-            _image = host.Ui.CreateImage("ScreenBackdrop", parent, Color.white);
-            var rect = _image.rectTransform;
+            if (target != null)
+            {
+                image = target;
+            }
+
+            if (image == null)
+            {
+                image = GetComponent<Image>();
+            }
+
+            if (image == null)
+            {
+                Debug.LogError(CoreText.Format(CoreErrors.BackdropImageMissing, name));
+                return;
+            }
+
+            image.raycastTarget = false;
+            image.preserveAspect = false;
+            image.type = Image.Type.Simple;
+            image.color = Color.white;
+        }
+
+        /// <summary>Применяет тему: спрайт из инспектора, затем id каталога, затем картинка темы, иначе градиент.</summary>
+        /// <param name="theme">Тема фона.</param>
+        public void Apply(ScreenTheme theme)
+        {
+            if (image == null)
+            {
+                return;
+            }
+
+            var tint = theme.Tint;
+            tint.a *= theme.Opacity;
+
+            var selected = sprite;
+            if (selected == null && !string.IsNullOrEmpty(spriteId) && TryGetFromCatalog(spriteId, out var fromInspector))
+            {
+                selected = fromInspector;
+            }
+
+            if (selected == null &&
+                !string.IsNullOrEmpty(theme.SpriteId) &&
+                TryGetFromCatalog(theme.SpriteId!, out var fromTheme))
+            {
+                selected = fromTheme;
+            }
+
+            if (selected != null)
+            {
+                image.sprite = selected;
+                image.color = tint;
+                return;
+            }
+
+            image.sprite = Gradient(theme.TopColor, theme.BottomColor);
+            image.color = tint;
+        }
+
+        /// <summary>Создаёт задник поверх панели: растянутое изображение с компонентом.</summary>
+        /// <param name="host">Хост интерфейса.</param>
+        /// <param name="parent">Панель экрана.</param>
+        /// <returns>Готовый задник.</returns>
+        public static ScreenBackdrop Create(IUiHost host, Transform parent)
+        {
+            var image = host.Ui.CreateImage("ScreenBackdrop", parent, Color.white);
+            var rect = image.rectTransform;
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
-            _image.raycastTarget = false;
-            _image.preserveAspect = false;
-            _image.type = Image.Type.Simple;
-            _image.color = Color.white;
+
+            var backdrop = image.gameObject.AddComponent<ScreenBackdrop>();
+            backdrop.Initialize(host, image);
+            return backdrop;
         }
 
-        /// <summary>Применяет тему: картинка по id, иначе градиент.</summary>
-        /// <param name="theme">Тема фона.</param>
-        public void Apply(ScreenTheme theme)
+        private bool TryGetFromCatalog(string id, out Sprite? found)
         {
-            var tint = theme.Tint;
-            tint.a *= theme.Opacity;
+            found = null;
+            return _host != null && _host.Sprites.TryGet(id, out found) && found != null;
+        }
 
-            if (!string.IsNullOrEmpty(theme.SpriteId) &&
-                _host.Sprites.TryGet(theme.SpriteId!, out var sprite) &&
-                sprite != null)
+        private void Reset()
+        {
+            image = GetComponent<Image>();
+        }
+
+        private void OnValidate()
+        {
+            if (image == null)
             {
-                _image.sprite = sprite;
-                _image.color = tint;
-                return;
+                image = GetComponent<Image>();
             }
-
-            _image.sprite = Gradient(theme.TopColor, theme.BottomColor);
-            _image.color = tint;
         }
 
         private static Sprite Gradient(Color top, Color bottom)

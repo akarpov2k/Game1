@@ -9,41 +9,52 @@ namespace AnomalyPath.Core.Save
     public sealed class NewGameSettingsSaveData
     {
         /// <summary>Создаёт снимок настроек.</summary>
-        /// <param name="lootLossFactor">Коэффициент потери лута, 0..1.</param>
+        /// <param name="insuranceChance">Коэффициент страховки надетых вещей, 0..1.</param>
         /// <param name="tradeDifficulty">Коэффициент усложнения торговли, не меньше 0.</param>
-        public NewGameSettingsSaveData(double lootLossFactor, double tradeDifficulty)
+        /// <param name="permadeath">Выбран ли режим постоянной смерти.</param>
+        public NewGameSettingsSaveData(double insuranceChance, double tradeDifficulty, bool permadeath = false)
         {
-            LootLossFactor = lootLossFactor;
+            InsuranceChance = insuranceChance;
             TradeDifficulty = tradeDifficulty;
+            Permadeath = permadeath;
         }
 
-        /// <summary>Коэффициент потери лута при смерти.</summary>
-        public double LootLossFactor { get; }
+        /// <summary>Коэффициент страховки надетых вещей, 0..1.</summary>
+        public double InsuranceChance { get; }
 
         /// <summary>Коэффициент усложнения торговли.</summary>
         public double TradeDifficulty { get; }
+
+        /// <summary><c>true</c>, если выбран режим постоянной смерти.</summary>
+        public bool Permadeath { get; }
 
         /// <summary>Сериализует настройки.</summary>
         /// <returns>JSON-объект.</returns>
         public JsonValue ToJson()
         {
             var value = JsonValue.NewObject();
-            value.Members["lootLossFactor"] = JsonValue.FromNumber(LootLossFactor);
+            value.Members["insuranceChance"] = JsonValue.FromNumber(InsuranceChance);
             value.Members["tradeDifficulty"] = JsonValue.FromNumber(TradeDifficulty);
+            value.Members["permadeath"] = JsonValue.FromBool(Permadeath);
             return value;
         }
 
-        /// <summary>Читает настройки из сохранения.</summary>
+        /// <summary>
+        /// Читает настройки из сохранения. Сейвы до версии 4 хранили коэффициент страховки
+        /// под старым именем <c>lootLossFactor</c>; поле читается для совместимости.
+        /// </summary>
         /// <param name="value">JSON-объект.</param>
         /// <param name="sourcePath">Путь для сообщения об ошибке.</param>
         /// <returns>Снимок настроек.</returns>
         /// <exception cref="DataException">Поля отсутствуют или значения вне границ.</exception>
         public static NewGameSettingsSaveData FromJson(JsonValue value, string sourcePath)
         {
-            var lootLossFactor = DataMap.RequireDouble(value, "lootLossFactor", sourcePath);
-            if (lootLossFactor < 0 || lootLossFactor > 1)
+            var insuranceChance = DataMap.OptionalDouble(value, "insuranceChance")
+                ?? DataMap.OptionalDouble(value, "lootLossFactor")
+                ?? throw new DataException(sourcePath, CoreErrors.SaveMissingField, "insuranceChance");
+            if (insuranceChance < 0 || insuranceChance > 1)
             {
-                throw new DataException(sourcePath, CoreErrors.SaveSettings, "lootLossFactor");
+                throw new DataException(sourcePath, CoreErrors.SaveSettings, "insuranceChance");
             }
 
             var tradeDifficulty = DataMap.RequireDouble(value, "tradeDifficulty", sourcePath);
@@ -52,7 +63,10 @@ namespace AnomalyPath.Core.Save
                 throw new DataException(sourcePath, CoreErrors.SaveSettings, "tradeDifficulty");
             }
 
-            return new NewGameSettingsSaveData(lootLossFactor, tradeDifficulty);
+            return new NewGameSettingsSaveData(
+                insuranceChance,
+                tradeDifficulty,
+                DataMap.OptionalBool(value, "permadeath", false));
         }
     }
 }

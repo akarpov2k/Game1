@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Combat;
+using AnomalyPath.Core.Death;
 using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Session;
 using AnomalyPath.Core.World;
@@ -16,23 +17,27 @@ namespace AnomalyPath.Core.Services
         private readonly ICombatService _combat;
         private readonly ISaveService _saves;
         private readonly INewGameService _newGame;
+        private readonly IDeathService _death;
 
         /// <summary>Создаёт сервис сессии.</summary>
         /// <param name="travel">Переходы по миру.</param>
         /// <param name="combat">Боевой расчёт.</param>
         /// <param name="saves">Сохранение и загрузка состояния.</param>
         /// <param name="newGame">Создание новой игры.</param>
+        /// <param name="death">Последствия смерти для вещей.</param>
         /// <exception cref="ArgumentNullException">Зависимость не задана.</exception>
         public GameSessionService(
             ITravelService travel,
             ICombatService combat,
             ISaveService saves,
-            INewGameService newGame)
+            INewGameService newGame,
+            IDeathService death)
         {
             _travel = travel ?? throw new ArgumentNullException(nameof(travel));
             _combat = combat ?? throw new ArgumentNullException(nameof(combat));
             _saves = saves ?? throw new ArgumentNullException(nameof(saves));
             _newGame = newGame ?? throw new ArgumentNullException(nameof(newGame));
+            _death = death ?? throw new ArgumentNullException(nameof(death));
         }
 
         /// <inheritdoc />
@@ -63,6 +68,17 @@ namespace AnomalyPath.Core.Services
             }
 
             return new GameSession(_newGame.Create(seed, loadoutId, settings));
+        }
+
+        /// <inheritdoc />
+        public DeathResult ApplyDeath(GameSession session)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            return _death.Apply(session.State);
         }
 
         /// <inheritdoc />

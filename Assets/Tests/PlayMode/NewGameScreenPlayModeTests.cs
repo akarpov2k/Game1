@@ -1,144 +1,295 @@
 #nullable enable
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using AnomalyPath.Runtime;
+using AnomalyPath.Runtime.Screens.Menu;
 using AnomalyPath.Runtime.Ui.Core;
 using AnomalyPath.Runtime.Ui.Items;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
 
 namespace AnomalyPath.Tests.PlayMode
 {
-    /// <summary>Экран новой игры: предпросмотр набора справа и числовые поля сложности вместо ползунков.</summary>
+    /// <summary>
+    /// Экран старта игры по прототипу: ник с кубиком сверху, наборы в две колонки с маркером,
+    /// настройки из общей строки и набор экипировки в собственной прокрутке.
+    /// </summary>
     public sealed class NewGameScreenPlayModeTests
     {
-        /// <summary>Окно инвентаря рисует предметы набора картинками, без подписей, и не даёт с ними работать.</summary>
+        /// <summary>Ник и кубик стоят выше выбора наборов.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]
-        public IEnumerator NewGame_InventoryPreview_DrawsLoadoutItemsWithoutText()
+        public IEnumerator NewGame_NicknameAboveLoadouts()
         {
-            yield return LoadMain();
+            yield return OpenNewGame();
 
-            Click("Новая игра");
-            yield return null;
+            var nickname = FindInPanel("NicknameRow");
+            var loadouts = FindInPanel("LoadoutBlock");
+            Assert.IsNotNull(nickname, "Нет строки с ником");
+            Assert.IsNotNull(loadouts, "Нет блока выбора набора");
 
-            var preview = GameObject.Find("NewGameInventoryFrame");
-            Assert.IsNotNull(preview, "Окно инвентаря набора не создано");
-            Assert.IsTrue(preview.activeSelf, "Окно инвентаря набора не активно");
-            Assert.IsNotNull(preview.GetComponent<Image>(), "Рамка инвентаря должна быть фоном самой панели");
-            Assert.IsNull(GameObject.Find("PreviewFrame"), "Рамка не должна быть отдельным растягиваемым объектом");
+            var nicknameRect = WorldRect((RectTransform)nickname.transform);
+            var loadoutsRect = WorldRect((RectTransform)loadouts.transform);
+            Assert.Greater(nicknameRect.yMin, loadoutsRect.yMax, "Ник должен быть выше выбора наборов");
+        }
 
-            Assert.IsNull(GameObject.Find("PreviewSlotMainValue"), "Состав набора не должен расписываться по слотам");
-            Assert.IsNull(GameObject.Find("PreviewInventorySummary"), "Счётчик занятых клеток на этом экране не нужен");
-            var money = GameObject.Find("PreviewMoney");
-            Assert.IsNotNull(money, "Над инвентарём не показаны деньги");
-            StringAssert.Contains("руб", money.GetComponent<Text>().text, "Деньги должны быть подписаны в рублях");
-            Assert.AreEqual(0, CountChildren(preview, "PreviewItemLabel_"),
-                "В клетках инвентаря не должно быть подписей предметов");
-            Assert.Greater(CountChildren(preview, "PreviewCell_"), 0, "Клетки инвентаря не созданы");
-            Assert.GreaterOrEqual(CountItemBoxes(preview), 7, "Предметы набора не отрисованы в инвентаре");
-            Assert.IsTrue(HasItem(preview, "wpn_ak74"), "Автомат набора не отрисован");
-            Assert.IsTrue(HasItem(preview, "itm_armor_plate"), "Броня набора не отрисована");
-            Assert.IsTrue(HasItem(preview, "ammo_545"), "Патроны набора не отрисованы");
+        /// <summary>Кубик показывает грань точками и выдаёт имя по нажатию.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Dice_RollsName()
+        {
+            yield return OpenNewGame();
 
-            var icons = preview.GetComponentsInChildren<Image>(includeInactive: false);
-            var drawn = 0;
-            foreach (var image in icons)
+            var dice = FindInPanel("DiceButton");
+            Assert.IsNotNull(dice, "Нет кнопки-кубика");
+            var button = dice.GetComponent<Button>();
+            Assert.IsNotNull(button, "У кубика нет Button");
+            var diceFace = dice.GetComponent<DiceButton>();
+            Assert.IsNotNull(diceFace, "У кубика нет DiceButton");
+
+            var pips = 0;
+            foreach (var image in dice.GetComponentsInChildren<Image>(true))
             {
-                if (image.name.StartsWith("PreviewItemIcon_", System.StringComparison.Ordinal) && image.sprite != null)
+                if (image.name.StartsWith("Pip_", System.StringComparison.Ordinal))
                 {
-                    drawn++;
+                    pips++;
                 }
             }
 
-            Assert.Greater(drawn, 0, "Иконки предметов не нарисованы — проверьте каталог спрайтов в сцене");
+            Assert.AreEqual(9, pips, "У кубика должно быть девять точек грани");
+            Assert.Greater(diceFace.Face, 0, "Грань кубика не показана");
 
-            Assert.AreEqual(0, preview.GetComponentsInChildren<ItemDropZone>(true).Length,
-                "В инвентаре набора не должно быть зон сброса");
-            Assert.AreEqual(0, preview.GetComponentsInChildren<ItemDragSource>(true).Length,
-                "В инвентаре набора не должно быть перетаскивания");
-            Assert.AreEqual(0, preview.GetComponentsInChildren<Button>(true).Length,
-                "В инвентаре набора не должно быть кнопок");
+            var nickname = FindInPanel("NicknameInput").GetComponent<TextInputField>();
+            var before = nickname.Text;
+            button.onClick.Invoke();
+            yield return null;
+
+            Assert.IsFalse(string.IsNullOrWhiteSpace(nickname.Text), "Кубик не выдал имя");
+            Assert.AreNotEqual(before, nickname.Text, "Кубик должен обновлять имя");
         }
 
-        /// <summary>Выбор другого набора перерисовывает окно инвентаря.</summary>
+        /// <summary>Наборы идут двумя колонками, маркер показывает ровно один выбранный.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Loadouts_TwoColumnsAndSingleMarker()
+        {
+            yield return OpenNewGame();
+
+            var left = FindInPanel("LoadoutColumnLeft");
+            var right = FindInPanel("LoadoutColumnRight");
+            Assert.IsNotNull(left, "Нет левой колонки наборов");
+            Assert.IsNotNull(right, "Нет правой колонки наборов");
+            Assert.AreEqual(2, CountLoadoutButtons(), "В данных два набора — должно быть две кнопки");
+            Assert.AreEqual(1, CountMarkers(), "Маркер выбранного набора должен быть один");
+
+            var before = MarkerParent();
+            Click("Разведчик");
+            yield return null;
+
+            Assert.AreEqual(1, CountMarkers(), "После выбора маркер должен остаться один");
+            Assert.AreNotEqual(before, MarkerParent(), "Маркер не перешёл на выбранный набор");
+        }
+
+        /// <summary>Выбор другого набора перерисовывает окно набора экипировки.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]
         public IEnumerator NewGame_SelectOtherLoadout_UpdatesPreview()
         {
-            yield return LoadMain();
+            yield return OpenNewGame();
 
-            Click("Новая игра");
-            yield return null;
-
-            var preview = GameObject.Find("NewGameInventoryFrame");
+            var preview = FindInPanel("NewGameInventoryFrame");
             Assert.IsTrue(HasItem(preview, "wpn_ak74"), "Первый набор должен быть с автоматом АК-74");
 
             Click("Разведчик");
             yield return null;
 
-            var updated = GameObject.Find("NewGameInventoryFrame");
-            Assert.IsFalse(HasItem(updated, "wpn_ak74"), "Автомат остался в окне инвентаря второго набора");
-            Assert.IsTrue(HasItem(updated, "wpn_pm"), "Второй набор не отрисован в инвентаре");
+            var updated = FindInPanel("NewGameInventoryFrame");
+            Assert.IsFalse(HasItem(updated, "wpn_ak74"), "Автомат остался в окне второго набора");
+            Assert.IsTrue(HasItem(updated, "wpn_pm"), "Второй набор не отрисован в окне набора");
         }
 
-        /// <summary>Поля сложности принимают цифры и меняют значение кнопками шагом 0.1.</summary>
+        /// <summary>Набор рисуется картинками без подписей, денег и интерактива.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]
-        public IEnumerator NewGame_Difficulty_NumberFieldsStepByPointOne()
+        public IEnumerator NewGame_Preview_DrawsItemsWithoutText()
         {
-            yield return LoadMain();
+            yield return OpenNewGame();
 
-            Click("Новая игра");
-            yield return null;
+            var preview = FindInPanel("NewGameInventoryFrame");
+            Assert.IsNotNull(preview, "Окно набора не создано");
+            Assert.IsNotNull(preview.GetComponent<Image>(), "Рамка набора должна быть фоном панели");
 
-            var loot = GameObject.Find("LootLossField");
-            Assert.IsNotNull(loot, "Нет поля потери лута");
-            var lootField = loot.GetComponent<NumberField>();
-            Assert.IsNotNull(lootField, "У поля потери лута нет NumberField");
-            Assert.IsNotNull(GameObject.Find("LootLossFieldIncrease"), "Нет кнопки увеличения потери лута");
-            Assert.IsNotNull(GameObject.Find("LootLossFieldDecrease"), "Нет кнопки уменьшения потери лута");
-            Assert.AreEqual(0.5, lootField.Value, 1e-6, "Начальное значение потери лута");
+            Assert.AreEqual(0, CountChildren(preview, "PreviewItemLabel_"),
+                "В клетках набора не должно быть подписей");
+            Assert.Greater(CountChildren(preview, "PreviewCell_"), 0, "Клетки сетки не созданы");
+            Assert.GreaterOrEqual(CountItemBoxes(preview), 7, "Предметы набора не отрисованы");
+            Assert.IsTrue(HasItem(preview, "itm_armor_plate"), "Броня набора не отрисована");
+            Assert.IsTrue(HasItem(preview, "ammo_545"), "Патроны набора не отрисованы");
 
-            Click("LootLossFieldIncrease");
-            Assert.AreEqual(0.6, lootField.Value, 1e-6, "Шаг увеличения 0.1");
-            Click("LootLossFieldIncrease");
-            Assert.AreEqual(0.7, lootField.Value, 1e-6, "Шаг увеличения 0.1");
-            Click("LootLossFieldDecrease");
-            Assert.AreEqual(0.6, lootField.Value, 1e-6, "Шаг уменьшения 0.1");
-            Click("LootLossFieldDecrease");
-            Click("LootLossFieldDecrease");
-            Click("LootLossFieldDecrease");
-            Click("LootLossFieldDecrease");
-            Click("LootLossFieldDecrease");
-            Click("LootLossFieldDecrease");
-            Assert.AreEqual(0, lootField.Value, 1e-6, "Минимум потери лута равен 0");
+            var money = FindInPanel("PreviewMoney");
+            Assert.IsNotNull(money, "В окне набора не показаны деньги");
+            StringAssert.Contains("руб", money.GetComponent<Text>().text, "Деньги должны быть подписаны в рублях");
 
-            var trade = GameObject.Find("TradeDifficultyField");
+            Assert.AreEqual(0, preview.GetComponentsInChildren<ItemDropZone>(true).Length,
+                "В наборе не должно быть зон сброса");
+            Assert.AreEqual(0, preview.GetComponentsInChildren<ItemDragSource>(true).Length,
+                "В наборе не должно быть перетаскивания");
+            Assert.AreEqual(0, preview.GetComponentsInChildren<Button>(true).Length,
+                "В наборе не должно быть кнопок");
+        }
+
+        /// <summary>Окно набора рисуется на текстуре инвентаря, даже если каталог ещё не пересобран.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Preview_UsesInventoryTexture()
+        {
+            yield return OpenNewGame();
+
+            var preview = FindInPanel("NewGameInventoryFrame");
+            Assert.IsNotNull(preview, "Окно набора не создано");
+            var image = preview.GetComponent<Image>();
+            Assert.IsNotNull(image, "У окна набора нет Image");
+            Assert.IsNotNull(image.sprite, "Текстура инвентаря не применена");
+            Assert.IsNotNull(image.sprite.texture, "У спрайта окна нет текстуры");
+            Assert.AreEqual(344, image.sprite.texture.width, "Ширина текстуры инвентаря");
+            Assert.AreEqual(458, image.sprite.texture.height, "Высота текстуры инвентаря");
+        }
+
+        /// <summary>Стартовая валюта стоит в верхней правой плашке окна набора.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Preview_Money_IsInTopRightPlate()
+        {
+            yield return OpenNewGame();
+
+            var preview = FindInPanel("NewGameInventoryFrame");
+            var money = FindInPanel("PreviewMoney");
+            Assert.IsNotNull(preview, "Окно набора не создано");
+            Assert.IsNotNull(money, "В окне набора не показаны деньги");
+
+            var previewRect = WorldRect((RectTransform)preview.transform);
+            var moneyRect = WorldRect((RectTransform)money.transform);
+            Assert.Greater(moneyRect.center.x, previewRect.center.x + (previewRect.width * 0.15f),
+                "Валюта должна быть в правой плашке окна");
+            Assert.Greater(moneyRect.center.y, previewRect.yMin + (previewRect.height * 0.9f),
+                "Валюта должна быть в верхней плашке окна");
+            Assert.IsTrue(previewRect.Contains(moneyRect.center), "Валюта должна лежать внутри окна");
+
+            var host = Object.FindAnyObjectByType<GameScreen>();
+            Assert.IsNotNull(host, "GameScreen не найден");
+            var selected = host!.Loadouts.All.OrderBy(loadout => loadout.Id, System.StringComparer.Ordinal).First();
+            var startingMoney = selected.StartingMoney ?? host.Rules.Require().StartingMoney;
+            var expected = UiText.Format(host.Texts, UiTextKey.Common_Money, startingMoney);
+            Assert.AreEqual(expected, money!.GetComponent<Text>().text, "Валюта должна быть стартовой суммой набора");
+        }
+
+        /// <summary>АК-74 в наборе лежит вертикально, а слот не закрашивает фон.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Ak74Preview_IsVerticalWithoutBackground()
+        {
+            yield return OpenNewGame();
+
+            var preview = FindInPanel("NewGameInventoryFrame");
+            Assert.IsNotNull(preview, "Окно набора не создано");
+
+            var icon = FindChild(preview, "PreviewItemIcon_wpn_ak74_");
+            Assert.IsNotNull(icon, "Иконка АК-74 в наборе не найдена");
+            var rect = icon!.GetComponent<RectTransform>();
+            Assert.Less(Quaternion.Angle(rect.localRotation, Quaternion.Euler(0f, 0f, 90f)), 0.1f,
+                "Иконка АК-74 должна быть повёрнута");
+            var world = WorldRect(rect);
+            Assert.Greater(world.height, world.width, "Иконка должна быть вытянута по высоте слота");
+
+            var box = FindChild(preview, "PreviewItem_wpn_ak74_");
+            Assert.IsNotNull(box, "Слот АК-74 не найден");
+            Assert.AreEqual(0f, box!.GetComponent<Image>().color.a, 0.001f,
+                "У слота не должно быть фона");
+        }
+
+        /// <summary>У набора своя вертикальная прокрутка, независимая от остальных областей.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Preview_HasOwnScroll()
+        {
+            yield return OpenNewGame();
+
+            var scrollGo = FindInPanel("PreviewScroll");
+            Assert.IsNotNull(scrollGo, "Нет прокрутки набора");
+            var scroll = scrollGo.GetComponent<ScrollRect>();
+            Assert.IsNotNull(scroll, "Нет ScrollRect у прокрутки набора");
+            Assert.IsTrue(scroll.vertical, "Прокрутка набора должна быть вертикальной");
+            Assert.IsFalse(scroll.horizontal, "Горизонтальная прокрутка набору не нужна");
+            Assert.IsNotNull(scroll.verticalScrollbar, "У прокрутки набора нет полосы");
+            Assert.AreEqual(ScrollRect.ScrollbarVisibility.AutoHide, scroll.verticalScrollbarVisibility,
+                "Полоса должна включаться только при переполнении");
+
+            var catcher = scroll.viewport.GetComponent<Graphic>();
+            Assert.IsNotNull(catcher, "Без Graphic область прокрутки не получит колесо мыши");
+            Assert.IsTrue(catcher.raycastTarget, "Область прокрутки не ловит события указателя");
+
+            var content = (RectTransform)scroll.content;
+            Assert.GreaterOrEqual(content.rect.height, scroll.viewport.rect.height - 1f,
+                "Высота контента не может быть меньше видимой области");
+        }
+
+        /// <summary>Строки настроек собираются из одной заготовки и стоят по две в ряд.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Settings_RowsFromTemplate()
+        {
+            yield return OpenNewGame();
+
+            var left = FindInPanel("SettingsColumnLeft");
+            var right = FindInPanel("SettingsColumnRight");
+            Assert.IsNotNull(left, "Нет левой колонки настроек");
+            Assert.IsNotNull(right, "Нет правой колонки настроек");
+            Assert.AreEqual(1, right.transform.childCount, "В правой колонке одна настройка");
+            Assert.AreEqual(2, left.transform.childCount, "В левой колонке две настройки: страховка и пермасмерть");
+
+            var insurance = FindInPanel("InsuranceField");
+            var trade = FindInPanel("TradeField");
+            Assert.IsNotNull(insurance, "Нет поля шанса страховки");
             Assert.IsNotNull(trade, "Нет поля усложнения торговли");
-            var tradeField = trade.GetComponent<NumberField>();
-            Assert.IsNotNull(tradeField, "У поля торговли нет NumberField");
-            Assert.AreEqual(1, tradeField.Value, 1e-6, "Начальное усложнение торговли");
-            Click("TradeDifficultyFieldIncrease");
-            Assert.AreEqual(1.1, tradeField.Value, 1e-6, "Шаг усложнения торговли 0.1");
+            Assert.IsNotNull(insurance.GetComponent<NumberField>(), "У страховки нет NumberField");
+            Assert.IsNotNull(trade.GetComponent<NumberField>(), "У торговли нет NumberField");
+        }
+
+        /// <summary>Поля настроек меняют значение кнопками шагом 0.05.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Settings_NumberFieldsStepByPointZeroFive()
+        {
+            yield return OpenNewGame();
+
+            var insurance = FindInPanel("InsuranceField").GetComponent<NumberField>();
+            Assert.AreEqual(0.15, insurance.Value, 1e-6, "Начальный шанс страховки");
+            ClickStep(insurance, "SettingFieldIncrease");
+            Assert.AreEqual(0.2, insurance.Value, 1e-6, "Шаг увеличения 0.05");
+            ClickStep(insurance, "SettingFieldDecrease");
+            ClickStep(insurance, "SettingFieldDecrease");
+            Assert.AreEqual(0.1, insurance.Value, 1e-6, "Шаг уменьшения 0.05");
+
+            var trade = FindInPanel("TradeField").GetComponent<NumberField>();
+            Assert.AreEqual(1, trade.Value, 1e-6, "Начальное усложнение торговли");
+            ClickStep(trade, "SettingFieldIncrease");
+            Assert.AreEqual(1.1, trade.Value, 1e-6, "Шаг усложнения торговли 0.1");
         }
 
         /// <summary>Цифровой ввод обновляет значение и зажимается в диапазон.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]
-        public IEnumerator NewGame_Difficulty_TypedNumber_ClampedToRange()
+        public IEnumerator NewGame_Settings_TypedNumber_ClampedToRange()
         {
-            yield return LoadMain();
+            yield return OpenNewGame();
 
-            Click("Новая игра");
-            yield return null;
-
-            var field = GameObject.Find("LootLossField").GetComponent<NumberField>();
-            var input = GameObject.Find("LootLossFieldInput");
-            Assert.IsNotNull(input, "Нет поля ввода у числового поля");
+            var field = FindInPanel("InsuranceField").GetComponent<NumberField>();
+            var input = FindInPanel("InsuranceFieldInput");
+            Assert.IsNotNull(input, "Нет поля ввода у настройки");
             var text = input.GetComponent<TextInputField>();
             Assert.IsNotNull(text, "У поля ввода нет TextInputField");
 
@@ -150,233 +301,204 @@ namespace AnomalyPath.Tests.PlayMode
 
             text.SetText("abc");
             Assert.AreEqual(1, field.Value, 1e-6, "Буквы не меняют значение");
-            Assert.AreEqual("1.0", text.Text, "Недопустимый ввод откатывается к последнему значению");
+            Assert.AreEqual("1.00", text.Text, "Недопустимый ввод откатывается к последнему значению");
         }
 
-        /// <summary>На экране новой игры нет ползунков: только поля с цифрами.</summary>
+        /// <summary>Чекбокс пермасмерти выключен по умолчанию, переключается и попадает в настройки старта.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Permadeath_CheckboxPassedToSettings()
+        {
+            yield return OpenNewGame();
+
+            var row = FindInPanel("PermadeathRow");
+            Assert.IsNotNull(row, "Нет строки пермасмерти");
+            var checkbox = row.GetComponent<CheckboxRow>();
+            Assert.IsNotNull(checkbox, "У строки пермасмерти нет CheckboxRow");
+            Assert.IsFalse(checkbox.Value, "Пермасмерть по умолчанию выключена");
+
+            var toggle = row.GetComponentInChildren<Toggle>(true);
+            Assert.IsNotNull(toggle, "Нет чекбокса пермасмерти");
+            toggle.isOn = true;
+            yield return null;
+            Assert.IsTrue(checkbox.Value, "Чекбокс не переключился");
+
+            Click("Начать игру");
+            yield return null;
+
+            var host = Object.FindAnyObjectByType<GameScreen>();
+            Assert.IsNotNull(host.Session, "Игра не началась");
+            var settings = host.Session!.State.Settings;
+            Assert.IsNotNull(settings, "Настройки старта не сохранены в сессии");
+            Assert.IsTrue(settings!.Permadeath, "Пермасмерть не попала в настройки старта");
+        }
+
+        /// <summary>Ползунков на экране нет: только поля с цифрами.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]
         public IEnumerator NewGame_HasNoSliders()
         {
-            yield return LoadMain();
-
-            Click("Новая игра");
-            yield return null;
+            yield return OpenNewGame();
 
             var panel = GameObject.Find("NewGame");
-            Assert.IsNotNull(panel, "Панель новой игры не создана");
-            Assert.IsNull(panel.GetComponentInChildren<Slider>(true), "Ползунки на экране новой игры не нужны");
+            Assert.IsNotNull(panel, "Панель старта игры не создана");
+            Assert.IsNull(panel.GetComponentInChildren<Slider>(true), "Ползунки на экране не нужны");
         }
 
-        /// <summary>Верхние границы настроек и инвентаря совпадают, фреймы растянуты, прокрутка есть.</summary>
+        /// <summary>Пустой ник не даёт начать игру: показывается строка состояния.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]
-        public IEnumerator NewGame_Layout_TopAlignedStretchScroll()
+        public IEnumerator NewGame_Start_EmptyName_ShowsStatus()
+        {
+            yield return OpenNewGame();
+
+            FindInPanel("NicknameInput").GetComponent<TextInputField>().SetText(string.Empty);
+            Click("Начать");
+            yield return null;
+
+            var status = FindInPanel("Status");
+            Assert.IsNotNull(status, "Нет строки состояния");
+            Assert.IsTrue(status.activeSelf, "Строка состояния не показана");
+            var host = Object.FindAnyObjectByType<GameScreen>();
+            Assert.AreEqual(
+                UiText.Get(host.Texts, UiTextKey.NewGame_Status_Enter_Name),
+                status.GetComponent<Text>().text,
+                "Статус не взят из каталога текстов");
+        }
+
+        /// <summary>Текст в полях ввода — насыщенный чёрный на светлом фоне.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Inputs_BlackTextOnLightField()
+        {
+            yield return OpenNewGame();
+
+            AssertField(FindInPanel("NicknameInput"), "ник");
+            AssertField(FindInPanel("InsuranceFieldInput"), "страховка");
+        }
+
+        private static void AssertField(GameObject input, string label)
+        {
+            Assert.IsNotNull(input, "Нет поля ввода: " + label);
+            var background = input.GetComponent<Image>();
+            Assert.IsNotNull(background, "У поля нет фона: " + label);
+            Assert.Greater(background.color.r, 0.8f, "Фон поля должен быть светлым: " + label);
+
+            var text = input.transform.GetChild(0).GetComponent<Text>();
+            Assert.IsNotNull(text, "У поля нет текста: " + label);
+            Assert.Less(text.color.r, 0.2f, "Текст поля должен быть чёрным: " + label);
+            Assert.Less(text.color.g, 0.2f, "Текст поля должен быть чёрным: " + label);
+            Assert.Less(text.color.b, 0.2f, "Текст поля должен быть чёрным: " + label);
+            Assert.Greater(text.color.a, 0.9f, "Текст поля должен быть непрозрачным: " + label);
+        }
+
+        private static IEnumerator OpenNewGame()
         {
             yield return LoadMain();
-
             Click("Новая игра");
             yield return null;
             Canvas.ForceUpdateCanvases();
+            yield return null;
+        }
 
-            var panel = GameObject.Find("NewGame");
-            Assert.IsNotNull(panel, "Панель новой игры не создана");
-            var preview = GameObject.Find("NewGameInventoryFrame");
-            Assert.IsNotNull(preview, "Нет панели инвентаря");
-            var column = preview.transform.parent.Find("Column");
-            Assert.IsNotNull(column, "Нет колонки настроек рядом с инвентарём");
-
-            var columnRect = WorldRect((RectTransform)column);
-            var previewRect = WorldRect((RectTransform)preview.transform);
-            Assert.AreEqual(columnRect.yMax, previewRect.yMax, 1f, "Верхние границы фреймов не совпадают");
-            Assert.Less(columnRect.xMax, previewRect.xMin, "Колонка настроек заходит на панель инвентаря");
-
-            var settingsHeight = ((RectTransform)column).rect.height;
-            var previewHeight = ((RectTransform)preview.transform).rect.height;
-            Assert.Greater(settingsHeight, 0f, "Колонка настроек не получила высоту");
-            Assert.Greater(previewHeight, 0f, "Окно инвентаря не получило высоту");
-
-            var scroll = panel.GetComponentInChildren<ScrollRect>(true);
-            Assert.IsNotNull(scroll, "Нет вертикальной прокрутки");
-            Assert.IsTrue(scroll.vertical, "Прокрутка должна быть вертикальной");
-            Assert.IsFalse(scroll.horizontal, "Горизонтальная прокрутка не нужна");
-            Assert.IsNotNull(scroll.verticalScrollbar, "Нет полосы прокрутки справа");
-            Assert.AreSame(scroll.content, preview.transform.parent, "Фреймы должны лежать в контенте прокрутки");
-
-            var boxes = 0;
-            foreach (var child in preview.GetComponentsInChildren<Transform>(includeInactive: false))
+        private static int CountLoadoutButtons()
+        {
+            var count = 0;
+            foreach (var columnName in new[] { "LoadoutColumnLeft", "LoadoutColumnRight" })
             {
-                if (!IsItemBox(child.name))
+                var column = FindInPanel(columnName);
+                if (column == null)
                 {
                     continue;
                 }
 
-                boxes++;
-                var itemRect = WorldRect((RectTransform)child);
-                Assert.GreaterOrEqual(itemRect.xMin, previewRect.xMin - 1f, "Предмет выходит влево за панель: " + child.name);
-                Assert.LessOrEqual(itemRect.xMax, previewRect.xMax + 1f, "Предмет выходит вправо за панель: " + child.name);
-                Assert.GreaterOrEqual(itemRect.yMin, previewRect.yMin - 1f, "Предмет выходит вниз за панель: " + child.name);
-                Assert.LessOrEqual(itemRect.yMax, previewRect.yMax + 1f, "Предмет выходит вверх за панель: " + child.name);
-            }
-
-            Assert.Greater(boxes, 0, "В инвентаре набора нет предметов для проверки вёрстки");
-        }
-
-        /// <summary>На маленьком окне контент выше области — полоса прокрутки включается.</summary>
-        /// <returns>Корутина теста.</returns>
-        [UnityTest]
-        public IEnumerator NewGame_Layout_SmallViewport_ScrollsContent()
-        {
-            yield return LoadMain();
-
-            Click("Новая игра");
-            yield return null;
-            Canvas.ForceUpdateCanvases();
-
-            var panel = GameObject.Find("NewGame");
-            var scroll = panel.GetComponentInChildren<ScrollRect>(true);
-            Assert.IsNotNull(scroll, "Нет вертикальной прокрутки");
-            var content = (RectTransform)scroll.content;
-            var viewport = (RectTransform)scroll.viewport;
-            Assert.GreaterOrEqual(content.rect.height, viewport.rect.height,
-                "Высота контента не может быть меньше области");
-            Assert.Greater(content.rect.height, 0f, "Контент не растянут");
-        }
-
-        /// <summary>При смене размера области фреймы пересчитываются: растягиваются, не разъезжаются, включают прокрутку.</summary>
-        /// <returns>Корутина теста.</returns>
-        [UnityTest]
-        public IEnumerator NewGame_Layout_ViewportResize_StretchesFramesAndShowsScrollbar()
-        {
-            yield return LoadMain();
-
-            Click("Новая игра");
-            yield return null;
-            Canvas.ForceUpdateCanvases();
-
-            var panel = GameObject.Find("NewGame");
-            Assert.IsNotNull(panel, "Панель новой игры не создана");
-            var scrollRoot = (RectTransform)GameObject.Find("NewGameScroll").transform;
-            var panelRect = (RectTransform)panel.transform;
-            var preview = GameObject.Find("NewGameInventoryFrame");
-            Assert.IsNotNull(preview, "Нет панели инвентаря");
-            var column = (RectTransform)preview.transform.parent.Find("Column");
-            Assert.IsNotNull(column, "Нет колонки настроек");
-            var scroll = panel.GetComponentInChildren<ScrollRect>(true);
-            Assert.IsNotNull(scroll, "Нет вертикальной прокрутки");
-
-            var previewDefaultWidth = ((RectTransform)preview.transform).rect.width;
-
-            scrollRoot.sizeDelta = Vector2.zero;
-            Canvas.ForceUpdateCanvases();
-            yield return null;
-
-            var widePreview = ((RectTransform)preview.transform).rect.width;
-            Assert.Greater(widePreview, previewDefaultWidth, "На широкой области окно инвентаря не растянулось");
-            var contentRect = (RectTransform)scroll.content;
-            var gap = contentRect.rect.width + ((RectTransform)preview.transform).rect.xMin - column.rect.xMax;
-            Assert.AreEqual(48f, gap, 1f, "Зазор между фреймами должен оставаться постоянным");
-            Assert.AreEqual(WorldRect(column).yMax, WorldRect((RectTransform)preview.transform).yMax, 1f,
-                "Верхние границы разъехались после изменения размера");
-
-            var smallWidth = Mathf.Max(240f, panelRect.rect.width - 800f);
-            var smallHeight = Mathf.Max(160f, panelRect.rect.height - 800f);
-            scrollRoot.sizeDelta = new Vector2(
-                smallWidth - panelRect.rect.width,
-                smallHeight - panelRect.rect.height);
-            Canvas.ForceUpdateCanvases();
-            yield return null;
-            yield return null;
-
-            var content = (RectTransform)scroll.content;
-            var viewport = (RectTransform)scroll.viewport;
-            Assert.Greater(content.rect.height, viewport.rect.height,
-                "На маленькой области контент должен быть выше видимой части");
-            Assert.IsTrue(scroll.verticalScrollbar.gameObject.activeSelf,
-                "Полоса прокрутки не включилась при переполнении");
-        }
-
-        /// <summary>Колесо мыши прокручивает содержимое: область ловит события и ScrollRect их принимает.</summary>
-        /// <returns>Корутина теста.</returns>
-        [UnityTest]
-        public IEnumerator NewGame_Scroll_WheelScrollsContent()
-        {
-            yield return LoadMain();
-
-            Click("Новая игра");
-            yield return null;
-            Canvas.ForceUpdateCanvases();
-
-            var panel = GameObject.Find("NewGame");
-            Assert.IsNotNull(panel, "Панель новой игры не создана");
-            var scrollRoot = (RectTransform)GameObject.Find("NewGameScroll").transform;
-            var panelRect = (RectTransform)panel.transform;
-            var scroll = panel.GetComponentInChildren<ScrollRect>(true);
-            Assert.IsNotNull(scroll, "Нет вертикальной прокрутки");
-
-            var catcher = scroll.viewport.GetComponent<Graphic>();
-            Assert.IsNotNull(catcher, "Без Graphic область прокрутки не получит колесо мыши");
-            Assert.IsTrue(catcher.raycastTarget, "Область прокрутки не ловит события указателя");
-
-            var smallWidth = Mathf.Max(240f, panelRect.rect.width - 800f);
-            var smallHeight = Mathf.Max(160f, panelRect.rect.height - 800f);
-            scrollRoot.sizeDelta = new Vector2(
-                smallWidth - panelRect.rect.width,
-                smallHeight - panelRect.rect.height);
-            Canvas.ForceUpdateCanvases();
-            yield return null;
-            yield return null;
-
-            scroll.verticalNormalizedPosition = 0.5f;
-            Canvas.ForceUpdateCanvases();
-            yield return null;
-
-            var content = (RectTransform)scroll.content;
-            var before = content.anchoredPosition.y;
-            scroll.OnScroll(new PointerEventData(EventSystem.current) { scrollDelta = new Vector2(0f, -5f) });
-            yield return null;
-
-            Assert.AreNotEqual(before, content.anchoredPosition.y, "Колесо мыши не прокручивает содержимое");
-        }
-
-        /// <summary>Сетка инвентаря заполняет панель по ширине, без пустых полей по бокам.</summary>
-        /// <returns>Корутина теста.</returns>
-        [UnityTest]
-        public IEnumerator NewGame_InventoryGrid_FillsPanelWidth()
-        {
-            yield return LoadMain();
-
-            Click("Новая игра");
-            yield return null;
-            Canvas.ForceUpdateCanvases();
-
-            var preview = GameObject.Find("NewGameInventoryFrame");
-            Assert.IsNotNull(preview, "Нет панели инвентаря");
-            var width = ((RectTransform)preview.transform).rect.width;
-
-            var minX = float.MaxValue;
-            var maxX = float.MinValue;
-            var cell = 0f;
-            var cells = 0;
-            foreach (var child in preview.GetComponentsInChildren<Transform>(includeInactive: false))
-            {
-                if (!child.name.StartsWith("PreviewCell_", System.StringComparison.Ordinal))
+                foreach (Transform child in column.transform)
                 {
-                    continue;
+                    if (child.gameObject.activeSelf && child.GetComponent<Button>() != null)
+                    {
+                        count++;
+                    }
                 }
-
-                var rect = (RectTransform)child;
-                cell = Mathf.Max(cell, rect.rect.width);
-                minX = Mathf.Min(minX, rect.anchoredPosition.x);
-                maxX = Mathf.Max(maxX, rect.anchoredPosition.x + rect.rect.width);
-                cells++;
             }
 
-            Assert.Greater(cells, 0, "Клетки инвентаря не созданы");
-            var padding = 24f;
-            Assert.LessOrEqual(minX, padding + cell + 1f, "Слева от сетки остаётся пустое поле");
-            Assert.LessOrEqual(width - maxX, padding + cell + 1f, "Справа от сетки остаётся пустое поле");
-            Assert.Greater(maxX - minX, width * 0.8f, "Сетка не заполняет ширину панели");
+            return count;
+        }
+
+        private static int CountMarkers()
+        {
+            var count = 0;
+            foreach (var marker in FindMarkers())
+            {
+                if (marker.gameObject.activeSelf)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static string? MarkerParent()
+        {
+            foreach (var marker in FindMarkers())
+            {
+                if (marker.gameObject.activeSelf)
+                {
+                    return marker.parent.name;
+                }
+            }
+
+            return null;
+        }
+
+        private static List<Transform> FindMarkers()
+        {
+            var markers = new List<Transform>();
+            var panel = GameObject.Find("NewGame");
+            foreach (var child in panel.GetComponentsInChildren<Transform>(true))
+            {
+                if (child.name == "SelectedMarker")
+                {
+                    markers.Add(child);
+                }
+            }
+
+            return markers;
+        }
+
+        private static void ClickStep(NumberField field, string name)
+        {
+            var button = field.transform.Find(name);
+            Assert.IsNotNull(button, $"Нет кнопки {name} у поля {field.name}");
+            button.GetComponent<Button>().onClick.Invoke();
+        }
+
+        private static GameObject FindInPanel(string name)
+        {
+            var panel = GameObject.Find("NewGame");
+            Assert.IsNotNull(panel, "Панель старта игры не создана");
+            foreach (var child in panel.GetComponentsInChildren<Transform>(true))
+            {
+                if (child.name == name)
+                {
+                    return child.gameObject;
+                }
+            }
+
+            return null!;
+        }
+
+        private static Transform? FindChild(GameObject root, string prefix)
+        {
+            foreach (var child in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (child.name.StartsWith(prefix, System.StringComparison.Ordinal))
+                {
+                    return child;
+                }
+            }
+
+            return null;
         }
 
         private static Rect WorldRect(RectTransform rect)

@@ -30,8 +30,12 @@ namespace AnomalyPath.Runtime
         [SerializeField]
         private SpriteCatalog? spriteCatalog = null;
 
+        [Tooltip("Префаб экрана новой игры")]
+        [SerializeField]
+        private GameObject? newGameScreenPrefab = null;
+
         private GameBootstrap _bootstrap = null!;
-        private readonly List<ScreenBase> _screens = new List<ScreenBase>();
+        private readonly List<IScreen> _screens = new List<IScreen>();
         private MainMenuScreen _mainMenu = null!;
         private NewGameScreen _newGame = null!;
         private LoadGameScreen _load = null!;
@@ -118,8 +122,23 @@ namespace AnomalyPath.Runtime
             Rules = services.Resolve<IGameRulesRepository>();
             Texts = services.Resolve<IGameTexts>();
 
+            var iconIds = new List<string>(Items.All.Count);
+            foreach (var item in Items.All)
+            {
+                iconIds.Add(item.Icon);
+            }
+
+            var missingIcons = SpriteCatalogValidator.FindMissing(iconIds, Sprites);
+            if (missingIcons.Count > 0)
+            {
+                var message = CoreText.Format(CoreErrors.SpriteMissing, string.Join(", ", missingIcons));
+                Debug.LogError(message);
+                BuildError(canvas, message);
+                return;
+            }
+
             _mainMenu = new MainMenuScreen(this, canvas);
-            _newGame = new NewGameScreen(this, canvas);
+            _newGame = CreateScreen<NewGameScreen>(newGameScreenPrefab, canvas, "NewGame");
             _load = new LoadGameScreen(this, canvas);
             _saveGame = new SaveGameScreen(this, canvas);
             _info = new InfoScreen(this, canvas);
@@ -323,12 +342,42 @@ namespace AnomalyPath.Runtime
             return go.transform;
         }
 
-        private void BuildDataError(Transform canvas)
+        /// <summary>Создаёт экран из префаба и связывает его с хостом.</summary>
+        /// <typeparam name="T">Тип компонента экрана.</typeparam>
+        /// <param name="prefab">Префаб экрана.</param>
+        /// <param name="canvas">Родительский канвас.</param>
+        /// <param name="panelName">Имя объекта панели в иерархии.</param>
+        /// <returns>Готовый экран.</returns>
+        /// <exception cref="InvalidOperationException">Префаб не задан или не содержит нужного компонента.</exception>
+        private T CreateScreen<T>(GameObject? prefab, Transform canvas, string panelName)
+            where T : PrefabScreenBase
+        {
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(CoreText.Format(CoreErrors.ScreenPrefabMissing, typeof(T).Name));
+            }
+
+            var instance = Instantiate(prefab, canvas);
+            instance.name = panelName;
+            var screen = instance.GetComponent<T>();
+            if (screen == null)
+            {
+                throw new InvalidOperationException(CoreText.Format(CoreErrors.ScreenPrefabMissing, prefab.name));
+            }
+
+            screen.Bind(this);
+            return screen;
+        }
+
+        private void BuildDataError(Transform canvas) =>
+            BuildError(canvas, _bootstrap.Preflight?.Report.Summary ?? CoreText.Get(CoreErrors.DataErrorMissing));
+
+        private void BuildError(Transform canvas, string summary)
         {
             var panel = Ui.CreatePanel("DataError", canvas);
             var column = Ui.CreateColumn(panel.transform, 900);
             Ui.CreateTitle(column, CoreText.Get(CoreErrors.DataErrorTitle));
-            var text = Ui.CreateText(column, _bootstrap.Preflight?.Report.Summary ?? CoreText.Get(CoreErrors.DataErrorMissing), 20, TextAnchor.UpperLeft);
+            var text = Ui.CreateText(column, summary, 20, TextAnchor.UpperLeft);
             text.GetComponent<LayoutElement>().preferredHeight = 400;
             Ui.CreateButton(column, CoreText.Get(CoreErrors.DataErrorQuit), Quit);
             panel.SetActive(true);

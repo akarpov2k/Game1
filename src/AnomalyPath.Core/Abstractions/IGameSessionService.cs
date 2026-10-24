@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using AnomalyPath.Core.Combat;
+using AnomalyPath.Core.Death;
 using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Session;
 using AnomalyPath.Core.World;
@@ -35,6 +36,14 @@ namespace AnomalyPath.Core.Abstractions
         /// <param name="settings">Настройки сложности.</param>
         /// <returns>Новая сессия.</returns>
         GameSession StartNew(int seed, string loadoutId, NewGameSettings settings);
+
+        /// <summary>
+        /// Применяет последствия смерти к вещам игрока: инвентарь теряется полностью,
+        /// кроме неутрачиваемых предметов, а каждый надетый предмет страхуется отдельным броском.
+        /// </summary>
+        /// <param name="session">Игровая сессия.</param>
+        /// <returns>Что потеряно, что осталось и что спасла страховка.</returns>
+        DeathResult ApplyDeath(GameSession session);
 
         /// <summary>Рёбра, видимые из текущей локации; в бою список пуст.</summary>
         /// <param name="session">Игровая сессия.</param>

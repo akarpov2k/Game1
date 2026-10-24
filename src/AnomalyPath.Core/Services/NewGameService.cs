@@ -79,7 +79,7 @@ namespace AnomalyPath.Core.Services
                 new string[0],
                 needs,
                 nickname,
-                rules.StartingMoney);
+                preview.Loadout.StartingMoney ?? rules.StartingMoney);
 
             return new GameState(world, player, settings);
         }

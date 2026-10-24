@@ -34,7 +34,8 @@ namespace AnomalyPath.Core.Templates
             ArmorMaterial? armorMaterial,
             double durabilityFactor,
             double quality,
-            string? caliber)
+            string? caliber,
+            bool unlosable)
         {
             Id = id;
             NameKey = nameKey;
@@ -58,6 +59,7 @@ namespace AnomalyPath.Core.Templates
             DurabilityFactor = durabilityFactor;
             Quality = quality;
             Caliber = caliber;
+            Unlosable = unlosable;
         }
 
         /// <summary>Идентификатор предмета.</summary>
@@ -125,6 +127,12 @@ namespace AnomalyPath.Core.Templates
 
         /// <summary>Калибр патронов; только для категории <c>ammo</c>.</summary>
         public string? Caliber { get; }
+
+        /// <summary>
+        /// <c>true</c>, если предмет нельзя потерять при смерти: он остаётся в инвентаре
+        /// или в слоте независимо от страховки и режима полной потери. По умолчанию <c>false</c>.
+        /// </summary>
+        public bool Unlosable { get; }
 
         /// <summary>Строгое чтение: любое нарушение схемы — <see cref="DataException"/> с id и полем.</summary>
         /// <param name="value">Загруженная запись.</param>
@@ -201,7 +209,8 @@ namespace AnomalyPath.Core.Templates
                 armorMaterial,
                 durabilityFactor,
                 quality,
-                caliber);
+                caliber,
+                DataMap.OptionalBool(value, "unlosable", false));
         }
 
         /// <summary>Слоты экипировки по категории, если в данных не заданы явно.</summary>

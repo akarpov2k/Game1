@@ -60,6 +60,50 @@ namespace AnomalyPath.Runtime.Ui.Core
             return image;
         }
 
+        /// <summary>
+        /// Создаёт иконку предмета, вписанную в слот по длинной стороне; вытянутый слот поворачивает её.
+        /// </summary>
+        /// <param name="host">Хост интерфейса.</param>
+        /// <param name="parent">Родитель.</param>
+        /// <param name="name">Имя объекта.</param>
+        /// <param name="sprite">Спрайт предмета.</param>
+        /// <param name="x">Отступ слева.</param>
+        /// <param name="y">Отступ сверху.</param>
+        /// <param name="width">Ширина слота.</param>
+        /// <param name="height">Высота слота.</param>
+        /// <param name="padding">Отступ иконки от краёв слота.</param>
+        /// <returns>Созданное изображение; размер может быть нулевым, если слот слишком мал.</returns>
+        public static Image ItemIcon(
+            IUiHost host,
+            Transform parent,
+            string name,
+            Sprite sprite,
+            float x,
+            float y,
+            float width,
+            float height,
+            float padding)
+        {
+            var fit = IconFit.Compute(width, height, sprite.rect.width, sprite.rect.height, padding);
+            var image = host.Ui.CreateImage(name, parent, Color.white);
+            image.sprite = sprite;
+            image.preserveAspect = false;
+            image.raycastTarget = false;
+
+            var rect = image.rectTransform;
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = new Vector2(x + (width / 2f), -(y + (height / 2f)));
+            rect.sizeDelta = fit.Size;
+            if (fit.Rotated)
+            {
+                rect.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            }
+
+            return image;
+        }
+
         /// <summary>Создаёт подпись с абсолютной позицией от левого верхнего угла.</summary>
         /// <param name="host">Хост интерфейса.</param>
         /// <param name="parent">Родитель.</param>

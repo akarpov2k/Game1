@@ -4,6 +4,7 @@
   "id": "loadout_scout",
   "nameKey": "loadout.loadout_scout.name",
   "descriptionKey": "loadout.loadout_scout.description",
+  "startingMoney": 1000,
   "weapon": "wpn_pm",
   "secondaryWeapon": null,
   "armor": "itm_armor_jacket",

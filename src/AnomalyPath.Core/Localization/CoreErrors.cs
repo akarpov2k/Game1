@@ -325,26 +325,11 @@ namespace AnomalyPath.Core.Localization
         /// <summary>id правил должен быть <c>rules</c>.</summary>
         public const string RulesId = "error.rules_id";
 
-        /// <summary>Неизвестный режим смерти.</summary>
-        public const string RulesUnknownDeathMode = "error.rules_unknown_death_mode";
-
-        /// <summary>Неизвестный вариант потери лута.</summary>
-        public const string RulesUnknownLootLoss = "error.rules_unknown_loot_loss";
-
-        /// <summary>Неизвестная область действия страховки.</summary>
-        public const string RulesUnknownInsuranceScope = "error.rules_unknown_insurance_scope";
-
-        /// <summary>Вариант потери лута по умолчанию отсутствует в списке.</summary>
-        public const string RulesDefaultLootLoss = "error.rules_default_loot_loss";
-
         /// <summary>Числовое поле правил меньше единицы.</summary>
         public const string RulesRange = "error.rules_range";
 
         /// <summary>Поле правил должно быть в диапазоне 0..1.</summary>
         public const string RulesChance = "error.rules_chance";
-
-        /// <summary>Список вариантов потери лута пуст.</summary>
-        public const string RulesMissingLootLoss = "error.rules_missing_loot_loss";
 
         /// <summary>Актёр не найден.</summary>
         public const string ActorNotFound = "error.actor_not_found";
@@ -372,5 +357,14 @@ namespace AnomalyPath.Core.Localization
 
         /// <summary>Некорректные настройки новой игры в сохранении.</summary>
         public const string SaveSettings = "error.save_settings";
+
+        /// <summary>В сцене не задан префаб экрана.</summary>
+        public const string ScreenPrefabMissing = "error.screen_prefab_missing";
+
+        /// <summary>У задника экрана нет компонента изображения.</summary>
+        public const string BackdropImageMissing = "error.backdrop_image_missing";
+
+        /// <summary>В каталоге спрайтов нет иконок, на которые ссылаются данные.</summary>
+        public const string SpriteMissing = "error.sprite_missing";
     }
 }

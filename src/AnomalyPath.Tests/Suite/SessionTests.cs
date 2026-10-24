@@ -6,6 +6,7 @@ using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Combat;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Di;
+using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Player;
 using AnomalyPath.Core.Save;
@@ -40,9 +41,15 @@ namespace AnomalyPath.Tests
             WithFixture(new Dictionary<string, string>(), root =>
             {
                 var saves = new SaveService(new FileSaveStorage(root), items);
-                var sessions = new GameSessionService(travel, combat, saves, newGame);
+                var sessions = new GameSessionService(
+                    travel,
+                    combat,
+                    saves,
+                    newGame,
+                    services.Resolve<IDeathService>());
                 TravelTests(services, sessions);
                 CombatTests(services, sessions, actors, items);
+                DeathSessionTests(services, sessions, items);
                 SaveLoadTests(services, sessions);
             });
         }
@@ -149,6 +156,32 @@ namespace AnomalyPath.Tests
             });
         }
 
+        private void DeathSessionTests(
+            ServiceContainer services,
+            IGameSessionService sessions,
+            IItemRepository items)
+        {
+            Check("сессия: смерть забирает инвентарь и незастрахованные вещи", () =>
+            {
+                var session = NewSession(services, withPlayer: true, new NewGameSettings(0, 1));
+                var player = session.State.Player!;
+                var template = items.Get("wpn_pm");
+                player.Inventory.Place(
+                    new ItemInstance("inst_inventory", "wpn_pm", 1),
+                    template,
+                    0,
+                    0,
+                    false);
+                player.Equipment.Set(EquipmentSlot.Main, new ItemInstance("inst_worn", "wpn_pm", 1));
+
+                var result = sessions.ApplyDeath(session);
+
+                Equal(0, player.Inventory.Items.Count, "инвентарь пуст");
+                True(player.Equipment.Get(EquipmentSlot.Main) == null, "оружие потеряно");
+                Equal(2, result.Lost.Count, "потерь");
+            });
+        }
+
         private void SaveLoadTests(ServiceContainer services, IGameSessionService sessions)
         {
             Check("сессия: новая игра по набору", () =>
@@ -164,13 +197,17 @@ namespace AnomalyPath.Tests
 
             Check("сессия: настройки сложности сохраняются", () =>
             {
-                var session = NewSession(services, withPlayer: true, new NewGameSettings(0.25, 1.75));
+                var session = NewSession(
+                    services,
+                    withPlayer: true,
+                    new NewGameSettings(0.25, 1.75, permadeath: true));
                 sessions.Save(session, "slot_settings");
 
                 var loaded = sessions.Load("slot_settings");
                 True(loaded.State.Settings != null, "настройки загружены");
-                Equal(0.25, loaded.State.Settings!.LootLossFactor, "lootLossFactor");
+                Equal(0.25, loaded.State.Settings!.InsuranceChance, "insuranceChance");
                 Equal(1.75, loaded.State.Settings.TradeDifficulty, "tradeDifficulty");
+                True(loaded.State.Settings.Permadeath, "permadeath");
             });
 
             Check("сессия: сохранение и загрузка состояния", () =>

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Loadouts;
 using AnomalyPath.Core.Session;
-using AnomalyPath.Runtime.Screens;
 using AnomalyPath.Runtime.Ui.Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,219 +11,267 @@ using UnityEngine.UI;
 namespace AnomalyPath.Runtime.Screens.Menu
 {
     /// <summary>
-    /// Экран новой игры: слева ник, набор снаряжения и числовые настройки сложности,
-    /// справа — неинтерактивное окно инвентаря с предметами выбранного набора.
-    /// Обе зоны начинаются от верхней границы контента и растягиваются под окно;
-    /// если контент выше экрана, включается вертикальная прокрутка с полосой справа.
+    /// Экран старта игры: ник с кубиком, выбор набора из данных, настройки сложности
+    /// из общей заготовки строки и набор экипировки в собственной прокрутке.
+    /// Разметка, размеры и отступы заданы в префабе; код связывает данные и обновляет превью.
     /// </summary>
-    public sealed class NewGameScreen : ScreenBase
+    public sealed class NewGameScreen : PrefabScreenBase
     {
-        private readonly IUiHost _host;
+        [Tooltip("Поле ввода ника")]
+        [SerializeField]
+        private TextInputField nickname = null!;
+
+        [Tooltip("Кнопка-кубик: случайное имя")]
+        [SerializeField]
+        private Button diceButton = null!;
+
+        [Tooltip("Грань кубика")]
+        [SerializeField]
+        private DiceButton dice = null!;
+
+        [Tooltip("Левая колонка кнопок наборов")]
+        [SerializeField]
+        private RectTransform loadoutLeft = null!;
+
+        [Tooltip("Правая колонка кнопок наборов")]
+        [SerializeField]
+        private RectTransform loadoutRight = null!;
+
+        [Tooltip("Неактивный образец кнопки набора")]
+        [SerializeField]
+        private Button loadoutTemplate = null!;
+
+        [Tooltip("Левая колонка строк настроек")]
+        [SerializeField]
+        private RectTransform settingsLeft = null!;
+
+        [Tooltip("Правая колонка строк настроек")]
+        [SerializeField]
+        private RectTransform settingsRight = null!;
+
+        [Tooltip("Неактивный образец строки настройки")]
+        [SerializeField]
+        private SettingRow settingRowTemplate = null!;
+
+        [Tooltip("Окно набора экипировки")]
+        [SerializeField]
+        private NewGameInventoryFrame preview = null!;
+
+        [Tooltip("Строка состояния")]
+        [SerializeField]
+        private Text status = null!;
+
+        [Tooltip("Кнопка начала игры")]
+        [SerializeField]
+        private Button start = null!;
+
+        [Tooltip("Кнопка возврата в меню")]
+        [SerializeField]
+        private Button back = null!;
+
         private readonly List<Button> _loadoutButtons = new List<Button>();
         private readonly List<string> _loadoutIds = new List<string>();
-        private readonly List<string> _loadoutNames = new List<string>();
-        private readonly ScrollArea _scroll;
-        private readonly RectTransform _settings;
-        private readonly Text _status;
-        private readonly TextInputField _nickname;
-        private readonly NumberField _lootLoss;
-        private readonly NumberField _tradeDifficulty;
-        private readonly NewGameInventoryFrame _preview;
+        private NumberField _insurance = null!;
+        private NumberField _trade = null!;
+        private CheckboxRow _permadeath = null!;
         private int _nicknameMax;
+        private double _insuranceDefault;
+        private double _insuranceStep;
         private double _tradeDefault;
         private double _tradeMax;
         private double _tradeStep;
-        private double _lootStep;
-        private bool _layingOut;
         private string _selectedLoadout = string.Empty;
+        private int _settingsCount;
 
-        /// <summary>Создаёт панель новой игры.</summary>
-        /// <param name="host">Хост интерфейса: сервисы и переходы.</param>
-        /// <param name="canvas">Родительский канвас.</param>
-        public NewGameScreen(IUiHost host, Transform canvas)
-            : base(host, canvas, "NewGame")
-        {
-            _host = host;
-            var rules = host.Rules.Require();
-            _nicknameMax = rules.NicknameMaxLength;
-            _tradeDefault = rules.TradeDifficulty;
-            _tradeMax = rules.TradeDifficultyMax;
-            _tradeStep = rules.TradeDifficultyStep;
-            _lootStep = rules.LootLossStep;
-
-            var title = host.Ui.CreateTitle(Content, UiText.Get(host.Texts, UiTextKey.NewGame_Title));
-            var titleRect = title.rectTransform;
-            titleRect.anchorMin = new Vector2(0.5f, 1f);
-            titleRect.anchorMax = new Vector2(0.5f, 1f);
-            titleRect.pivot = new Vector2(0.5f, 1f);
-            titleRect.anchoredPosition = new Vector2(0f, -24f);
-            titleRect.sizeDelta = new Vector2(600f, 70f);
-
-            var scrollGo = new GameObject("NewGameScroll", typeof(RectTransform), typeof(ScrollArea));
-            scrollGo.transform.SetParent(Content, false);
-            var scrollRect = (RectTransform)scrollGo.transform;
-            scrollRect.anchorMin = Vector2.zero;
-            scrollRect.anchorMax = Vector2.one;
-            scrollRect.offsetMin = new Vector2(MenuMetrics.SidePadding, MenuMetrics.BottomPadding);
-            scrollRect.offsetMax = new Vector2(-MenuMetrics.SidePadding, -MenuMetrics.TopPadding);
-
-            _scroll = scrollGo.GetComponent<ScrollArea>();
-            _scroll.Configure(MenuMetrics.ScrollbarWidth);
-            _scroll.Resized += LayoutContent;
-
-            var column = host.Ui.CreateColumn(_scroll.Content, MenuMetrics.SettingsWidth);
-            _settings = (RectTransform)column;
-            _settings.anchorMin = new Vector2(0f, 1f);
-            _settings.anchorMax = new Vector2(0f, 1f);
-            _settings.pivot = new Vector2(0f, 1f);
-            _settings.anchoredPosition = Vector2.zero;
-
-            host.Ui.CreateText(column, UiText.Get(host.Texts, UiTextKey.NewGame_Name_Label), 18, TextAnchor.MiddleLeft);
-            _nickname = host.Ui.CreateInputField(column, UiText.Get(host.Texts, UiTextKey.NewGame_Name_Placeholder), string.Empty);
-            host.Ui.CreateButton(column, UiText.Get(host.Texts, UiTextKey.NewGame_Random_Name), GenerateNickname);
-            host.Ui.CreateText(column, UiText.Get(host.Texts, UiTextKey.NewGame_Loadout_Label), 22, TextAnchor.MiddleCenter);
-
-            var loadouts = SortedLoadouts(host.Loadouts);
-            foreach (var loadout in loadouts)
-            {
-                var id = loadout.Id;
-                _loadoutIds.Add(id);
-                _loadoutNames.Add(host.Texts.Get(loadout.NameKey));
-                _loadoutButtons.Add(host.Ui.CreateButton(column, host.Texts.Get(loadout.NameKey), () => Select(id)));
-            }
-
-            _status = host.Ui.CreateText(column, string.Empty, 18, TextAnchor.MiddleCenter);
-            host.Ui.CreateText(column, UiText.Get(host.Texts, UiTextKey.NewGame_Loot_Loss_Label), 18, TextAnchor.MiddleLeft);
-            _lootLoss = host.Ui.CreateNumberField(column, "LootLossField", 0, 1, 0, _lootStep);
-            host.Ui.CreateText(column, UiText.Get(host.Texts, UiTextKey.NewGame_Trade_Label), 18, TextAnchor.MiddleLeft);
-            _tradeDifficulty = host.Ui.CreateNumberField(
-                column,
-                "TradeDifficultyField",
-                0,
-                _tradeMax,
-                _tradeDefault,
-                _tradeStep);
-
-            host.Ui.CreateButton(column, UiText.Get(host.Texts, UiTextKey.NewGame_Start), StartGame);
-            host.Ui.CreateButton(column, UiText.Get(host.Texts, UiTextKey.Common_Back), host.ShowMainMenu);
-
-            _preview = new NewGameInventoryFrame(host, _scroll.Content);
-        }
-
-        /// <summary>Готовит экран к показу: выбор первого набора, настройки по умолчанию и ник.</summary>
+        /// <summary>Готовит экран к показу: первый набор, настройки по умолчанию и случайный ник.</summary>
         public void Show()
         {
             _selectedLoadout = _loadoutIds.Count > 0 ? _loadoutIds[0] : string.Empty;
             ResetDifficulty();
-            _nickname.SetText(NextNickname());
-            _status.text = string.Empty;
-            UpdateButtons();
-            _host.Router.Show(Panel);
+            ResetNickname();
+            SetStatus(string.Empty);
+            UpdateSelection();
+            Host.Router.Show(Panel);
             Canvas.ForceUpdateCanvases();
             RefreshPreview();
-            LayoutContent();
+            Canvas.ForceUpdateCanvases();
         }
 
-        /// <summary>Esc из настроек новой игры возвращает в меню; в фокусе поля ввода Esc снимает фокус.</summary>
+        /// <summary>Esc со старта игры возвращает в меню; в фокусе поля ввода Esc снимает фокус.</summary>
         /// <returns><c>true</c>, если Esc обработан.</returns>
         public override bool HandleEscape()
         {
-            if (_nickname.IsFocused)
+            if (nickname.IsFocused)
             {
                 return false;
             }
 
-            _host.ShowMainMenu();
+            Host.ShowMainMenu();
             return true;
         }
 
-        private void GenerateNickname()
+        /// <inheritdoc />
+        protected override void OnBound()
         {
-            _nickname.SetText(NextNickname());
+            var rules = Host.Rules.Require();
+            _nicknameMax = rules.NicknameMaxLength;
+            _insuranceDefault = rules.InsuranceChance;
+            _insuranceStep = rules.InsuranceStep;
+            _tradeDefault = rules.TradeDifficulty;
+            _tradeMax = rules.TradeDifficultyMax;
+            _tradeStep = rules.TradeDifficultyStep;
+
+            diceButton.onClick.AddListener(RollNickname);
+            start.onClick.AddListener(StartGame);
+            back.onClick.AddListener(Host.ShowMainMenu);
+            preview.Bind(Host);
+            BuildSettings();
+            BuildLoadouts();
         }
 
-        private string NextNickname() => _host.Nicknames.Generate(unchecked((int)DateTime.UtcNow.Ticks));
+        private void BuildSettings()
+        {
+            _insurance = AddSetting(
+                "InsuranceRow",
+                "InsuranceField",
+                UiTextKey.NewGame_Insurance_Label,
+                0,
+                1,
+                _insuranceStep,
+                _insuranceDefault);
+
+            _trade = AddSetting(
+                "TradeRow",
+                "TradeField",
+                UiTextKey.NewGame_Trade_Label,
+                0,
+                _tradeMax,
+                _tradeStep,
+                _tradeDefault);
+
+            _permadeath = CheckboxRow.Create(
+                Host.Ui,
+                settingsLeft,
+                "PermadeathRow",
+                UiText.Get(Host.Texts, UiTextKey.NewGame_Permadeath_Label),
+                false);
+        }
+
+        private NumberField AddSetting(
+            string rowName,
+            string fieldName,
+            UiTextKey labelKey,
+            double minimum,
+            double maximum,
+            double step,
+            double initial)
+        {
+            var parent = _settingsCount % 2 == 0 ? settingsLeft : settingsRight;
+            _settingsCount++;
+            var row = Instantiate(settingRowTemplate, parent);
+            row.gameObject.name = rowName;
+            row.gameObject.SetActive(true);
+            row.Bind(UiText.Get(Host.Texts, labelKey), minimum, maximum, step, initial);
+
+            var field = row.GetComponentInChildren<NumberField>(true);
+            field.gameObject.name = fieldName;
+            if (field.transform.childCount >= 3)
+            {
+                var input = field.transform.GetChild(0);
+                input.gameObject.name = fieldName + "Input";
+            }
+
+            return field;
+        }
+
+        private void BuildLoadouts()
+        {
+            foreach (Transform child in loadoutLeft)
+            {
+                Destroy(child.gameObject);
+            }
+
+            foreach (Transform child in loadoutRight)
+            {
+                Destroy(child.gameObject);
+            }
+
+            _loadoutButtons.Clear();
+            _loadoutIds.Clear();
+
+            var index = 0;
+            foreach (var loadout in SortedLoadouts(Host.Loadouts))
+            {
+                var id = loadout.Id;
+                var name = Host.Texts.Get(loadout.NameKey);
+                var parent = index % 2 == 0 ? loadoutLeft : loadoutRight;
+                var button = Instantiate(loadoutTemplate, parent);
+                button.gameObject.name = name;
+                button.gameObject.SetActive(true);
+
+                var label = button.GetComponentInChildren<Text>(true);
+                if (label != null)
+                {
+                    label.text = name;
+                }
+
+                button.onClick.AddListener(() => Select(id));
+                _loadoutButtons.Add(button);
+                _loadoutIds.Add(id);
+                index++;
+            }
+
+            UpdateSelection();
+        }
+
+        private void RollNickname()
+        {
+            dice.Show(UnityEngine.Random.Range(1, 7));
+            nickname.SetText(NextNickname());
+        }
+
+        private void ResetNickname()
+        {
+            dice.Show(UnityEngine.Random.Range(1, 7));
+            nickname.SetText(NextNickname());
+        }
+
+        private string NextNickname() => Host.Nicknames.Generate(unchecked((int)DateTime.UtcNow.Ticks));
 
         private void ResetDifficulty()
         {
-            _lootLoss.SetValue(0);
-            var rules = _host.Rules.Rules;
-            if (rules != null)
-            {
-                foreach (var option in rules.LootLossOptions)
-                {
-                    if (option.Id == rules.DefaultLootLoss)
-                    {
-                        _lootLoss.SetValue(option.Share);
-                        break;
-                    }
-                }
-            }
-
-            _tradeDifficulty.SetValue(_tradeDefault);
+            _insurance.SetValue(_insuranceDefault);
+            _trade.SetValue(_tradeDefault);
+            _permadeath.SetValue(false);
         }
 
         private void Select(string id)
         {
             _selectedLoadout = id;
-            _status.text = string.Empty;
-            UpdateButtons();
+            SetStatus(string.Empty);
+            UpdateSelection();
             RefreshPreview();
-            LayoutContent();
+            Canvas.ForceUpdateCanvases();
         }
 
-        /// <summary>
-        /// Считает раскладку под текущий размер окна: обе зоны от верхней границы,
-        /// ширины делят свободное место, высота контента — по более высокому фрейму.
-        /// </summary>
-        private void LayoutContent()
+        private void UpdateSelection()
         {
-            if (_layingOut || _preview == null)
+            for (var index = 0; index < _loadoutButtons.Count && index < _loadoutIds.Count; index++)
             {
-                return;
-            }
+                var button = _loadoutButtons[index];
+                var selected = _loadoutIds[index] == _selectedLoadout;
 
-            var viewportWidth = _scroll.ViewportWidth;
-            var viewportHeight = _scroll.ViewportHeight;
-            if (viewportWidth <= 1f || viewportHeight <= 1f)
-            {
-                return;
-            }
-
-            _layingOut = true;
-            try
-            {
-                Canvas.ForceUpdateCanvases();
-                var leftWidth = Mathf.Clamp(
-                    viewportWidth * MenuMetrics.SettingsShare,
-                    MenuMetrics.SettingsMinWidth,
-                    MenuMetrics.SettingsWidth);
-                var rightWidth = viewportWidth - leftWidth - MenuMetrics.ColumnGap;
-                if (rightWidth < MenuMetrics.PreviewMinWidth)
+                var background = button.GetComponent<Image>();
+                if (background != null)
                 {
-                    leftWidth = Mathf.Max(
-                        MenuMetrics.SettingsMinWidth * 0.6f,
-                        viewportWidth - MenuMetrics.PreviewMinWidth - MenuMetrics.ColumnGap);
-                    rightWidth = viewportWidth - leftWidth - MenuMetrics.ColumnGap;
+                    background.color = selected ? MenuPalette.ButtonSelected : UiFactory.ButtonColor;
                 }
 
-                rightWidth = Mathf.Max(120f, rightWidth);
-
-                _settings.sizeDelta = new Vector2(leftWidth, _settings.sizeDelta.y);
-                LayoutRebuilder.ForceRebuildLayoutImmediate(_settings);
-                var settingsHeight = _settings.rect.height;
-
-                // Панель инвентаря обтягивает сетку: клетки считаются от ширины, высота — от сетки.
-                var previewHeight = _preview.MeasureHeight(rightWidth);
-                var contentHeight = Mathf.Max(
-                    viewportHeight,
-                    Mathf.Max(settingsHeight, previewHeight));
-                _scroll.SetContentHeight(contentHeight);
-                _preview.Resize(rightWidth, previewHeight);
-            }
-            finally
-            {
-                _layingOut = false;
+                var marker = button.transform.Find("SelectedMarker");
+                if (marker != null)
+                {
+                    marker.gameObject.SetActive(selected);
+                }
             }
         }
 
@@ -232,64 +279,73 @@ namespace AnomalyPath.Runtime.Screens.Menu
         {
             if (string.IsNullOrEmpty(_selectedLoadout))
             {
-                _preview.Show(null, UiText.Get(_host.Texts, UiTextKey.NewGame_No_Loadouts), StartingMoney());
+                preview.Show(null, UiText.Get(Host.Texts, UiTextKey.NewGame_No_Loadouts), StartingMoney());
                 return;
             }
 
             try
             {
-                _preview.Show(_host.LoadoutPreviews.Build(_selectedLoadout), null, StartingMoney());
+                preview.Show(Host.LoadoutPreviews.Build(_selectedLoadout), null, StartingMoney());
             }
             catch (Exception error)
             {
-                _preview.Show(null, UiText.Format(_host.Texts, UiTextKey.NewGame_Preview_Failed, error.Message), StartingMoney());
+                preview.Show(null, UiText.Format(Host.Texts, UiTextKey.NewGame_Preview_Failed, error.Message), StartingMoney());
             }
         }
 
-        private int StartingMoney() => _host.Rules.Require().StartingMoney;
-
-        private void UpdateButtons()
+        private int StartingMoney()
         {
-            for (var index = 0; index < _loadoutButtons.Count && index < _loadoutIds.Count; index++)
+            var fallback = Host.Rules.Require().StartingMoney;
+            if (string.IsNullOrEmpty(_selectedLoadout) || !Host.Loadouts.Contains(_selectedLoadout))
             {
-                var id = _loadoutIds[index];
-                var label = _loadoutButtons[index].GetComponentInChildren<Text>();
-                var name = _loadoutNames[index];
-                label.text = (id == _selectedLoadout ? "> " : string.Empty) + name;
+                return fallback;
             }
+
+            return Host.Loadouts.Get(_selectedLoadout).StartingMoney ?? fallback;
+        }
+
+        private void SetStatus(string text)
+        {
+            status.text = text;
+            status.gameObject.SetActive(!string.IsNullOrEmpty(text));
         }
 
         private void StartGame()
         {
             if (string.IsNullOrEmpty(_selectedLoadout))
             {
-                _status.text = UiText.Get(_host.Texts, UiTextKey.NewGame_Status_No_Sets);
+                SetStatus(UiText.Get(Host.Texts, UiTextKey.NewGame_Status_No_Sets));
                 return;
             }
 
-            var nickname = _nickname.Text.Trim();
-            if (nickname.Length == 0)
+            var name = nickname.Text.Trim();
+            if (name.Length == 0)
             {
-                _status.text = UiText.Get(_host.Texts, UiTextKey.NewGame_Status_Enter_Name);
+                SetStatus(UiText.Get(Host.Texts, UiTextKey.NewGame_Status_Enter_Name));
                 return;
             }
 
-            if (nickname.Length > _nicknameMax)
+            if (name.Length > _nicknameMax)
             {
-                _status.text = UiText.Format(_host.Texts, UiTextKey.NewGame_Status_Name_Too_Long, _nicknameMax);
+                SetStatus(UiText.Format(Host.Texts, UiTextKey.NewGame_Status_Name_Too_Long, _nicknameMax));
                 return;
             }
 
             try
             {
                 var seed = unchecked((int)DateTime.UtcNow.Ticks);
-                var settings = new NewGameSettings(_lootLoss.Value, _tradeDifficulty.Value, nickname, _nicknameMax);
-                _host.Session = _host.Sessions.StartNew(seed, _selectedLoadout, settings);
-                _host.ShowGame();
+                var settingsData = new NewGameSettings(
+                    insuranceChance: _insurance.Value,
+                    tradeDifficulty: _trade.Value,
+                    nickname: name,
+                    nicknameMaxLength: _nicknameMax,
+                    permadeath: _permadeath.Value);
+                Host.Session = Host.Sessions.StartNew(seed, _selectedLoadout, settingsData);
+                Host.ShowGame();
             }
             catch (Exception error)
             {
-                _status.text = UiText.Format(_host.Texts, UiTextKey.NewGame_Status_Error, error.Message);
+                SetStatus(UiText.Format(Host.Texts, UiTextKey.NewGame_Status_Error, error.Message));
             }
         }
 

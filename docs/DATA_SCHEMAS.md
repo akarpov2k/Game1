@@ -9,15 +9,15 @@
 
 ## Оглавление
 
-Номера строк — на 2026-10-23; при правке документа обновить таблицу или искать раздел по заголовку.
+Номера строк — на 2026-10-24; при правке документа обновить таблицу или искать раздел по заголовку.
 
 | § | Раздел | Строка |
 | --- | --- | --- |
 | 0 | Что нового в v0.36 | 40 |
 | 1 | Соглашения | 71 |
 | 2 | Данные и состояние | 114 |
-| 3 | Файлы данных, каталоги, моды | 174 |
-| 4 | Item | 510 |
+| 3 | Файлы данных, каталоги, моды | 173 |
+| 4 | Item | 509 |
 | 5 | Габариты и поворот | 748 |
 | 6 | Стеки | 756 |
 | 7 | GridContainer | 769 |
@@ -31,11 +31,11 @@
 | 15 | Фракции, квесты, диалоги, открытия | 1449 |
 | 16 | Крафт и ремонт: `Recipe` | 1534 |
 | 17 | Сейв | 1553 |
-| 18 | Открытые вопросы по данным | 1678 |
-| 19 | Правила валидации | 1698 |
-| 20 | Примеры | 1888 |
-| 21 | Наборы снаряжения и новая игра | 2710 |
-| 22 | Ники для новой игры (`nicks`) | 2779 |
+| 18 | Открытые вопросы по данным | 1674 |
+| 19 | Правила валидации | 1694 |
+| 20 | Примеры | 1882 |
+| 21 | Наборы снаряжения и новая игра | 2697 |
+| 22 | Ники для новой игры (`nicks`) | 2772 |
 
 ## 0. Что нового в v0.36
 
@@ -156,7 +156,6 @@ Mods/<name>/Localization/...                 # моды добавляют св�
 | `Rarity` | `nameKey` | `rarity.rar_rare.name` |
 | `Feature` | `nameKey`, `descriptionKey` | `feature.feat_selfloading.name` |
 | `Loadout` | `nameKey`, `descriptionKey` | `loadout.loadout_scout.name` |
-| `GameRules` | `lootLossOptions[].titleKey` | `rules.lootLoss.partial` |
 | `Dialog` | узлы и варианты | `dlg.dlg_caravan_boss.hello` |
 | Интерфейс | — | `ui.inventory.title`, `ui.button.leave` |
 
@@ -533,6 +532,7 @@ Mods/<modName>/
 | `tags` | string[] | нет | свободные метки для фильтров и правил |
 | `sellable` | bool | нет | по умолчанию `true`; `false` для сюжетных |
 | `droppable` | bool | нет | по умолчанию `true`; `false` для сюжетных |
+| `unlosable` | bool | нет | по умолчанию `false`; `true` — предмет не теряется при смерти (в том числе в режиме полной потери) и не участвует в бросках страховки |
 
 **Вес отсутствует.** Ограничение инвентаря — только клетки. Поля `weight` нет и не будет; модификаторы веса, перегруз и связанные правила не вводятся.
 
@@ -1552,7 +1552,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 ## 17. Сейв
 
-Один файл, JSON, в `Application.persistentDataPath`. Формат v2 сохраняет **мир и игрока**; сейвы v1 (world-only) читаются: блок `player` в них отсутствует. Запись атомарная: `save.json.tmp` → замена, предыдущая версия остаётся в `save.json.bak`; список слотов строится по файлам `*.json`.
+Один файл, JSON, в `Application.persistentDataPath`. Формат **v4** сохраняет **мир и игрока**; сейвы v1 (world-only) читаются: блок `player` в них отсутствует. Запись атомарная: `save.json.tmp` → замена, предыдущая версия остаётся в `save.json.bak`; список слотов строится по файлам `*.json`.
 
 | Поле | Тип | Смысл |
 | --- | --- | --- |
@@ -1580,7 +1580,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `weather` | string | `clear`, `rain`, `fog` |
 | `locations` | LocationSave[] | экземпляры локаций |
 | `edges` | EdgeSave[] | рёбра переходов со стоимостью |
-| `settings` | object? | выбранные на старте настройки: `lootLossFactor` (0..1) и `tradeDifficulty` (≥ 0) |
+| `settings` | object? | выбранные на старте настройки: `insuranceChance` (0..1), `tradeDifficulty` (≥ 0) и `permadeath` (bool). Сейвы до v4 хранили страховку как `lootLossFactor`, поле читается для миграции |
 
 `LocationSave`: `{ instanceId, templateId, seed, background, nodeType, tier, danger, visited, cleared }`.
 
@@ -1635,7 +1635,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `traders` | `[{ actorId, stock: [{ itemId, count }] }]` | текущие запасы торговцев |
 | `time` | `{ day, hours, phase }` | время мира: двигается при переходах и отдыхе |
 | `weather` | string | текущая погода: `clear` / `rain` / `fog`; фаза суток — в `time.phase` (`day` / `night`) |
-| `settings` | object | выбранные на старте настройки прохождения (`lootLossFactor`, `tradeDifficulty`) |
+| `settings` | object | выбранные на старте настройки прохождения (`insuranceChance`, `tradeDifficulty`, `permadeath`) |
 | `stash` | GridContainer? | склад в хабе ❓ |
 
 Правила:
@@ -1654,11 +1654,8 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | Поле | Тип | Смысл |
 | --- | --- | --- |
 | `id` | string | всегда `rules` |
-| `deathMode` | enum | `hubReturn` — возврат в хаб с потерей лута (принято); `permadeath` — по смерти удаляется всё |
-| `lootLossOptions` | `[{ id, titleKey, loss, share }]` | варианты потери лута: `loss` ∈ `none`, `partial`, `all`; `share` — доля теряемого для `partial` (0..1) ⏸ |
-| `defaultLootLoss` | string | какой вариант выбран по умолчанию |
-| `insuranceChance` | number | 0..1, шанс, что конкретная вещь не пропадёт при потере ⏸ |
-| `insuranceAppliesTo` | enum | `loot` — только добыча вылазки; `all` — включая снаряжение |
+| `insuranceChance` | number | 0..1, коэффициент страховки надетой вещи по умолчанию; при смерти применяется к каждому надетому предмету отдельным броском |
+| `insuranceStep` | number | шаг изменения коэффициента страховки, больше 0 |
 | `baseRows` | int | строк сетки без рюкзака (принято 4) |
 | `gridWidth` | int | ширина сетки инвентаря (принято 8) |
 | `needsMax` | int | максимум шкал потребностей новой игры |
@@ -1668,7 +1665,6 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `tradeDifficulty` | number | усложнение торговли по умолчанию |
 | `tradeDifficultyMax` | number | максимум усложнения торговли |
 | `tradeDifficultyStep` | number | шаг изменения усложнения |
-| `lootLossStep` | number | шаг изменения потери лута |
 | `nicknameMaxLength` | int | предел длины ника |
 | `previewMaxRows` | int | предел рядов в окне предпросмотра набора |
 | `savePageSize` | int | число ячеек сохранения на странице |
@@ -1693,7 +1689,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 14. **Android и WebGL:** когда и с какими ограничениями (сейчас целевая — Windows).
 15. **Диапазоны `statRolls`** по шести ступеням — баланс; форма задана.
 
-Закрыто и вынесено в схемы: стаки по `(itemId, durability)`, вес (отсутствует), ОД (полностью каждый ход), дистанция (зоны, один сдвиг бесплатно), износ (выстрел/попадание), ремонт (набор + станок), слоты артефактов (сумма), авторазмещение переполнения, модификаторы с убывающей отдачей, враждебность NPC (состояние в сейве), смерть (возврат в хаб, настраиваемая потеря, страховка), карта (хабы + радиальные вылазки), редкость и уникальность локаций, квесты (сюжетные не проваливаются; повторяемые двух видов), 4 тира, крафт только в хабах, торговцы с пополнением, все вычисления — формулы в данных, редкость только у оружия, брони и артефактов.
+Закрыто и вынесено в схемы: стаки по `(itemId, durability)`, вес (отсутствует), ОД (полностью каждый ход), дистанция (зоны, один сдвиг бесплатно), износ (выстрел/попадание), ремонт (набор + станок), слоты артефактов (сумма), авторазмещение переполнения, модификаторы с убывающей отдачей, враждебность NPC (состояние в сейве), смерть (возврат в хаб, полная потеря инвентаря кроме неутрачиваемых, независимая страховка надетых вещей), карта (хабы + радиальные вылазки), редкость и уникальность локаций, квесты (сюжетные не проваливаются; повторяемые двух видов), 4 тира, крафт только в хабах, торговцы с пополнением, все вычисления — формулы в данных, редкость только у оружия, брони и артефактов.
 
 ## 19. Правила валидации
 
@@ -1850,13 +1846,11 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 **Правила прохождения**
 
-- `GameRules` ровно одна; `deathMode` ∈ `hubReturn`, `permadeath`.
-- `lootLossOptions[].loss` ∈ `none`, `partial`, `all`; у `partial` обязателен `share` ∈ 0..1; у `none` — `share = 0`; у `all` — `share = 1`.
-- `defaultLootLoss` ссылается на существующий вариант.
-- `insuranceChance` ∈ 0..1; при `permadeath` страховка не применяется.
+- `GameRules` ровно одна.
+- `insuranceChance` ∈ 0..1; `insuranceStep > 0`. При `permadeath` страховка не применяется.
 - `baseRows ≥ 1`, `gridWidth ≥ 1`, `needsMax ≥ 1`, `tierCount ≥ 1`.
 - `playerActorId` ссылается на существующего актёра.
-- Сейв хранит выбранные `settings`: `lootLossFactor` ∈ 0..1, `tradeDifficulty` ≥ 0.
+- Сейв хранит выбранные `settings`: `insuranceChance` ∈ 0..1, `tradeDifficulty` ≥ 0, `permadeath` — bool; старое поле `lootLossFactor` читается как `insuranceChance`.
 
 **Наборы снаряжения**
 
@@ -2348,7 +2342,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
     "flags": {},
     "traders": [],
     "time": { "day": 1, "hours": 9, "phase": "morning" },
-    "settings": { "deathMode": "hubReturn", "lootLoss": "partial" }
+    "settings": { "insuranceChance": 0.15, "tradeDifficulty": 1, "permadeath": false }
   }
 }
 ```
@@ -2358,15 +2352,8 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 ```json
 {
   "id": "rules",
-  "deathMode": "hubReturn",
-  "lootLossOptions": [
-    { "id": "none", "titleKey": "rules.lootLoss.none", "loss": "none", "share": 0 },
-    { "id": "partial", "titleKey": "rules.lootLoss.partial", "loss": "partial", "share": 0.5 },
-    { "id": "all", "titleKey": "rules.lootLoss.all", "loss": "all", "share": 1 }
-  ],
-  "defaultLootLoss": "partial",
   "insuranceChance": 0.15,
-  "insuranceAppliesTo": "loot",
+  "insuranceStep": 0.05,
   "baseRows": 4,
   "tierCount": 4
 }
@@ -2725,6 +2712,7 @@ Mods/hardcore_loot/
 | `helmet` | string? | шлем |
 | `backpack` | string? | рюкзак; добавляет строки сетке |
 | `belt` | string? | пояс артефактов |
+| `startingMoney` | int? | стартовые деньги набора; нет поля — `GameRules.startingMoney` |
 | `consumables` | LoadoutItem[] | расходники, которые кладутся в инвентарь |
 
 `LoadoutItem`: `{ itemId, count }`, `count ≥ 1`.
@@ -2735,6 +2723,7 @@ Mods/hardcore_loot/
 
 - `itemId` из экипировки и `consumables` существуют в данных; иначе preflight не проходит.
 - `count ≥ 1`; неизвестный слот — ошибка загрузки.
+- `startingMoney ≥ 0`; отсутствие поля — не ошибка, сумма берётся из `GameRules.startingMoney`.
 - Стартовые расходники обязаны помещаться в сетку `gridWidth × (baseRows + backpack.extraRows)`; если не помещаются — ошибка данных, а не переполнение.
 - Набор — контент: состав меняется файлом, код не содержит имён предметов.
 - Для совместимости старый формат с `items` и `equipment` (`{ "main": ..., "armor": ... }`) продолжает читаться; новые поля имеют приоритет.
@@ -2748,6 +2737,7 @@ Mods/hardcore_loot/
   "id": "loadout_scout",
   "nameKey": "loadout.loadout_scout.name",
   "descriptionKey": "loadout.loadout_scout.description",
+  "startingMoney": 1000,
   "weapon": "wpn_pm",
   "secondaryWeapon": null,
   "armor": "itm_armor_jacket",
@@ -2767,14 +2757,17 @@ Mods/hardcore_loot/
 
 | Поле | Тип | Смысл |
 | --- | --- | --- |
-| `lootLossFactor` | number | коэффициент потери лута при смерти, 0..1; умножает долю выбранного варианта |
+| `insuranceChance` | number | коэффициент страховки надетой вещи, 0..1: вероятность, что конкретный надетый предмет переживёт смерть; применяется к каждому предмету отдельным броском |
 | `tradeDifficulty` | number | коэффициент усложнения торговли, ≥ 0, по умолчанию 1 |
+| `permadeath` | bool | режим постоянной смерти, по умолчанию `false`; при `true` смерть удаляет всё, включая снаряжение, а страховка не применяется |
 
 Правила:
 
-- `lootLossFactor` ∈ 0..1, `tradeDifficulty` ≥ 0; иначе ошибка загрузки сейва.
+- `insuranceChance` ∈ 0..1, `tradeDifficulty` ≥ 0; иначе ошибка загрузки сейва.
+- `permadeath` — необязательное поле; в старых сейвах считается `false`.
 - Настройки фиксируются при старте и не меняются задним числом.
-- Старые сейвы без `settings` читаются: настройки считаются отсутствующими.
+- Старые сейвы без `settings` читаются: настройки считаются отсутствующими, страховка при смерти не применяется (коэффициент 0).
+- Сейвы до v4 хранили коэффициент под именем `lootLossFactor`; при чтении поле считается коэффициентом страховки.
 
 ## 22. Ники для новой игры (`nicks`)
 

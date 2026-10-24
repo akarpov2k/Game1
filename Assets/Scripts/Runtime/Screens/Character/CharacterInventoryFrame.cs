@@ -36,22 +36,29 @@ namespace AnomalyPath.Runtime.Screens.Character
             var left = CharacterMetrics.FrameWidth + CharacterMetrics.Gap;
             var frame = CharacterWidgets.Box(_host, _content, "InventoryFrame", left, 0f,
                 CharacterMetrics.InventoryWidth, CharacterMetrics.FrameHeight, CharacterPalette.Frame);
+            var hasPanel = InventoryPanelArt.ApplyBackground(_host, frame, CharacterPalette.Frame);
             var frameZone = frame.gameObject.AddComponent<ItemDropZone>();
             frameZone.Configure(_frameHost.Drag, instanceId => _frameHost.DropOnInventory(instanceId, -1, -1, false));
 
-            CharacterWidgets.Label(_host, _content, "InventoryTitle", UiText.Get(_host.Texts, UiTextKey.Character_Inventory_Title), 28, TextAnchor.MiddleCenter,
-                UiFactory.TextColor, left + 20f, 12f, CharacterMetrics.InventoryWidth - 40f, 36f);
-            CharacterWidgets.Label(_host, _content, "InventoryMoney", SaveSlotText.Money(_host.Texts, player.Money), 20,
-                TextAnchor.MiddleRight, UiFactory.MutedTextColor,
-                left + CharacterMetrics.InventoryWidth - 220f, 14f, 200f, 30f);
+            CharacterWidgets.Label(_host, _content, "InventoryTitle", UiText.Get(_host.Texts, UiTextKey.Character_Inventory_Title), 24, TextAnchor.MiddleLeft,
+                UiFactory.TextColor, left + 40f, 14f, 300f, 36f);
+            var plate = InventoryPanelArt.ToAbsolute(
+                InventoryPanelArt.CurrencyPlate,
+                CharacterMetrics.InventoryWidth,
+                CharacterMetrics.FrameHeight,
+                left,
+                0f);
+            var money = CharacterWidgets.Label(_host, _content, "InventoryMoney", SaveSlotText.Money(_host.Texts, player.Money), 24,
+                TextAnchor.MiddleCenter, UiFactory.TextColor, plate.x, plate.y, plate.width, plate.height);
+            InventoryPanelArt.DecorateMoney(money);
             var summary = UiText.Format(_host.Texts, UiTextKey.Common_Count_Of, grid.UsedCells, grid.Width * grid.Rows);
-            CharacterWidgets.Label(_host, _content, "InventorySummary", summary, 16, TextAnchor.MiddleCenter,
-                UiFactory.MutedTextColor, left + 20f, 50f, CharacterMetrics.InventoryWidth - 40f, 24f);
+            CharacterWidgets.Label(_host, _content, "InventorySummary", summary, 14, TextAnchor.MiddleLeft,
+                UiFactory.MutedTextColor, left + 40f, 54f, 300f, 22f);
 
             var gridWidth = CharacterMetrics.GridWidth(grid.Width);
             var gridHeight = CharacterMetrics.GridHeight(grid.Rows);
             var gridX = left + ((CharacterMetrics.InventoryWidth - gridWidth) / 2f);
-            const float gridY = 86f;
+            const float gridY = 100f;
 
             var gridRoot = new GameObject("InventoryGrid", typeof(RectTransform), typeof(Image));
             gridRoot.transform.SetParent(_content, false);
@@ -70,6 +77,7 @@ namespace AnomalyPath.Runtime.Screens.Character
                 (instanceId, x, y, rotated) => CanPlace(grid, instanceId, x, y, rotated),
                 _frameHost.DropOnInventory);
 
+            var cellColor = hasPanel ? Color.clear : CharacterPalette.Cell;
             for (var row = 0; row < grid.Rows; row++)
             {
                 for (var column = 0; column < grid.Width; column++)
@@ -79,7 +87,7 @@ namespace AnomalyPath.Runtime.Screens.Character
                         row * CharacterMetrics.CellStep,
                         CharacterMetrics.Cell,
                         CharacterMetrics.Cell,
-                        CharacterPalette.Cell);
+                        cellColor);
                     cell.raycastTarget = false;
                 }
             }
@@ -164,23 +172,22 @@ namespace AnomalyPath.Runtime.Screens.Character
 
         private void ItemBox(ItemInstance item, Transform parent, float x, float y, float width, float height)
         {
-            var frame = CharacterWidgets.Box(_host, parent, "Item_" + item.InstanceId, x, y, width, height,
-                CharacterWidgets.ColorFor(_host, item));
-            CharacterWidgets.AttachItem(_host, _frameHost, frame, item, null, -1, DragOrigin.Inventory);
-
             var template = CharacterWidgets.Template(_host, item);
             Sprite? sprite = null;
             var hasIcon = template != null && _host.Sprites.TryGet(template.Icon, out sprite) && sprite != null;
-            const float labelHeight = 30f;
+            var frame = CharacterWidgets.Box(_host, parent, "Item_" + item.InstanceId, x, y, width, height,
+                hasIcon ? Color.clear : CharacterWidgets.ColorFor(_host, item));
+            frame.raycastTarget = true;
+            CharacterWidgets.AttachItem(_host, _frameHost, frame, item, null, -1, DragOrigin.Inventory);
 
+            const float labelHeight = 30f;
             if (hasIcon)
             {
-                var iconArea = height - labelHeight - 6f;
-                var side = Mathf.Min(width - 10f, iconArea);
-                if (side > 8f)
+                var iconHeight = height - labelHeight - 6f;
+                if (iconHeight > 8f)
                 {
-                    CharacterWidgets.Icon(_host, parent, "ItemIcon_" + item.InstanceId, sprite!,
-                        x + ((width - side) / 2f), y + 4f, side, side);
+                    UiWidgets.ItemIcon(_host, parent, "ItemIcon_" + item.InstanceId, sprite!,
+                        x, y, width, iconHeight, 4f);
                 }
             }
 

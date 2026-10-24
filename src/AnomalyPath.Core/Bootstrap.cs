@@ -3,6 +3,7 @@ using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Character;
 using AnomalyPath.Core.Combat;
 using AnomalyPath.Core.Data;
+using AnomalyPath.Core.Death;
 using AnomalyPath.Core.Di;
 using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Inventory;
@@ -86,6 +87,9 @@ namespace AnomalyPath.Core
             container.RegisterSingleton<IEquipmentSettings>(equipmentSettings);
             container.RegisterSingleton<IGameRulesRepository>(rules);
             container.RegisterSingleton<INicknameGenerator>(nicknames);
+            var deathRandom = new SeededDeathRandom(1);
+            container.RegisterSingleton<IDeathRandom>(deathRandom);
+            container.RegisterSingleton<IDeathService>(new DeathService(items, deathRandom));
             var equipmentService = new EquipmentService(items, inventory);
             container.RegisterSingleton<IEquipmentService>(equipmentService);
             container.RegisterSingleton<ICharacterActions>(new CharacterActions(items, inventory, equipmentService));

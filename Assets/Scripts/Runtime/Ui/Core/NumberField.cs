@@ -14,24 +14,64 @@ namespace AnomalyPath.Runtime.Ui.Core
     /// </summary>
     public sealed class NumberField : MonoBehaviour
     {
-        private TextInputField _input = null!;
-        private double _min;
-        private double _max;
-        private double _step = 0.1;
-        private double _value;
+        [Tooltip("Поле ввода цифр")]
+        [SerializeField]
+        private TextInputField? input = null;
+
+        [Tooltip("Кнопка увеличения значения")]
+        [SerializeField]
+        private Button? increase = null;
+
+        [Tooltip("Кнопка уменьшения значения")]
+        [SerializeField]
+        private Button? decrease = null;
+
+        [Tooltip("Минимум диапазона")]
+        [SerializeField]
+        private double min = 0;
+
+        [Tooltip("Максимум диапазона")]
+        [SerializeField]
+        private double max = 1;
+
+        [Tooltip("Шаг кнопок, больше нуля")]
+        [SerializeField]
+        private double step = 0.1;
+
+        [SerializeField]
+        private double value = 0;
+
         private bool _syncing;
+        private bool _subscribed;
 
         /// <summary>Текущее значение в допустимом диапазоне.</summary>
-        public double Value => Clamp(_value);
+        public double Value => Clamp(value);
 
         /// <summary>Минимум диапазона.</summary>
-        public double Minimum => _min;
+        public double Minimum => min;
 
         /// <summary>Максимум диапазона.</summary>
-        public double Maximum => _max;
+        public double Maximum => max;
 
         /// <summary>Шаг кнопок.</summary>
-        public double Step => _step;
+        public double Step => step;
+
+        /// <summary>Настраивает поле из префаба: диапазон, шаг и значение.</summary>
+        /// <param name="minimum">Минимум диапазона.</param>
+        /// <param name="maximum">Максимум диапазона.</param>
+        /// <param name="step">Шаг кнопок, больше нуля.</param>
+        /// <param name="initial">Начальное значение.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Максимум меньше минимума или шаг не положительный.</exception>
+        public void Configure(double minimum, double maximum, double step, double initial)
+        {
+            Validate(minimum, maximum, step);
+            min = minimum;
+            max = maximum;
+            this.step = step;
+            value = Clamp(initial);
+            EnsureSubscribed();
+            Sync();
+        }
 
         /// <summary>Настраивает поле: диапазон, шаг, начальное значение и подписки на кнопки.</summary>
         /// <param name="input">Поле ввода цифр.</param>
@@ -67,58 +107,81 @@ namespace AnomalyPath.Runtime.Ui.Core
                 throw new ArgumentNullException(nameof(decrease));
             }
 
-            if (max < min)
+            Validate(min, max, step);
+            this.input = input;
+            this.increase = increase;
+            this.decrease = decrease;
+            this.min = min;
+            this.max = max;
+            this.step = step;
+            this.value = Clamp(value);
+
+            EnsureSubscribed();
+            Sync();
+        }
+
+        /// <summary>Увеличивает значение на шаг.</summary>
+        public void Increase() => SetValue(Value + step);
+
+        /// <summary>Уменьшает значение на шаг.</summary>
+        public void Decrease() => SetValue(Value - step);
+
+        /// <summary>Ставит значение, округляя до шага и зажимая в диапазон.</summary>
+        /// <param name="value">Новое значение.</param>
+        public void SetValue(double value)
+        {
+            this.value = Clamp(Snap(value));
+            Sync();
+        }
+
+        private void Awake()
+        {
+            EnsureSubscribed();
+            Sync();
+        }
+
+        private void EnsureSubscribed()
+        {
+            if (_subscribed || input == null || increase == null || decrease == null)
             {
-                throw new ArgumentOutOfRangeException(nameof(max), CoreText.Get(CoreErrors.RangeOrder));
+                return;
+            }
+
+            input.Changed += OnTextChanged;
+            input.FocusChanged += OnFocusChanged;
+            increase.onClick.AddListener(Increase);
+            decrease.onClick.AddListener(Decrease);
+            _subscribed = true;
+        }
+
+        private static void Validate(double minimum, double maximum, double step)
+        {
+            if (maximum < minimum)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maximum), CoreText.Get(CoreErrors.RangeOrder));
             }
 
             if (step <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(step), CoreText.Get(CoreErrors.StepPositive));
             }
-
-            _input = input;
-            _min = min;
-            _max = max;
-            _step = step;
-            _value = Clamp(value);
-
-            input.Changed += OnTextChanged;
-            input.FocusChanged += OnFocusChanged;
-            increase.onClick.AddListener(Increase);
-            decrease.onClick.AddListener(Decrease);
-            Sync();
-        }
-
-        /// <summary>Увеличивает значение на шаг.</summary>
-        public void Increase() => SetValue(Value + _step);
-
-        /// <summary>Уменьшает значение на шаг.</summary>
-        public void Decrease() => SetValue(Value - _step);
-
-        /// <summary>Ставит значение, округляя до шага и зажимая в диапазон.</summary>
-        /// <param name="value">Новое значение.</param>
-        public void SetValue(double value)
-        {
-            _value = Clamp(Snap(value));
-            Sync();
         }
 
         private void Sync()
         {
-            if (_input == null)
+            if (input == null)
             {
                 return;
             }
 
             _syncing = true;
-            _input.SetText(Format(Value));
+            input.SetText(Format(Value));
             _syncing = false;
         }
 
         private void OnTextChanged(string text)
         {
-            if (_syncing || _input == null)
+            if (_syncing || input == null)
             {
                 return;
             }
@@ -132,7 +195,7 @@ namespace AnomalyPath.Runtime.Ui.Core
 
             if (double.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
             {
-                _value = Clamp(parsed);
+                value = Clamp(parsed);
             }
         }
 
@@ -144,22 +207,22 @@ namespace AnomalyPath.Runtime.Ui.Core
             }
         }
 
-        private double Snap(double value) => _min + (Math.Round((value - _min) / _step) * _step);
+        private double Snap(double value) => min + (Math.Round((value - min) / step) * step);
 
         private double Clamp(double value)
         {
-            if (value < _min)
+            if (value < min)
             {
-                return _min;
+                return min;
             }
 
-            return value > _max ? _max : value;
+            return value > max ? max : value;
         }
 
         private string Format(double value)
         {
             var decimals = 0;
-            var stepScale = _step;
+            var stepScale = step;
             while (decimals < 4 && Math.Abs(stepScale - Math.Round(stepScale)) > 1e-9)
             {
                 stepScale *= 10;

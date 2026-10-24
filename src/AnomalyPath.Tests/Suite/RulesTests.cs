@@ -41,21 +41,16 @@ namespace AnomalyPath.Tests
                 var rules = repository.Require();
 
                 Equal("rules", rules.Id, "id");
-                Equal(DeathMode.HubReturn, rules.DeathMode, "deathMode");
                 Equal(4, rules.BaseRows, "baseRows");
                 Equal(4, rules.TierCount, "tierCount");
                 Equal(8, rules.GridWidth, "gridWidth");
                 Equal(100, rules.NeedsMax, "needsMax");
                 Equal("actor_player", rules.PlayerActorId, "playerActorId");
                 True(Math.Abs(rules.InsuranceChance - 0.15) < 1e-9, "insuranceChance");
-                Equal(InsuranceScope.Loot, rules.InsuranceAppliesTo, "insuranceAppliesTo");
-                Equal(3, rules.LootLossOptions.Count, "варианты потери лута");
-                Equal(LootLossKind.Partial, rules.LootLossOptions[1].Loss, "loss partial");
-                Equal("partial", rules.DefaultLootLoss, "defaultLootLoss");
+                True(Math.Abs(rules.InsuranceStep - 0.05) < 1e-9, "insuranceStep");
                 True(Math.Abs(rules.TradeDifficulty - 1) < 1e-9, "tradeDifficulty");
                 True(Math.Abs(rules.TradeDifficultyMax - 3) < 1e-9, "tradeDifficultyMax");
                 True(Math.Abs(rules.TradeDifficultyStep - 0.1) < 1e-9, "tradeDifficultyStep");
-                True(Math.Abs(rules.LootLossStep - 0.1) < 1e-9, "lootLossStep");
                 Equal(24, rules.NicknameMaxLength, "nicknameMaxLength");
                 Equal(32, rules.PreviewMaxRows, "previewMaxRows");
                 Equal(6, rules.SavePageSize, "savePageSize");
@@ -101,7 +96,8 @@ namespace AnomalyPath.Tests
                 Equal(8, rules.GridWidth, "gridWidth");
                 Equal(100, rules.NeedsMax, "needsMax");
                 Equal("actor_player", rules.PlayerActorId, "playerActorId");
-                Equal(3, rules.LootLossOptions.Count, "варианты");
+                True(Math.Abs(rules.InsuranceChance - 0.15) < 1e-9, "insuranceChance");
+                True(Math.Abs(rules.InsuranceStep - 0.05) < 1e-9, "insuranceStep");
                 Equal("rules", rules.Id, "id");
                 Equal(1000, rules.StartingMoney, "startingMoney по умолчанию");
             });
@@ -116,9 +112,7 @@ namespace AnomalyPath.Tests
 
             var invalid = new (string Name, string Json, string Code)[]
             {
-                ("неизвестный deathMode", Rules(deathMode: "unknown"), CoreErrors.RulesUnknownDeathMode),
                 ("чужой id", Rules(id: "other"), CoreErrors.RulesId),
-                ("неизвестный defaultLootLoss", Rules(defaultLoss: "missing"), CoreErrors.RulesDefaultLootLoss),
                 ("baseRows 0", Rules(baseRows: 0), CoreErrors.RulesRange),
                 ("tierCount 0", Rules(tierCount: 0), CoreErrors.RulesRange),
                 ("gridWidth 0", Rules(gridWidth: 0), CoreErrors.RulesRange),
@@ -126,9 +120,8 @@ namespace AnomalyPath.Tests
                 ("startingMoney -1", Rules(startingMoney: -1), CoreErrors.RulesRange),
                 ("пустой playerActorId", Rules(playerActorId: ""), CoreErrors.MissingStringField),
                 ("insuranceChance 1.5", Rules(insuranceChance: 1.5), CoreErrors.RulesChance),
-                ("неизвестная страховка", Rules(insuranceScope: "unknown"), CoreErrors.RulesUnknownInsuranceScope),
-                ("неизвестный loss", Rules(loss: "unknown"), CoreErrors.RulesUnknownLootLoss),
-                ("share вне диапазона", Rules(share: -0.1), CoreErrors.RulesChance)
+                ("insuranceChance -0.1", Rules(insuranceChance: -0.1), CoreErrors.RulesChance),
+                ("insuranceStep 0", Rules(insuranceStep: 0), CoreErrors.PositiveValue)
             };
 
             foreach (var item in invalid)
@@ -141,53 +134,40 @@ namespace AnomalyPath.Tests
                     Equal(item.Code, error.Code, "код");
                 });
             }
-
-            Check("правила: пустой список вариантов", () =>
-            {
-                var json = "{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"rules\",\"deathMode\":\"hubReturn\",\"lootLossOptions\":[],\"defaultLootLoss\":\"partial\",\"insuranceChance\":0.15,\"insuranceAppliesTo\":\"loot\",\"baseRows\":4,\"tierCount\":4}";
-                var error = Throws<DataException>(
-                    () => GameRulesTemplate.FromJson(JsonParser.Parse(json, "rules"), "rules"),
-                    "пустой список");
-                Equal(CoreErrors.RulesMissingLootLoss, error.Code, "код");
-            });
         }
 
         private void ValidatorTests()
         {
-            Check("правила: валидатор ловит неизвестный режим", () =>
+            Check("правила: валидатор ловит нулевой шаг страховки", () =>
             {
                 WithFixture(
                     new Dictionary<string, string>
                     {
                         ["catalog.json"] = Catalog("rules.json"),
-                        ["rules.json"] = Rules(deathMode: "unknown")
+                        ["rules.json"] = Rules(insuranceStep: 0)
                     },
                     root =>
                     {
                         var report = Preflight.Validate(root);
-                        True(HasIssue(report, "rules.json", "Неизвестный режим смерти"), "нет ошибки");
+                        True(HasIssue(report, "rules.json", "должно быть больше нуля"), "нет ошибки");
                     });
             });
         }
 
         private static string Rules(
             string id = "rules",
-            string deathMode = "hubReturn",
-            string defaultLoss = "partial",
             double insuranceChance = 0.15,
-            string insuranceScope = "loot",
+            double insuranceStep = 0.05,
             int baseRows = 4,
             int tierCount = 4,
-            string loss = "partial",
-            double share = 0.5,
             string playerActorId = "actor_player",
             int gridWidth = 8,
             int needsMax = 100,
             int startingMoney = 1000)
         {
             var insurance = insuranceChance.ToString(CultureInfo.InvariantCulture);
-            var shareText = share.ToString(CultureInfo.InvariantCulture);
-            return $"{{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"{id}\",\"deathMode\":\"{deathMode}\",\"lootLossOptions\":[{{\"id\":\"none\",\"titleKey\":\"t.none\",\"loss\":\"none\",\"share\":0}},{{\"id\":\"partial\",\"titleKey\":\"t.partial\",\"loss\":\"{loss}\",\"share\":{shareText}}},{{\"id\":\"all\",\"titleKey\":\"t.all\",\"loss\":\"all\",\"share\":1}}],\"defaultLootLoss\":\"{defaultLoss}\",\"insuranceChance\":{insurance},\"insuranceAppliesTo\":\"{insuranceScope}\",\"baseRows\":{baseRows},\"tierCount\":{tierCount},\"playerActorId\":\"{playerActorId}\",\"gridWidth\":{gridWidth},\"needsMax\":{needsMax},\"startingMoney\":{startingMoney},\"tradeDifficulty\":1,\"tradeDifficultyMax\":3,\"tradeDifficultyStep\":0.1,\"lootLossStep\":0.1,\"nicknameMaxLength\":24,\"previewMaxRows\":32,\"savePageSize\":6}}";
+            var step = insuranceStep.ToString(CultureInfo.InvariantCulture);
+            return $"{{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"{id}\",\"insuranceChance\":{insurance},\"insuranceStep\":{step},\"baseRows\":{baseRows},\"tierCount\":{tierCount},\"playerActorId\":\"{playerActorId}\",\"gridWidth\":{gridWidth},\"needsMax\":{needsMax},\"startingMoney\":{startingMoney},\"tradeDifficulty\":1,\"tradeDifficultyMax\":3,\"tradeDifficultyStep\":0.1,\"nicknameMaxLength\":24,\"previewMaxRows\":32,\"savePageSize\":6}}";
         }
     }
 }
