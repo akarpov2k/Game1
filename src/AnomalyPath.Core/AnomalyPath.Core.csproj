@@ -10,4 +10,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <!-- Вложенность partial-частей в Solution Explorer; список частей — в самом файле. -->
+  <Import Project="..\AnomalyPath.Core.PartialFiles.props" />
+
 </Project>

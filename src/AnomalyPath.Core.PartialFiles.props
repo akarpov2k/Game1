@@ -1,0 +1,43 @@
+<Project>
+
+  <!--
+    Вложенность partial-частей в Solution Explorer: файл Имя.Область.cs лежит под Имя.cs.
+    Список ведётся вручную: добавили часть — добавьте строку. В Unity-проектах то же
+    правило применяет Assets/Editor/ProjectGeneration/PartialClassNesting.cs.
+  -->
+  <ItemGroup>
+    <Compile Update="Validation\DataValidator.Settings.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Validation\DataValidator.Traders.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Validation\DataValidator.Quests.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Validation\DataValidator.Loot.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Validation\DataValidator.QuestTargets.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Validation\DataValidator.Rules.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Validation\DataValidator.Combat.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Validation\DataValidator.Entities.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Validation\DataValidator.Catalog.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Validation\DataValidator.Texts.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Validation\DataValidator.Helpers.cs"><DependentUpon>DataValidator.cs</DependentUpon></Compile>
+    <Compile Update="Services\QuestService.Offers.cs"><DependentUpon>QuestService.cs</DependentUpon></Compile>
+    <Compile Update="Services\QuestService.State.cs"><DependentUpon>QuestService.cs</DependentUpon></Compile>
+    <Compile Update="Services\QuestService.Generation.cs"><DependentUpon>QuestService.cs</DependentUpon></Compile>
+    <Compile Update="Services\QuestService.Candidates.cs"><DependentUpon>QuestService.cs</DependentUpon></Compile>
+    <Compile Update="Services\QuestService.Routes.cs"><DependentUpon>QuestService.cs</DependentUpon></Compile>
+    <Compile Update="Services\QuestService.Rewards.cs"><DependentUpon>QuestService.cs</DependentUpon></Compile>
+    <Compile Update="Services\QuestService.Helpers.cs"><DependentUpon>QuestService.cs</DependentUpon></Compile>
+    <Compile Update="Services\CombatService.Attacks.cs"><DependentUpon>CombatService.cs</DependentUpon></Compile>
+    <Compile Update="Services\CombatService.Weapons.cs"><DependentUpon>CombatService.cs</DependentUpon></Compile>
+    <Compile Update="Services\CombatService.Wear.cs"><DependentUpon>CombatService.cs</DependentUpon></Compile>
+    <Compile Update="Character\CharacterActions.Equipment.cs"><DependentUpon>CharacterActions.cs</DependentUpon></Compile>
+    <Compile Update="Character\CharacterActions.Ammo.cs"><DependentUpon>CharacterActions.cs</DependentUpon></Compile>
+    <Compile Update="Character\CharacterActions.Items.cs"><DependentUpon>CharacterActions.cs</DependentUpon></Compile>
+    <Compile Update="Character\CharacterActions.Helpers.cs"><DependentUpon>CharacterActions.cs</DependentUpon></Compile>
+    <Compile Update="Localization\CoreErrors.Data.cs"><DependentUpon>CoreErrors.cs</DependentUpon></Compile>
+    <Compile Update="Localization\CoreErrors.Combat.cs"><DependentUpon>CoreErrors.cs</DependentUpon></Compile>
+    <Compile Update="Localization\CoreErrors.World.cs"><DependentUpon>CoreErrors.cs</DependentUpon></Compile>
+    <Compile Update="Localization\CoreErrors.Save.cs"><DependentUpon>CoreErrors.cs</DependentUpon></Compile>
+    <Compile Update="Localization\CoreErrors.Rules.cs"><DependentUpon>CoreErrors.cs</DependentUpon></Compile>
+    <Compile Update="Localization\CoreErrors.Quests.cs"><DependentUpon>CoreErrors.cs</DependentUpon></Compile>
+    <Compile Update="Localization\CoreErrors.Loot.cs"><DependentUpon>CoreErrors.cs</DependentUpon></Compile>
+  </ItemGroup>
+
+</Project>
