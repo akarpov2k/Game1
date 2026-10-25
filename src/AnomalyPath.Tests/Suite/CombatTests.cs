@@ -36,6 +36,24 @@ namespace AnomalyPath.Tests
                 Equal(0.8, actors.Get("actor_player").Combat!.Accuracy, "меткость игрока");
             });
 
+            Check("бой: атака врагов читается из данных", () =>
+            {
+                var bandit = actors.Get("enemy_bandit").Combat!.Attack!;
+                Equal("wpn_akm", bandit.WeaponId, "оружие бандита");
+                False(bandit.IsNatural, "бандит бьёт оружием");
+                var wolf = actors.Get("mutant_wolf").Combat!.Attack!;
+                True(wolf.IsNatural, "волк бьёт естественно");
+                Equal(8.0, wolf.Damage, "урон волка");
+                Equal(DistanceZone.Melee, wolf.Range, "дистанция волка");
+            });
+
+            Check("бой: оружие противника создаётся с полным магазином", () =>
+            {
+                var state = Start(combat, actors, equipment, settings);
+                Equal("wpn_akm", state.EnemyWeapon!.ItemId, "оружие");
+                Equal(30, state.EnemyWeapon.MagazineRounds, "патроны");
+            });
+
             Check("бой: игрок ходит первым", () =>
             {
                 var state = Start(combat, actors, equipment, settings);

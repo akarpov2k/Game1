@@ -9,6 +9,7 @@
   "icon": "icons/wpn_sv98",
   "footprint": [2, 3],
   "tier": 3,
+  "rarity": "epic",
   "price": { "mode": "fixed", "buy": 3000, "sell": 1200 },
   "weapon": {
     "classId": "wclass_sniper",

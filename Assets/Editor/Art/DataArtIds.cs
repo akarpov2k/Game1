@@ -75,7 +75,11 @@ namespace AnomalyPath.Editor.Art
         private static readonly Regex BackgroundsPattern = new Regex("\"backgrounds\"\\s*:\\s*\\[([^\\]]*)\\]", RegexOptions.Compiled);
         private static readonly Regex QuotedPattern = new Regex("\"([^\"]+)\"", RegexOptions.Compiled);
 
-        /// <summary>Возвращает все id иконок из данных без повторов.</summary>
+        /// <summary>
+        /// Возвращает все id иконок из данных без повторов. В одном файле иконок может быть
+        /// несколько — дерево талантов хранит все узлы в <c>talents.json</c>, — поэтому читаются
+        /// все совпадения поля <c>icon</c>, а не первое.
+        /// </summary>
         /// <returns>Список иконок с категориями и габаритами.</returns>
         internal static IReadOnlyList<IconId> Icons()
         {
@@ -85,12 +89,6 @@ namespace AnomalyPath.Editor.Art
             {
                 var text = Read(file);
                 if (text == null)
-                {
-                    continue;
-                }
-
-                var icon = IconPattern.Match(text);
-                if (!icon.Success || !seen.Add(icon.Groups[1].Value))
                 {
                     continue;
                 }
@@ -105,7 +103,13 @@ namespace AnomalyPath.Editor.Art
                     height = ParseInt(footprint.Groups[2].Value, 1);
                 }
 
-                result.Add(new IconId(icon.Groups[1].Value, category, width, height));
+                foreach (Match icon in IconPattern.Matches(text))
+                {
+                    if (seen.Add(icon.Groups[1].Value))
+                    {
+                        result.Add(new IconId(icon.Groups[1].Value, category, width, height));
+                    }
+                }
             }
 
             return result;

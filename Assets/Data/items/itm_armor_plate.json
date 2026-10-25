@@ -8,6 +8,7 @@
   "footprint": [2, 3],
   "maxStack": 1,
   "tier": 3,
+  "rarity": "rare",
   "protection": { "dmg_bullet": 9, "dmg_electric": 5, "dmg_chemical": 5, "dmg_fire": 4, "dmg_rupture": 4 },
   "artifactSlots": 1,
   "durabilityMax": 90,

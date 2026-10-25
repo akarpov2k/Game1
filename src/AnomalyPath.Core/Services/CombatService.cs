@@ -86,7 +86,25 @@ namespace AnomalyPath.Core.Services
 
             var player = new Combatant(playerActor, playerEquipment, playerModifiers);
             var opponent = new Combatant(enemy);
-            return new CombatState(player, opponent, distance, scenario ?? CombatScenario.Normal);
+            return new CombatState(player, opponent, distance, scenario ?? CombatScenario.Normal, CreateEnemyWeapon(enemy));
+        }
+
+        /// <summary>Создаёт оружие противника из данных; у естественной атаки оружия нет.</summary>
+        private ItemInstance? CreateEnemyWeapon(ActorTemplate enemy)
+        {
+            var attack = enemy.Combat?.Attack;
+            if (attack?.WeaponId is not { } weaponId)
+            {
+                return null;
+            }
+
+            var template = _items.Get(weaponId);
+            if (template.Weapon == null)
+            {
+                throw new DataException(enemy.Id, CoreErrors.WeaponWithoutBlock, weaponId);
+            }
+
+            return new ItemInstance("enemy_weapon", weaponId, 1, null, null, null, template.Weapon.Magazine);
         }
 
         /// <inheritdoc />
@@ -137,24 +155,13 @@ namespace AnomalyPath.Core.Services
             var damage = 0;
             if (hit)
             {
-                var type = template.Weapon.DamageTypeId;
-                if (!_damageTypes.Contains(type))
-                {
-                    throw new DataException(template.Id, CoreErrors.UnknownDamageType, type);
-                }
-
-                var protection = ProtectionOf(defender, type);
-                var variables = new Dictionary<string, double>(StringComparer.Ordinal)
-                {
-                    ["damage"] = template.Weapon.Damage,
-                    ["penetration"] = template.Weapon.ArmorPenetration,
-                    ["protection"] = protection,
-                    ["distance"] = (int)state.Distance
-                };
-
-                var formula = _formulas.Get(_settings.DamageFormulaId);
-                var evaluated = formula.Evaluate(variables, _balance.Constants, _settings.ClampMin, _settings.ClampMax);
-                damage = evaluated < 0 ? 0 : (int)evaluated;
+                damage = EvaluateDamage(
+                    defender,
+                    template.Weapon.DamageTypeId,
+                    template.Weapon.Damage,
+                    template.Weapon.ArmorPenetration,
+                    state.Distance,
+                    template.Id);
             }
 
             if (hit)
@@ -171,6 +178,137 @@ namespace AnomalyPath.Core.Services
             ApplyWear(weapon, defender, damage);
             result = new CombatAttackResult(hit, damage, defender.IsDead, roll, chance);
             return true;
+        }
+
+        /// <inheritdoc />
+        public bool TryEnemyAttack(CombatState state, out CombatAttackResult result)
+        {
+            result = default;
+            if (state == null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            if (state.IsFinished || !ReferenceEquals(state.Current, state.Enemy))
+            {
+                return false;
+            }
+
+            var attacker = state.Enemy;
+            var defender = state.Player;
+            var attack = attacker.Template.Combat?.Attack;
+            if (attack == null)
+            {
+                return false;
+            }
+
+            if (attack.WeaponId != null)
+            {
+                var weapon = state.EnemyWeapon;
+                if (weapon == null)
+                {
+                    return false;
+                }
+
+                return TryAttack(state, weapon, out result);
+            }
+
+            if (state.Distance > attack.Range || attacker.Ap < _settings.AttackApCost)
+            {
+                return false;
+            }
+
+            var chance = NaturalChance(attacker, state.Distance);
+            var roll = _random.NextDouble();
+            var hit = roll < chance;
+            var damage = 0;
+            if (hit)
+            {
+                attacker.PityBonus = 0;
+                damage = EvaluateDamage(
+                    defender,
+                    attack.DamageTypeId!,
+                    attack.Damage,
+                    0,
+                    state.Distance,
+                    attacker.Template.Id);
+            }
+            else
+            {
+                attacker.PityBonus += chance * 0.05;
+            }
+
+            attacker.Ap -= _settings.AttackApCost;
+            defender.Health = Math.Max(0, defender.Health - damage);
+            ApplyArmorWear(defender, damage);
+            result = new CombatAttackResult(hit, damage, defender.IsDead, roll, chance);
+            return true;
+        }
+
+        /// <inheritdoc />
+        public bool TryFlee(CombatState state, out FleeResult result)
+        {
+            if (state == null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            if (state.IsFinished)
+            {
+                result = FleeResult.Finished();
+                return false;
+            }
+
+            if (!ReferenceEquals(state.Current, state.Player))
+            {
+                result = FleeResult.NotPlayerTurn();
+                return false;
+            }
+
+            EndTurn(state);
+            var attacked = TryEnemyAttack(state, out var attack);
+            var attackResult = attacked ? attack : (CombatAttackResult?)null;
+            result = state.Player.IsDead
+                ? FleeResult.DiedTo(attackResult)
+                : FleeResult.EscapedWith(ToHealth(state.Player.Health), attackResult);
+            return true;
+        }
+
+        private static int ToHealth(double health) =>
+            health <= 0 ? 0 : (int)Math.Round(health, MidpointRounding.AwayFromZero);
+
+        private double NaturalChance(Combatant attacker, DistanceZone distance)
+        {
+            var combat = attacker.Template.Combat;
+            var accuracy = (combat?.Accuracy ?? 0.8) + (combat?.AccuracyBonus ?? 0) +
+                           attacker.AccuracyBonus + attacker.PityBonus;
+            return Math.Clamp(accuracy * DistanceMultiplier(distance), 0, 1);
+        }
+
+        private int EvaluateDamage(
+            Combatant defender,
+            string damageType,
+            double baseDamage,
+            double penetration,
+            DistanceZone distance,
+            string sourceId)
+        {
+            if (!_damageTypes.Contains(damageType))
+            {
+                throw new DataException(sourceId, CoreErrors.UnknownDamageType, damageType);
+            }
+
+            var variables = new Dictionary<string, double>(StringComparer.Ordinal)
+            {
+                ["damage"] = baseDamage,
+                ["penetration"] = penetration,
+                ["protection"] = ProtectionOf(defender, damageType),
+                ["distance"] = (int)distance
+            };
+
+            var formula = _formulas.Get(_settings.DamageFormulaId);
+            var evaluated = formula.Evaluate(variables, _balance.Constants, _settings.ClampMin, _settings.ClampMax);
+            return evaluated < 0 ? 0 : (int)evaluated;
         }
 
         /// <inheritdoc />
@@ -342,17 +480,28 @@ namespace AnomalyPath.Core.Services
 
         private void ApplyWear(ItemInstance weapon, Combatant defender, int damage)
         {
-            if (weapon.Durability.HasValue && _items.Get(weapon.ItemId).Weapon is { } weaponBlock)
+            ApplyWeaponWear(weapon);
+            ApplyArmorWear(defender, damage);
+        }
+
+        private void ApplyWeaponWear(ItemInstance weapon)
+        {
+            if (!weapon.Durability.HasValue || _items.Get(weapon.ItemId).Weapon is not { } weaponBlock)
             {
-                var wear = weaponBlock.DurabilityPerShot > 0
-                    ? Math.Max(1, (int)Math.Ceiling(weaponBlock.DurabilityPerShot))
-                    : 0;
-                if (wear > 0)
-                {
-                    weapon.Durability = Math.Max(0, weapon.Durability.Value - wear);
-                }
+                return;
             }
 
+            var wear = weaponBlock.DurabilityPerShot > 0
+                ? Math.Max(1, (int)Math.Ceiling(weaponBlock.DurabilityPerShot))
+                : 0;
+            if (wear > 0)
+            {
+                weapon.Durability = Math.Max(0, weapon.Durability.Value - wear);
+            }
+        }
+
+        private void ApplyArmorWear(Combatant defender, int damage)
+        {
             if (damage <= 0 || defender.Equipment == null)
             {
                 return;

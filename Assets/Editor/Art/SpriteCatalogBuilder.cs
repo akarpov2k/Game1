@@ -265,7 +265,10 @@ namespace AnomalyPath.Editor.Art
 
             if (missing.Count > 0)
             {
-                UnityEngine.Debug.LogWarning("AnomalyPath: нет спрайтов для id: " + string.Join(", ", missing));
+                UnityEngine.Debug.LogWarning(
+                    "AnomalyPath: нет спрайтов для id: " + string.Join(", ", missing) +
+                    ". Каталог собирается только из готовых PNG — файлы рисует " +
+                    "Tools/AnomalyPath/Сгенерировать арт-заглушки");
             }
         }
     }

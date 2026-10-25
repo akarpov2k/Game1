@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "lootTables",
+  "collection": true,
+  "id": "col_loot",
+  "entries": [
+    "loot/loot_common.json",
+    "loot/loot_human.json",
+    "loot/loot_mutant_wolf.json",
+    "loot/loot_mutant_boar.json",
+    "loot/loot_mutant_bear.json"
+  ]
+}

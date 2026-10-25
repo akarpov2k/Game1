@@ -27,6 +27,7 @@ namespace AnomalyPath.Core.Save
         /// <param name="quests">Состояние квестов или <c>null</c> для старых сейвов.</param>
         /// <param name="questSerial">Счётчик выданных квестов.</param>
         /// <param name="lastHubId">Последний посещённый хаб; <c>null</c> в старых сейвах.</param>
+        /// <param name="lootSerial">Счётчик бросков лута; в старых сейвах 0.</param>
         public WorldSaveData(
             string startLocationId,
             string currentLocationId,
@@ -44,7 +45,8 @@ namespace AnomalyPath.Core.Save
             IReadOnlyList<TraderSaveData>? traders = null,
             IReadOnlyList<QuestSaveData>? quests = null,
             int questSerial = 0,
-            string? lastHubId = null)
+            string? lastHubId = null,
+            int lootSerial = 0)
         {
             StartLocationId = startLocationId;
             CurrentLocationId = currentLocationId;
@@ -63,6 +65,7 @@ namespace AnomalyPath.Core.Save
             Quests = quests ?? new List<QuestSaveData>();
             QuestSerial = questSerial;
             LastHubId = lastHubId;
+            LootSerial = lootSerial;
         }
 
         /// <summary>Стартовая локация.</summary>
@@ -116,6 +119,9 @@ namespace AnomalyPath.Core.Save
         /// <summary>Последний посещённый хаб; <c>null</c> в старых сейвах.</summary>
         public string? LastHubId { get; }
 
+        /// <summary>Счётчик бросков лута; в старых сейвах 0.</summary>
+        public int LootSerial { get; }
+
         /// <summary>Сериализует снимок в JSON-узел.</summary>
         /// <returns>Объект сохранения мира.</returns>
         public JsonValue ToJson()
@@ -162,6 +168,7 @@ namespace AnomalyPath.Core.Save
 
             value.Members["traders"] = traders;
             value.Members["questSerial"] = JsonValue.FromNumber(QuestSerial);
+            value.Members["lootSerial"] = JsonValue.FromNumber(LootSerial);
             var quests = JsonValue.NewArray();
             foreach (var quest in Quests)
             {
@@ -213,6 +220,12 @@ namespace AnomalyPath.Core.Save
 
             var quests = ReadQuests(value, sourcePath);
             var lastHubId = DataMap.OptionalString(value, "lastHubId");
+            var lootSerial = DataMap.OptionalInt(value, "lootSerial", 0);
+            if (lootSerial < 0)
+            {
+                throw new DataException(sourcePath, CoreErrors.SaveMissingField, "lootSerial");
+            }
+
             return new WorldSaveData(
                 startLocationId,
                 currentLocationId,
@@ -230,7 +243,8 @@ namespace AnomalyPath.Core.Save
                 traders,
                 quests,
                 questSerial,
-                lastHubId);
+                lastHubId,
+                lootSerial);
         }
 
         private static IReadOnlyList<QuestSaveData> ReadQuests(JsonValue value, string sourcePath)

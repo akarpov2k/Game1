@@ -8,6 +8,7 @@
   "footprint": [2, 2],
   "maxStack": 1,
   "tier": 1,
+  "rarity": "common",
   "protection": { "dmg_bullet": 2, "dmg_electric": 1, "dmg_chemical": 1, "dmg_fire": 1, "dmg_rupture": 1 },
   "durabilityMax": 25,
   "material": "light",

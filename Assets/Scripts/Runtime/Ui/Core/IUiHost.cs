@@ -1,6 +1,8 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using AnomalyPath.Core.Abstractions;
+using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Session;
 
 namespace AnomalyPath.Runtime.Ui.Core
@@ -117,6 +119,10 @@ namespace AnomalyPath.Runtime.Ui.Core
         /// <summary>Показать всплывающее сообщение.</summary>
         /// <param name="text">Текст сообщения.</param>
         void Toast(string text);
+
+        /// <summary>Показать диалог лута после победы над противником.</summary>
+        /// <param name="loot">Выпавшие предметы; пустой список — диалог не открывается.</param>
+        void ShowLoot(IReadOnlyList<ItemInstance> loot);
 
         /// <summary>Выйти из игры.</summary>
         void Quit();

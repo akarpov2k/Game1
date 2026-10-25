@@ -17,6 +17,7 @@ namespace AnomalyPath.Core.World
         /// <param name="clock">Часы мира.</param>
         /// <param name="weather">Текущая погода.</param>
         /// <param name="lastHubId">Последний посещённый хаб; <c>null</c> — определить по карте.</param>
+        /// <param name="lootSerial">Номер последнего броска лута; в старых сейвах 0.</param>
         /// <exception cref="DataException">Локация не найдена или выносливость вне границ.</exception>
         public WorldState(
             WorldMap map,
@@ -25,13 +26,19 @@ namespace AnomalyPath.Core.World
             int staminaMax,
             WorldClock clock,
             WeatherKind weather = WeatherKind.Clear,
-            string? lastHubId = null)
+            string? lastHubId = null,
+            int lootSerial = 0)
         {
             Map = map ?? throw new ArgumentNullException(nameof(map));
             Clock = clock ?? throw new ArgumentNullException(nameof(clock));
             if (staminaMax < 0 || stamina < 0 || stamina > staminaMax)
             {
                 throw new DataException("player.stamina", CoreErrors.WorldRange, "stamina");
+            }
+
+            if (lootSerial < 0)
+            {
+                throw new DataException("world.lootSerial", CoreErrors.WorldRange, "lootSerial");
             }
 
             if (!map.TryGetLocation(currentLocationId, out _))
@@ -43,6 +50,7 @@ namespace AnomalyPath.Core.World
             Stamina = stamina;
             StaminaMax = staminaMax;
             Weather = weather;
+            LootSerial = lootSerial;
             LastHubId = ResolveLastHub(map, currentLocationId, lastHubId);
             Map.GetLocation(currentLocationId).MarkVisited();
         }
@@ -67,6 +75,12 @@ namespace AnomalyPath.Core.World
 
         /// <summary>Текущая погода.</summary>
         public WeatherKind Weather { get; private set; }
+
+        /// <summary>
+        /// Номер последнего броска лута. Входит в seed броска, поэтому каждый следующий бросок
+        /// в одном состоянии даёт новый результат, а сохранённый номер делает его проверяемым.
+        /// </summary>
+        public int LootSerial { get; private set; }
 
         /// <summary>Текущая локация.</summary>
         public LocationInstance CurrentLocation => Map.GetLocation(CurrentLocationId);
@@ -127,6 +141,10 @@ namespace AnomalyPath.Core.World
         /// <summary>Меняет погоду.</summary>
         /// <param name="weather">Новая погода.</param>
         public void SetWeather(WeatherKind weather) => Weather = weather;
+
+        /// <summary>Выдаёт номер следующего броска лута и увеличивает счётчик.</summary>
+        /// <returns>Номер броска, начиная с 1.</returns>
+        public int NextLootSerial() => ++LootSerial;
 
         private static string ResolveLastHub(WorldMap map, string currentLocationId, string? lastHubId)
         {

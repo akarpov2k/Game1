@@ -31,7 +31,7 @@ namespace AnomalyPath.Tests
 
             Check("репозиторий: все предметы", () =>
             {
-                Equal(18, repository.All.Count, "All");
+                Equal(21, repository.All.Count, "All");
             });
 
             Check("репозиторий: поиск по id", () =>
@@ -50,7 +50,7 @@ namespace AnomalyPath.Tests
             Check("сервис: выборка по тиру", () =>
             {
                 var tier2 = catalog.ByTier(2);
-                Equal(5, tier2.Count, "tier 2");
+                Equal(6, tier2.Count, "tier 2");
                 Equal("wpn_ak74", tier2[0].Id, "tier 2 id");
             });
 
@@ -72,7 +72,7 @@ namespace AnomalyPath.Tests
                 var container = Bootstrap.Build(_dataRoot);
                 True(container.IsRegistered<IItemRepository>(), "репозиторий зарегистрирован");
                 True(container.IsRegistered<IItemCatalogService>(), "сервис зарегистрирован");
-                Equal(18, container.Resolve<IItemCatalogService>().All().Count, "All через сервис");
+                Equal(21, container.Resolve<IItemCatalogService>().All().Count, "All через сервис");
             });
 
             Check("DI: повторная регистрация — ошибка", () =>

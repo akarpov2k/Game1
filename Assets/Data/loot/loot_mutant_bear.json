@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "lootTables",
+  "id": "loot_mutant_bear",
+  "sharedTableIds": [
+    "loot_common"
+  ],
+  "entries": [
+    { "itemId": "itm_trophy_bear_hide", "chance": 0.6 }
+  ]
+}

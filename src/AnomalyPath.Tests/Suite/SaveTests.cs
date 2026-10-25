@@ -91,6 +91,8 @@ namespace AnomalyPath.Tests
                     var edge = FirstPaidEdge(map, state.CurrentLocationId);
                     True(travel.Travel(state, edge.EdgeId).Succeeded, "переход");
                     state.SetWeather(WeatherKind.Fog);
+                    state.NextLootSerial();
+                    state.NextLootSerial();
 
                     var storage = new FileSaveStorage(root);
                     var service = new SaveService(storage, items);
@@ -105,6 +107,7 @@ namespace AnomalyPath.Tests
                     Equal(state.Clock.Hours, loaded.Clock.Hours, "часы");
                     Equal(state.Weather, loaded.Weather, "погода");
                     Equal(state.LastHubId, loaded.LastHubId, "последний хаб");
+                    Equal(2, loaded.LootSerial, "счётчик бросков лута");
                     Equal(map.Seed, loaded.Map.Seed, "seed");
                     Equal(map.StartLocationId, loaded.Map.StartLocationId, "стартовая локация");
                     Equal(map.Locations.Count, loaded.Map.Locations.Count, "локации");
@@ -118,6 +121,71 @@ namespace AnomalyPath.Tests
                     True(loaded.Map.TryGetEdge(edge.EdgeId, out var savedEdge), "ребро сохранено");
                     Equal(edge.Cost.Stamina, savedEdge!.Cost.Stamina, "стоимость ребра");
                     Equal(edge.Length, savedEdge.Length, "длина ребра");
+                });
+            });
+
+            Check("сейв: исчезнувший противник сохраняется по локации", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    state.CurrentLocation.MarkEnemyGone();
+                    var service = new SaveService(new FileSaveStorage(root), items);
+                    service.Save(
+                        new GameState(state, null),
+                        "slot_1",
+                        0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+
+                    var loaded = service.Load("slot_1").World;
+                    True(loaded.CurrentLocation.EnemyGone, "текущая локация без противника");
+                    foreach (var location in loaded.Map.Locations)
+                    {
+                        if (location.InstanceId != loaded.CurrentLocationId)
+                        {
+                            False(location.EnemyGone, "другая локация с противником");
+                        }
+                    }
+                });
+            });
+
+            Check("сейв: старый сейв без исчезнувшего противника читается с false", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(
+                        new GameState(state, null),
+                        "slot_1",
+                        0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var text = File.ReadAllText(storage.GetPath("slot_1"))
+                        .Replace("\"enemyGone\"", "\"enemyGoneRemoved\"");
+                    File.WriteAllText(storage.GetPath("slot_1"), text);
+
+                    False(service.Load("slot_1").World.CurrentLocation.EnemyGone, "противник на месте");
+                });
+            });
+
+            Check("сейв: старый сейв без счётчика лута читается с нулём", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(new GameState(state, null), "slot_1", 0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var text = File.ReadAllText(storage.GetPath("slot_1"))
+                        .Replace("\"lootSerial\"", "\"lootSerialRemoved\"");
+                    File.WriteAllText(storage.GetPath("slot_1"), text);
+
+                    Equal(0, service.Load("slot_1").World.LootSerial, "счётчик по умолчанию");
                 });
             });
 
@@ -200,8 +268,8 @@ namespace AnomalyPath.Tests
                         new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"))
                         .Replace("\"insuranceChance\": 0.4", "\"lootLossFactor\": 0.4")
-                        .Replace("\"schemaVersion\": 9", "\"schemaVersion\": 3")
-                        .Replace("\"saveVersion\": 9", "\"saveVersion\": 3");
+                        .Replace($"\"schemaVersion\": {SaveGame.CurrentSchemaVersion}", "\"schemaVersion\": 3")
+                        .Replace($"\"saveVersion\": {SaveGame.CurrentSaveVersion}", "\"saveVersion\": 3");
                     File.WriteAllText(storage.GetPath("slot_1"), text);
 
                     var loaded = service.Load("slot_1");
@@ -366,8 +434,8 @@ namespace AnomalyPath.Tests
                     var service = new SaveService(storage, items);
                     service.Save(new GameState(state, null), "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"))
-                        .Replace("\"schemaVersion\": 9", "\"schemaVersion\": 1")
-                        .Replace("\"saveVersion\": 9", "\"saveVersion\": 1");
+                        .Replace($"\"schemaVersion\": {SaveGame.CurrentSchemaVersion}", "\"schemaVersion\": 1")
+                        .Replace($"\"saveVersion\": {SaveGame.CurrentSaveVersion}", "\"saveVersion\": 1");
                     File.WriteAllText(storage.GetPath("slot_1"), text);
 
                     True(service.Load("slot_1").Player == null, "игрока нет");
@@ -450,7 +518,9 @@ namespace AnomalyPath.Tests
                     var service = new SaveService(storage, items);
                     service.Save(new GameState(state, null), "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"));
-                    File.WriteAllText(storage.GetPath("slot_1"), text.Replace("\"schemaVersion\": 9", "\"schemaVersion\": 99"));
+                    File.WriteAllText(
+                        storage.GetPath("slot_1"),
+                        text.Replace($"\"schemaVersion\": {SaveGame.CurrentSchemaVersion}", "\"schemaVersion\": 99"));
                     var error = Throws<DataException>(() => service.Load("slot_1"), "версия");
                     Equal("error.save_unsupported_version", error.Code, "код");
                 });

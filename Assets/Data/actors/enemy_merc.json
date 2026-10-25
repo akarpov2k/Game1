@@ -5,6 +5,8 @@
   "type": "enemy",
   "nameKey": "actor.enemy_merc.name",
   "roles": ["human"],
+  "rarity": "rare",
+  "lootTable": "loot_human",
   "combat": {
     "tier": 2,
     "level": 2,
@@ -13,6 +15,7 @@
     "xp": 60,
     "protection": { "dmg_bullet": 4 },
     "ai": "aggressive",
-    "accuracy": 0.8
+    "accuracy": 0.8,
+    "attack": { "weaponId": "wpn_ak74" }
   }
 }

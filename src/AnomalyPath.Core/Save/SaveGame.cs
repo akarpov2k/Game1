@@ -9,10 +9,10 @@ namespace AnomalyPath.Core.Save
     public sealed class SaveGame
     {
         /// <summary>Поддерживаемая версия схемы сохранения.</summary>
-        public const int CurrentSchemaVersion = 9;
+        public const int CurrentSchemaVersion = 11;
 
         /// <summary>Поддерживаемая версия формата сохранения.</summary>
-        public const int CurrentSaveVersion = 9;
+        public const int CurrentSaveVersion = 11;
 
         /// <summary>Создаёт сохранение.</summary>
         /// <param name="schemaVersion">Версия схемы.</param>

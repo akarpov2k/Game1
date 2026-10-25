@@ -222,6 +222,38 @@ namespace AnomalyPath.Core.Services
         }
 
         /// <inheritdoc />
+        public bool TryFlee(GameSession session, out FleeResult result)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            var combat = session.Combat;
+            if (combat == null)
+            {
+                result = FleeResult.NotInCombat();
+                return false;
+            }
+
+            if (!_combat.TryFlee(combat, out result))
+            {
+                return false;
+            }
+
+            if (result.Died)
+            {
+                // Бой остаётся завершённым: вызывающий применяет обычный итог поражения.
+                return true;
+            }
+
+            session.State.Player?.SetHealth(result.Health);
+            session.State.World.CurrentLocation.MarkEnemyGone();
+            session.SetCombat(null);
+            return true;
+        }
+
+        /// <inheritdoc />
         public void EndCombat(GameSession session)
         {
             if (session == null)

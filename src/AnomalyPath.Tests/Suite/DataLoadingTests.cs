@@ -24,7 +24,7 @@ namespace AnomalyPath.Tests
             var data = Load(_dataRoot);
             Check("загрузка: тринадцать сущностей в коллекциях", () =>
             {
-                Equal(18, data.All("items").Count, "items");
+                Equal(21, data.All("items").Count, "items");
             });
 
             Check("загрузка: абстрактные шаблоны не зарегистрированы", () =>

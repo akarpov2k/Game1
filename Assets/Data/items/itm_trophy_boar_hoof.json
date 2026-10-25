@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "itm_trophy_boar_hoof",
+  "nameKey": "item.itm_trophy_boar_hoof.name",
+  "icon": "icons/itm_trophy_boar_hoof",
+  "category": "trophy",
+  "footprint": [1, 1],
+  "maxStack": 5,
+  "tier": 2,
+  "price": { "mode": "fixed", "buy": 90, "sell": 35 }
+}

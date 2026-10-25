@@ -8,6 +8,7 @@
   "icon": "icons/wpn_akm",
   "footprint": [2, 3],
   "tier": 3,
+  "rarity": "epic",
   "price": { "mode": "fixed", "buy": 900, "sell": 350 },
   "weapon": {
     "classId": "wclass_rifle",

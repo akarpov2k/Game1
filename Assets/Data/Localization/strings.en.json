@@ -218,6 +218,10 @@
   "ui.game_quests": "Quests",
   "ui.game_clear_location": "Clear the location",
   "ui.game_cleared": "Location cleared",
+  "ui.game_test_enemy_label": "Test enemy (temporary)",
+  "ui.game_test_enemy_kill": "Kill",
+  "ui.game_test_victory": "Enemy killed: XP +{0}",
+  "ui.game_test_kill_failed": "Could not finish the test fight",
   "ui.trader_quests": "Quests",
   "ui.quest_title": "Quests",
   "ui.quest_trader_title": "Quests: {0}",
@@ -300,5 +304,14 @@
   "talent.tal_scavenger.title": "Scavenger",
   "talent.tal_scavenger.description": "An extra row in the backpack never hurts: every rank adds room for loot.",
   "talent.tal_survivor.title": "Last Stand",
-  "talent.tal_survivor.description": "When strength runs low, a tough body and a precise shot carry the day."
+  "talent.tal_survivor.description": "When strength runs low, a tough body and a precise shot carry the day.",
+  "item.itm_trophy_wolf_tail.name": "Wolf tail",
+  "item.itm_trophy_boar_hoof.name": "Boar hooves",
+  "item.itm_trophy_bear_hide.name": "Bear hide",
+  "ui.loot_title": "Loot",
+  "ui.loot_take_all": "Take all",
+  "ui.loot_close": "Close",
+  "ui.loot_empty": "The enemy left nothing",
+  "ui.loot_full": "Inventory is full: some loot remains",
+  "ui.loot_hint": "Click an item to take it"
 }

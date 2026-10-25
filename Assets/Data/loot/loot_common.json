@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "lootTables",
+  "id": "loot_common",
+  "entries": [
+    { "itemId": "ammo_9x18", "chance": 0.5, "count": [5, 15] },
+    { "itemId": "ammo_545", "chance": 0.4, "count": [5, 15] },
+    { "itemId": "ammo_762x39", "chance": 0.3, "count": [5, 10] },
+    { "itemId": "ammo_762x54", "chance": 0.25, "count": [3, 8] }
+  ]
+}

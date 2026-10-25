@@ -218,6 +218,10 @@
   "ui.game_quests": "Задания",
   "ui.game_clear_location": "Зачистить локацию",
   "ui.game_cleared": "Локация зачищена",
+  "ui.game_test_enemy_label": "Тестовый противник (временно)",
+  "ui.game_test_enemy_kill": "Убить",
+  "ui.game_test_victory": "Противник убит: опыт +{0}",
+  "ui.game_test_kill_failed": "Не удалось завершить тестовый бой",
   "ui.trader_quests": "Задания",
   "ui.quest_title": "Задания",
   "ui.quest_trader_title": "Задания: {0}",
@@ -300,5 +304,14 @@
   "talent.tal_scavenger.title": "Запасливость",
   "talent.tal_scavenger.description": "Лишняя строка в рюкзаке никогда не мешает: каждый ранг добавляет место под добычу.",
   "talent.tal_survivor.title": "Последний рубеж",
-  "talent.tal_survivor.description": "Когда силы на исходе, помогают крепость тела и точный выстрел."
+  "talent.tal_survivor.description": "Когда силы на исходе, помогают крепость тела и точный выстрел.",
+  "item.itm_trophy_wolf_tail.name": "Хвост волка",
+  "item.itm_trophy_boar_hoof.name": "Копыта кабана",
+  "item.itm_trophy_bear_hide.name": "Шкура медведя",
+  "ui.loot_title": "Лут",
+  "ui.loot_take_all": "Забрать всё",
+  "ui.loot_close": "Закрыть",
+  "ui.loot_empty": "Противник ничего не оставил",
+  "ui.loot_full": "Инвентарь полон: часть лута осталась",
+  "ui.loot_hint": "Нажмите на предмет, чтобы забрать его"
 }

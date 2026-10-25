@@ -34,7 +34,7 @@ namespace AnomalyPath.Core.Combat
         /// <summary>Сколько опыта получено за победу; 0 при поражении.</summary>
         public int XpGained { get; }
 
-        /// <summary>Лут с побеждённого противника; пока пуст до описания пула лута.</summary>
+        /// <summary>Лут с побеждённого противника; пуст, если пул ничего не выдал.</summary>
         public IReadOnlyList<ItemInstance> Loot { get; }
 
         /// <summary>Последствия смерти для вещей; <c>null</c> при победе и без боя.</summary>

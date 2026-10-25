@@ -5,6 +5,8 @@
   "type": "enemy",
   "nameKey": "actor.mutant_wolf.name",
   "roles": ["mutant"],
+  "rarity": "common",
+  "lootTable": "loot_mutant_wolf",
   "combat": {
     "tier": 1,
     "level": 1,
@@ -13,6 +15,7 @@
     "xp": 30,
     "protection": { "dmg_rupture": 2 },
     "ai": "aggressive",
-    "accuracy": 0.8
+    "accuracy": 0.8,
+    "attack": { "damage": 8, "damageTypeId": "dmg_rupture", "range": "melee" }
   }
 }

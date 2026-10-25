@@ -98,6 +98,17 @@ namespace AnomalyPath.Core.Abstractions
         /// <param name="session">Игровая сессия.</param>
         void EndTurn(GameSession session);
 
+        /// <summary>
+        /// Побег из боя: ход переходит противнику, он атакует, если может; при выживании
+        /// игрока бой закрывается без победы, здоровье и износ сохраняются, противник
+        /// исчезает с текущей локации. При смерти бой остаётся завершённым — вызывающий
+        /// применяет обычный итог поражения.
+        /// </summary>
+        /// <param name="session">Игровая сессия.</param>
+        /// <param name="result">Исход побега, атака противника и здоровье игрока.</param>
+        /// <returns><c>true</c>, если побег выполнен; <c>false</c>, если он невозможен.</returns>
+        bool TryFlee(GameSession session, out FleeResult result);
+
         /// <summary>Завершает бой без победителя.</summary>
         /// <param name="session">Игровая сессия.</param>
         void EndCombat(GameSession session);

@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using AnomalyPath.Core;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Combat;
@@ -66,7 +67,7 @@ namespace AnomalyPath.Tests
                 False(combat.IsFinished, "бой не завершён");
             });
 
-            Check("итог: победа начисляет опыт по тиру локации и отдаёт пустой лут", () =>
+            Check("итог: победа начисляет опыт по тиру локации и считает лут по пулу", () =>
             {
                 var services = Bootstrap.Build(_dataRoot);
                 var state = NewState(services);
@@ -84,9 +85,56 @@ namespace AnomalyPath.Tests
                 Equal(CombatOutcomeStatus.Victory, outcome.Status, "статус");
                 Equal(expected, outcome.XpGained, "опыт за победу");
                 Equal(expected, state.Player!.Xp, "опыт игрока");
-                Equal(0, outcome.Loot.Count, "лут пока пуст");
+                True(outcome.Loot.Count <= 9, "лут не больше числа записей пула");
+                var pool = PlayerTableItems(services);
+                foreach (var item in outcome.Loot)
+                {
+                    True(pool.Contains(item.ItemId), "предмет из пула бандита: " + item.ItemId);
+                    True(item.Stack >= 1, "стопка лута");
+                }
+
                 Equal(100, state.Player.Health, "здоровье победителя");
                 False(session.InCombat, "бой завершён");
+            });
+
+            Check("итог: лут детерминирован для одного seed и состояния", () =>
+            {
+                var services = Bootstrap.Build(_dataRoot);
+                var first = LootOfVictory(services);
+                var second = LootOfVictory(services);
+                Equal(first, second, "повтор с тем же seed мира");
+            });
+
+            Check("итог: каждая победа берёт новый номер броска лута", () =>
+            {
+                var services = Bootstrap.Build(_dataRoot);
+                var state = NewState(services);
+                MoveToWild(state);
+                Equal(0, state.World.LootSerial, "до боёв");
+
+                var first = StartFight(services, state, "enemy_bandit", out var firstCombat);
+                Win(services.Resolve<ICombatService>(), firstCombat);
+                services.Resolve<ICombatOutcomeService>().Resolve(first);
+
+                var second = StartFight(services, state, "enemy_bandit", out var secondCombat);
+                Win(services.Resolve<ICombatService>(), secondCombat);
+                services.Resolve<ICombatOutcomeService>().Resolve(second);
+
+                Equal(2, state.World.LootSerial, "номер вырос на каждой победе");
+            });
+
+            Check("итог: поражение не отдаёт лут", () =>
+            {
+                var services = Bootstrap.Build(_dataRoot);
+                var state = NewState(services);
+                MoveToWild(state);
+                var session = StartFight(services, state, "enemy_bandit", out var combat);
+                Lose(services.Resolve<ICombatService>(), combat);
+
+                var outcome = services.Resolve<ICombatOutcomeService>().Resolve(session);
+
+                Equal(CombatOutcomeStatus.Defeat, outcome.Status, "статус");
+                Equal(0, outcome.Loot.Count, "лута нет");
             });
 
             Check("итог: повторный разбор победы не начисляет опыт второй раз", () =>
@@ -165,6 +213,44 @@ namespace AnomalyPath.Tests
                 Equal(0, state.Player!.Health, "здоровье");
                 False(session.InCombat, "бой завершён");
             });
+        }
+
+        private static HashSet<string> PlayerTableItems(ServiceContainer services)
+        {
+            var loot = services.Resolve<ILootRepository>();
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            CollectLoot("loot_human", loot, ids);
+            return ids;
+        }
+
+        private static void CollectLoot(string tableId, ILootRepository loot, HashSet<string> ids)
+        {
+            var table = loot.Get(tableId);
+            foreach (var entry in table.Entries)
+            {
+                ids.Add(entry.ItemId);
+            }
+
+            foreach (var shared in table.SharedTableIds)
+            {
+                CollectLoot(shared, loot, ids);
+            }
+        }
+
+        private static string LootOfVictory(ServiceContainer services)
+        {
+            var state = NewState(services);
+            MoveToWild(state);
+            var session = StartFight(services, state, "enemy_bandit", out var combat);
+            Win(services.Resolve<ICombatService>(), combat);
+            var outcome = services.Resolve<ICombatOutcomeService>().Resolve(session);
+            var parts = new List<string>();
+            foreach (var item in outcome.Loot)
+            {
+                parts.Add(item.ItemId + ":" + item.Stack);
+            }
+
+            return string.Join(",", parts);
         }
 
         private static GameState NewState(ServiceContainer services, bool permadeath = false)

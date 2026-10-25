@@ -98,7 +98,9 @@ namespace AnomalyPath.Runtime.Ui.Core
             rect.sizeDelta = fit.Size;
             if (fit.Rotated)
             {
-                rect.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                // Оружие нарисовано стволом влево, магазином вниз. Поворот против часовой
+                // (минус 90°) поднимает ствол вверх и оставляет магазин слева — правило проекта.
+                rect.localRotation = Quaternion.Euler(0f, 0f, -90f);
             }
 
             return image;

@@ -157,5 +157,34 @@ namespace AnomalyPath.Runtime.Screens.Game
 
         /// <summary>Отступ иконок от края нижней полосы.</summary>
         public const float IconPadding = 24f;
+
+        // --- ВРЕМЕННО: тестовый противник и кнопка «Убить» (удалить вместе с блоком ROADMAP I) ---
+
+        /// <summary>ВРЕМЕННО: ширина блока тестового противника.</summary>
+        public const float TestEnemyWidth = 420f;
+
+        /// <summary>ВРЕМЕННО: высота блока тестового противника.</summary>
+        public const float TestEnemyHeight = 136f;
+
+        /// <summary>ВРЕМЕННО: отступ блока тестового противника сверху, ниже подписи денег.</summary>
+        public const float TestEnemyTop = 70f;
+
+        /// <summary>ВРЕМЕННО: внутренний отступ блока тестового противника.</summary>
+        public const float TestEnemyPadding = 12f;
+
+        /// <summary>ВРЕМЕННО: высота подписи «Тестовый противник».</summary>
+        public const float TestEnemyLabelHeight = 24f;
+
+        /// <summary>ВРЕМЕННО: высота имени тестового противника.</summary>
+        public const float TestEnemyNameHeight = 34f;
+
+        /// <summary>ВРЕМЕННО: высота кнопки «Убить».</summary>
+        public const float TestEnemyButtonHeight = 54f;
+
+        /// <summary>ВРЕМЕННО: размер шрифта подписи тестового противника.</summary>
+        public const int TestEnemyLabelFontSize = 16;
+
+        /// <summary>ВРЕМЕННО: размер шрифта имени тестового противника.</summary>
+        public const int TestEnemyNameFontSize = 24;
     }
 }

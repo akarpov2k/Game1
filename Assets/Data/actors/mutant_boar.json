@@ -5,6 +5,8 @@
   "type": "enemy",
   "nameKey": "actor.mutant_boar.name",
   "roles": ["mutant"],
+  "rarity": "rare",
+  "lootTable": "loot_mutant_boar",
   "combat": {
     "tier": 2,
     "level": 2,
@@ -13,6 +15,7 @@
     "xp": 50,
     "protection": { "dmg_rupture": 3 },
     "ai": "aggressive",
-    "accuracy": 0.9
+    "accuracy": 0.9,
+    "attack": { "damage": 12, "damageTypeId": "dmg_rupture", "range": "melee" }
   }
 }

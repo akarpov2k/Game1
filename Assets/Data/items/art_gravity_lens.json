@@ -9,5 +9,6 @@
   "footprint": [1, 1],
   "maxStack": 1,
   "tier": 4,
+  "rarity": "special",
   "price": { "mode": "fixed", "buy": 1600, "sell": 700 }
 }

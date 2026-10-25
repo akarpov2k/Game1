@@ -41,6 +41,28 @@ MonoBehaviour:
     value: {fileID: 21300000, guid: 6f99f28ee9b4549449d252abb5442f53, type: 3}
   - id: icons/itm_helmet_light
     value: {fileID: 21300000, guid: 2e33d5dd69bdd314882bfd716c402be0, type: 3}
+  - id: icons/itm_trophy_bear_hide
+    value: {fileID: 21300000, guid: fcf647bca502cf241ac3a6042dd0c1b0, type: 3}
+  - id: icons/itm_trophy_boar_hoof
+    value: {fileID: 21300000, guid: cc692afe92ce0ea49a3774f6ca257c11, type: 3}
+  - id: icons/itm_trophy_wolf_tail
+    value: {fileID: 21300000, guid: 3f0a7a2ace7e16d428c8cb03c38da55b, type: 3}
+  - id: icons/tal_endurance
+    value: {fileID: 21300000, guid: 29cbdbab2cc3f9d4b847842c0b7df2a5, type: 3}
+  - id: icons/tal_focus
+    value: {fileID: 21300000, guid: 8c3706d6c894afa45b37f8c4f0f94bb2, type: 3}
+  - id: icons/tal_luck
+    value: {fileID: 21300000, guid: 8cb25df2a4c793247b8b238eb85d37cc, type: 3}
+  - id: icons/tal_scavenger
+    value: {fileID: 21300000, guid: 04769d0bf86ba2a49b3f6bce1e427cbc, type: 3}
+  - id: icons/tal_second_wind
+    value: {fileID: 21300000, guid: 4a71af3bf21acbe4eab20425965cc3b1, type: 3}
+  - id: icons/tal_steady_hand
+    value: {fileID: 21300000, guid: fe9db6c66a611a043b3f311e538a8b82, type: 3}
+  - id: icons/tal_survivor
+    value: {fileID: 21300000, guid: a94d50fb1ce245047bd52cf4433a5479, type: 3}
+  - id: icons/tal_toughness
+    value: {fileID: 21300000, guid: 4f450df4e17411c41b8d0fa4bedaac1c, type: 3}
   - id: icons/wpn_ak74
     value: {fileID: 21300000, guid: 367d942d2ec601b4cb30bca1174ced91, type: 3}
   - id: icons/wpn_akm
@@ -63,5 +85,11 @@ MonoBehaviour:
     value: {fileID: 21300000, guid: 59db3b22748934c429b271cdd95038f7, type: 3}
   - id: bg_site_house
     value: {fileID: 21300000, guid: d49658c7f016f564aa2f9cefc709bffa, type: 3}
+  - id: backdrops/inventory
+    value: {fileID: 21300000, guid: 58ec6c38ed6590a4fb617f3c21939004, type: 3}
   - id: backdrops/screen
     value: {fileID: 21300000, guid: 4733eec4d11c5904084ed6aeceb385be, type: 3}
+  - id: portraits/trd_hub_medic
+    value: {fileID: 21300000, guid: ddf344847934e9240b400205255d93a7, type: 3}
+  - id: portraits/trd_hub_smuggler
+    value: {fileID: 21300000, guid: a909e16d972ad874296b5d7cf7a2ee26, type: 3}

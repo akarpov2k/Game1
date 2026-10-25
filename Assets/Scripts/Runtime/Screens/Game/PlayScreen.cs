@@ -22,6 +22,7 @@ namespace AnomalyPath.Runtime.Screens.Game
         private readonly PlayClock _clock;
         private readonly Text _money;
         private readonly PlayObject _object;
+        private readonly TestEnemyPanel _testEnemy;
         private PlayActionList _actions = null!;
         private readonly Text _toast;
 
@@ -70,6 +71,8 @@ namespace AnomalyPath.Runtime.Screens.Game
                 PlayMetrics.MoneyHeight);
 
             _object = new PlayObject(host, Content);
+            // ВРЕМЕННО: тестовый противник и кнопка «Убить» — до боевого экрана (ROADMAP, блок I).
+            _testEnemy = new TestEnemyPanel(host, Content, Show);
             BuildActionPanel();
             BuildBottomBar();
 
@@ -218,6 +221,7 @@ namespace AnomalyPath.Runtime.Screens.Game
                 _clock.Hide();
                 _money.text = string.Empty;
                 _object.Hide();
+                _testEnemy.Hide();
                 _actions.SetActions(Array.Empty<PlayAction>(), noGame);
                 return;
             }
@@ -240,6 +244,7 @@ namespace AnomalyPath.Runtime.Screens.Game
 
             // В данных пока нет экземпляров объектов локации: структура есть, отрисовки нет.
             _object.Hide();
+            _testEnemy.Refresh();
 
             if (session.InCombat)
             {

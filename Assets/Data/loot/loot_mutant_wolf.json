@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "lootTables",
+  "id": "loot_mutant_wolf",
+  "sharedTableIds": [
+    "loot_common"
+  ],
+  "entries": [
+    { "itemId": "itm_trophy_wolf_tail", "chance": 0.7, "count": [1, 2] }
+  ]
+}

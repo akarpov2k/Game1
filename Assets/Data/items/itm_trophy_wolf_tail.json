@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "itm_trophy_wolf_tail",
+  "nameKey": "item.itm_trophy_wolf_tail.name",
+  "icon": "icons/itm_trophy_wolf_tail",
+  "category": "trophy",
+  "footprint": [1, 1],
+  "maxStack": 5,
+  "tier": 1,
+  "price": { "mode": "fixed", "buy": 40, "sell": 15 }
+}

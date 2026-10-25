@@ -30,6 +30,21 @@ namespace AnomalyPath.Core.Abstractions
         /// <returns><c>true</c>, если атака выполнена.</returns>
         bool TryAttack(AnomalyPath.Core.Combat.CombatState state, ItemInstance weapon, out AnomalyPath.Core.Combat.CombatAttackResult result);
 
+        /// <summary>Противник атакует своими данными: оружием или естественной атакой.</summary>
+        /// <param name="state">Состояние боя.</param>
+        /// <param name="result">Попадание, урон и смерть цели.</param>
+        /// <returns><c>true</c>, если атака выполнена; <c>false</c>, если она невозможна.</returns>
+        bool TryEnemyAttack(AnomalyPath.Core.Combat.CombatState state, out AnomalyPath.Core.Combat.CombatAttackResult result);
+
+        /// <summary>
+        /// Побег: передаёт ход противнику, тот делает стандартную атаку, если может,
+        /// и при выживании игрока закрывает бой без победы.
+        /// </summary>
+        /// <param name="state">Состояние боя.</param>
+        /// <param name="result">Исход побега, атака противника и здоровье игрока.</param>
+        /// <returns><c>true</c>, если побег выполнен; <c>false</c>, если он невозможен.</returns>
+        bool TryFlee(AnomalyPath.Core.Combat.CombatState state, out AnomalyPath.Core.Combat.FleeResult result);
+
         /// <summary>Перезаряжает оружие из инвентаря, тратя ОД.</summary>
         /// <param name="state">Состояние боя.</param>
         /// <param name="weapon">Оружие.</param>

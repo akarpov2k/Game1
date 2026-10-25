@@ -9,6 +9,7 @@
   "icon": "icons/wpn_ak74",
   "footprint": [2, 3],
   "tier": 2,
+  "rarity": "rare",
   "price": { "mode": "reputation", "base": 1200, "factionId": "fct_caravan" },
   "weapon": {
     "classId": "wclass_rifle",

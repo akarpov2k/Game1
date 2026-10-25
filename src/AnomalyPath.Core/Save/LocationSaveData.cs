@@ -19,6 +19,7 @@ namespace AnomalyPath.Core.Save
         /// <param name="danger">Сложность.</param>
         /// <param name="visited">Был ли игрок.</param>
         /// <param name="cleared">Зачищена ли.</param>
+        /// <param name="enemyGone">Покинул ли противник локацию после побега.</param>
         public LocationSaveData(
             string instanceId,
             string templateId,
@@ -28,7 +29,8 @@ namespace AnomalyPath.Core.Save
             int tier,
             double danger,
             bool visited,
-            bool cleared)
+            bool cleared,
+            bool enemyGone = false)
         {
             InstanceId = instanceId;
             TemplateId = templateId;
@@ -39,6 +41,7 @@ namespace AnomalyPath.Core.Save
             Danger = danger;
             Visited = visited;
             Cleared = cleared;
+            EnemyGone = enemyGone;
         }
 
         /// <summary>Id экземпляра.</summary>
@@ -68,6 +71,9 @@ namespace AnomalyPath.Core.Save
         /// <summary>Зачищена ли.</summary>
         public bool Cleared { get; }
 
+        /// <summary>Покинул ли противник локацию после успешного побега.</summary>
+        public bool EnemyGone { get; }
+
         /// <summary>Сериализует запись.</summary>
         /// <returns>JSON-объект.</returns>
         public JsonValue ToJson()
@@ -82,6 +88,7 @@ namespace AnomalyPath.Core.Save
             value.Members["danger"] = JsonValue.FromNumber(Danger);
             value.Members["visited"] = JsonValue.FromBool(Visited);
             value.Members["cleared"] = JsonValue.FromBool(Cleared);
+            value.Members["enemyGone"] = JsonValue.FromBool(EnemyGone);
             return value;
         }
 
@@ -105,6 +112,7 @@ namespace AnomalyPath.Core.Save
             var danger = DataMap.OptionalDouble(value, "danger") ?? 0;
             var visited = DataMap.OptionalBool(value, "visited", false);
             var cleared = DataMap.OptionalBool(value, "cleared", false);
+            var enemyGone = DataMap.OptionalBool(value, "enemyGone", false);
             if (tier < 0 || danger < 0 || danger > 1)
             {
                 throw new DataException(sourcePath, CoreErrors.SaveMissingField, "location");
@@ -119,7 +127,8 @@ namespace AnomalyPath.Core.Save
                 tier,
                 danger,
                 visited,
-                cleared);
+                cleared,
+                enemyGone);
         }
     }
 }

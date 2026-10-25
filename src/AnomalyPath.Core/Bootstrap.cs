@@ -68,6 +68,7 @@ namespace AnomalyPath.Core
             var economySettings = LoadEconomy(data);
             var quests = QuestRepository.FromLoadedData(data);
             var talents = TalentRepository.FromLoadedData(data);
+            var loot = LootRepository.FromLoadedData(data);
 
             var inventory = new InventoryService(items, instanceIds);
             var travel = new TravelService();
@@ -85,6 +86,9 @@ namespace AnomalyPath.Core
             container.RegisterSingleton<ILoadoutRepository>(loadouts);
             container.RegisterSingleton<IQuestRepository>(quests);
             container.RegisterSingleton<ITalentRepository>(talents);
+            container.RegisterSingleton<ILootRepository>(loot);
+            var lootService = new LootService(loot, items, instanceIds);
+            container.RegisterSingleton<ILootService>(lootService);
             var talentService = new TalentService(talents);
             container.RegisterSingleton<ITalentService>(talentService);
             container.RegisterSingleton<IWorldGenerator>(world);
@@ -104,7 +108,8 @@ namespace AnomalyPath.Core
                 rules,
                 formulas,
                 combatSettings,
-                balance));
+                balance,
+                lootService));
             var equipmentService = new EquipmentService(items, inventory);
             container.RegisterSingleton<IEquipmentService>(equipmentService);
             container.RegisterSingleton<ICharacterActions>(new CharacterActions(items, inventory, equipmentService));

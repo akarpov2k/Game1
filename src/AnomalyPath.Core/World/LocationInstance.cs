@@ -75,10 +75,16 @@ namespace AnomalyPath.Core.World
         /// <summary>Зачищена ли локация.</summary>
         public bool Cleared { get; private set; }
 
+        /// <summary>Покинул ли противник локацию после успешного побега.</summary>
+        public bool EnemyGone { get; private set; }
+
         /// <summary>Отмечает, что игрок был здесь.</summary>
         public void MarkVisited() => Visited = true;
 
         /// <summary>Отмечает локацию зачищенной.</summary>
         public void MarkCleared() => Cleared = true;
+
+        /// <summary>Отмечает, что противник покинул локацию и больше здесь не появляется.</summary>
+        public void MarkEnemyGone() => EnemyGone = true;
     }
 }

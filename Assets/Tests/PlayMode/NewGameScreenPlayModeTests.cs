@@ -187,7 +187,7 @@ namespace AnomalyPath.Tests.PlayMode
             Assert.AreEqual(expected, money!.GetComponent<Text>().text, "Валюта должна быть стартовой суммой набора");
         }
 
-        /// <summary>АК-74 в наборе лежит вертикально, а слот не закрашивает фон.</summary>
+        /// <summary>АК-74 в наборе лежит вертикально (ствол вверх, магазин слева), а слот не закрашивает фон.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]
         public IEnumerator NewGame_Ak74Preview_IsVerticalWithoutBackground()
@@ -200,8 +200,8 @@ namespace AnomalyPath.Tests.PlayMode
             var icon = FindChild(preview, "PreviewItemIcon_wpn_ak74_");
             Assert.IsNotNull(icon, "Иконка АК-74 в наборе не найдена");
             var rect = icon!.GetComponent<RectTransform>();
-            Assert.Less(Quaternion.Angle(rect.localRotation, Quaternion.Euler(0f, 0f, 90f)), 0.1f,
-                "Иконка АК-74 должна быть повёрнута");
+            Assert.Less(Quaternion.Angle(rect.localRotation, Quaternion.Euler(0f, 0f, -90f)), 0.1f,
+                "Иконка АК-74 должна быть повёрнута по часовой: ствол вверх, магазин слева");
             var world = WorldRect(rect);
             Assert.Greater(world.height, world.width, "Иконка должна быть вытянута по высоте слота");
 

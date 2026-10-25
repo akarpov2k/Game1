@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "collection": true,
+  "id": "col_trophies",
+  "entries": [
+    "items/itm_trophy_wolf_tail.json",
+    "items/itm_trophy_boar_hoof.json",
+    "items/itm_trophy_bear_hide.json"
+  ]
+}

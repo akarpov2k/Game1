@@ -66,7 +66,8 @@ namespace AnomalyPath.Core.Services
                 ToTraderData(state.Traders),
                 ToQuestData(state.Quests),
                 state.QuestSerial,
-                world.LastHubId);
+                world.LastHubId,
+                world.LootSerial);
             var game = new SaveGame(
                 SaveGame.CurrentSchemaVersion,
                 SaveGame.CurrentSaveVersion,
@@ -106,6 +107,11 @@ namespace AnomalyPath.Core.Services
                     location.MarkCleared();
                 }
 
+                if (item.EnemyGone)
+                {
+                    location.MarkEnemyGone();
+                }
+
                 locations.Add(location);
             }
 
@@ -140,7 +146,8 @@ namespace AnomalyPath.Core.Services
                 world.StaminaMax,
                 clock,
                 weather,
-                world.LastHubId);
+                world.LastHubId,
+                world.LootSerial);
             var player = game.Player == null
                 ? null
                 : PlayerSaveMapper.FromSaveData(game.Player, _items, slot);
@@ -205,7 +212,8 @@ namespace AnomalyPath.Core.Services
                     location.Tier,
                     location.Danger,
                     location.Visited,
-                    location.Cleared));
+                    location.Cleared,
+                    location.EnemyGone));
             }
 
             return result;

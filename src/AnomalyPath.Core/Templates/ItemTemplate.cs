@@ -21,6 +21,7 @@ namespace AnomalyPath.Core.Templates
             bool rotatable,
             int maxStack,
             int tier,
+            Rarity rarity,
             string icon,
             WeaponBlock? weapon,
             PriceBlock? price,
@@ -46,6 +47,7 @@ namespace AnomalyPath.Core.Templates
             Rotatable = rotatable;
             MaxStack = maxStack;
             Tier = tier;
+            Rarity = rarity;
             Icon = icon;
             Weapon = weapon;
             Price = price;
@@ -88,6 +90,9 @@ namespace AnomalyPath.Core.Templates
 
         /// <summary>Тир предмета.</summary>
         public int Tier { get; }
+
+        /// <summary>Базовая редкость шаблона; по умолчанию обычная.</summary>
+        public Rarity Rarity { get; }
 
         /// <summary>Путь к иконке.</summary>
         public string Icon { get; }
@@ -196,6 +201,7 @@ namespace AnomalyPath.Core.Templates
                 DataMap.OptionalBool(value, "rotatable", true),
                 DataMap.RequireInt(value, "maxStack", sourcePath),
                 DataMap.RequireInt(value, "tier", sourcePath),
+                ReadRarity(value, sourcePath),
                 DataMap.RequireString(value, "icon", sourcePath),
                 weapon,
                 price,
@@ -257,6 +263,22 @@ namespace AnomalyPath.Core.Templates
             }
 
             return protection;
+        }
+
+        private static Rarity ReadRarity(JsonValue value, string sourcePath)
+        {
+            var code = DataMap.OptionalString(value, "rarity");
+            if (code == null)
+            {
+                return global::AnomalyPath.Core.Templates.Rarity.Common;
+            }
+
+            if (!SchemaEnum.TryParse(code, out Rarity rarity))
+            {
+                throw new DataException(sourcePath, CoreErrors.UnknownRarity, code);
+            }
+
+            return rarity;
         }
 
         private static WeaponBlock ReadWeapon(JsonValue value, string itemId, string sourcePath)

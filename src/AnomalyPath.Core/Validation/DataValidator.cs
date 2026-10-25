@@ -8,6 +8,7 @@ using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Loadouts;
 using AnomalyPath.Core.Localization;
+using AnomalyPath.Core.Loot;
 using AnomalyPath.Core.Nicks;
 using AnomalyPath.Core.Quests;
 using AnomalyPath.Core.Repositories;
@@ -84,7 +85,9 @@ namespace AnomalyPath.Core.Validation
                 ValidateTraders(loaded, issues);
                 ValidateQuests(loaded, issues);
                 ValidateTalents(loaded, issues);
+                ValidateLoot(loaded, issues);
                 AddWorldIssues(loaded, issues);
+                ValidateActorAttacks(loaded, issues);
             }
             catch (DataException error)
             {
@@ -131,6 +134,26 @@ namespace AnomalyPath.Core.Validation
             if (economy.Count > 0)
             {
                 Try(() => EconomySettings.FromJson(economy[0], "economy"), issues);
+            }
+
+            var loot = data.All(LootSettings.RecordId);
+            if (loot.Count == 0 && data.All("lootTables").Count > 0)
+            {
+                issues.Add(new ValidationIssue(
+                    LootSettings.RecordId,
+                    CoreErrors.FileNotFound,
+                    CoreText.Get(CoreErrors.FileNotFound)));
+            }
+            else if (loot.Count > 1)
+            {
+                issues.Add(new ValidationIssue(
+                    LootSettings.RecordId,
+                    CoreErrors.LootSettingsMultiple,
+                    CoreText.Format(CoreErrors.LootSettingsMultiple, loot.Count)));
+            }
+            else if (loot.Count == 1)
+            {
+                Try(() => LootSettings.FromJson(loot[0], LootSettings.RecordId), issues);
             }
         }
 
@@ -315,6 +338,112 @@ namespace AnomalyPath.Core.Validation
             }
 
             Try(() => TalentTreeTemplate.FromJson(records[0], "talents"), issues);
+        }
+
+        private static void ValidateLoot(LoadedData data, List<ValidationIssue> issues)
+        {
+            LootRepository loot;
+            ItemRepository items;
+            ActorRepository actors;
+            try
+            {
+                loot = LootRepository.FromLoadedData(data);
+                items = ItemRepository.FromLoadedData(data);
+                actors = ActorRepository.FromLoadedData(data);
+            }
+            catch (DataException)
+            {
+                return;
+            }
+
+            foreach (var table in loot.All)
+            {
+                foreach (var entry in table.Entries)
+                {
+                    if (!items.TryGet(entry.ItemId, out _))
+                    {
+                        issues.Add(new ValidationIssue(
+                            table.Id,
+                            CoreErrors.LootItemNotFound,
+                            CoreText.Format(CoreErrors.LootItemNotFound, entry.ItemId)));
+                    }
+                }
+
+                ExpandLootTable(
+                    table,
+                    loot,
+                    new HashSet<string>(StringComparer.Ordinal),
+                    new HashSet<string>(StringComparer.Ordinal),
+                    issues);
+            }
+
+            foreach (var actor in actors.All)
+            {
+                if (actor.LootTableId == null)
+                {
+                    continue;
+                }
+
+                if (actor.Type != ActorType.Enemy)
+                {
+                    issues.Add(new ValidationIssue(
+                        actor.Id,
+                        CoreErrors.LootTableOnNonEnemy,
+                        CoreText.Format(CoreErrors.LootTableOnNonEnemy, actor.Id)));
+                    continue;
+                }
+
+                if (!loot.TryGet(actor.LootTableId, out _))
+                {
+                    issues.Add(new ValidationIssue(
+                        actor.Id,
+                        CoreErrors.LootTableNotFound,
+                        CoreText.Format(CoreErrors.LootTableNotFound, actor.LootTableId)));
+                }
+            }
+        }
+
+        private static void ExpandLootTable(
+            LootTable table,
+            ILootRepository loot,
+            HashSet<string> visiting,
+            HashSet<string> seen,
+            List<ValidationIssue> issues)
+        {
+            visiting.Add(table.Id);
+            foreach (var sharedId in table.SharedTableIds)
+            {
+                if (visiting.Contains(sharedId))
+                {
+                    issues.Add(new ValidationIssue(
+                        table.Id,
+                        CoreErrors.LootTableCycle,
+                        CoreText.Format(CoreErrors.LootTableCycle, sharedId)));
+                    continue;
+                }
+
+                if (!loot.TryGet(sharedId, out var shared))
+                {
+                    issues.Add(new ValidationIssue(
+                        table.Id,
+                        CoreErrors.LootTableNotFound,
+                        CoreText.Format(CoreErrors.LootTableNotFound, sharedId)));
+                    continue;
+                }
+
+                if (!seen.Add(sharedId))
+                {
+                    issues.Add(new ValidationIssue(
+                        table.Id,
+                        CoreErrors.LootTableDuplicate,
+                        CoreText.Format(CoreErrors.LootTableDuplicate, sharedId)));
+                    continue;
+                }
+
+                ExpandLootTable(shared, loot, visiting, seen, issues);
+            }
+
+            visiting.Remove(table.Id);
         }
 
         private static void ValidateClearQuest(
@@ -852,6 +981,85 @@ namespace AnomalyPath.Core.Validation
             }
         }
 
+        private static void ValidateActorAttacks(LoadedData data, List<ValidationIssue> issues)
+        {
+            try
+            {
+                var damageTypes = DamageTypeRepository.FromLoadedData(data);
+                var actors = ActorRepository.FromLoadedData(data);
+                var items = ItemRepository.FromLoadedData(data);
+                foreach (var actor in actors.All)
+                {
+                    if (actor.Combat != null)
+                    {
+                        ValidateActorAttack(actor, actor.Combat.Attack, damageTypes, items, issues);
+                    }
+                }
+            }
+            catch (DataException)
+            {
+                // Ошибки схемы актёров уже собраны в ValidateEntities.
+            }
+        }
+
+        private static void ValidateActorAttack(
+            ActorTemplate actor,
+            ActorAttackTemplate? attack,
+            DamageTypeRepository damageTypes,
+            ItemRepository items,
+            List<ValidationIssue> issues)
+        {
+            if (actor.Type != ActorType.Enemy)
+            {
+                if (attack != null)
+                {
+                    issues.Add(new ValidationIssue(
+                        actor.Id,
+                        CoreErrors.AttackOnNonEnemy,
+                        CoreText.Format(CoreErrors.AttackOnNonEnemy, actor.Id)));
+                }
+
+                return;
+            }
+
+            if (attack == null)
+            {
+                issues.Add(new ValidationIssue(
+                    actor.Id,
+                    CoreErrors.ActorWithoutAttack,
+                    CoreText.Format(CoreErrors.ActorWithoutAttack, actor.Id)));
+                return;
+            }
+
+            if (attack.WeaponId != null)
+            {
+                if (!items.TryGet(attack.WeaponId, out var template))
+                {
+                    issues.Add(new ValidationIssue(
+                        actor.Id,
+                        CoreErrors.ItemNotFound,
+                        CoreText.Format(CoreErrors.ItemNotFound, attack.WeaponId)));
+                }
+                else if (template.Weapon == null)
+                {
+                    issues.Add(new ValidationIssue(
+                        actor.Id,
+                        CoreErrors.WeaponWithoutBlock,
+                        CoreText.Format(CoreErrors.WeaponWithoutBlock, attack.WeaponId)));
+                }
+
+                return;
+            }
+
+            if (attack.DamageTypeId == null || !damageTypes.Contains(attack.DamageTypeId))
+            {
+                issues.Add(new ValidationIssue(
+                    actor.Id,
+                    CoreErrors.UnknownDamageType,
+                    CoreText.Format(CoreErrors.UnknownDamageType, attack.DamageTypeId ?? string.Empty)));
+            }
+        }
+
         private List<string> ValidateEntities(DataLoader loader, List<ValidationIssue> issues)
         {
             var entityFiles = new List<string>();
@@ -963,6 +1171,14 @@ namespace AnomalyPath.Core.Validation
                 else if (kind == "talents")
                 {
                     Try(() => TalentTreeTemplate.FromJson(resolved, pair.Key), issues);
+                }
+                else if (kind == "lootTables")
+                {
+                    Try(() => LootTable.FromJson(resolved, pair.Key), issues);
+                }
+                else if (kind == LootSettings.RecordId)
+                {
+                    Try(() => LootSettings.FromJson(resolved, pair.Key), issues);
                 }
             }
 

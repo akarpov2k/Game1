@@ -5,6 +5,8 @@
   "type": "enemy",
   "nameKey": "actor.mutant_bear.name",
   "roles": ["mutant"],
+  "rarity": "epic",
+  "lootTable": "loot_mutant_bear",
   "combat": {
     "tier": 3,
     "level": 3,
@@ -13,6 +15,7 @@
     "xp": 100,
     "protection": { "dmg_rupture": 5, "dmg_bullet": 2 },
     "ai": "aggressive",
-    "accuracy": 0.75
+    "accuracy": 0.75,
+    "attack": { "damage": 18, "damageTypeId": "dmg_rupture", "range": "melee" }
   }
 }

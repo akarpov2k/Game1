@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "items",
+  "id": "itm_trophy_bear_hide",
+  "nameKey": "item.itm_trophy_bear_hide.name",
+  "icon": "icons/itm_trophy_bear_hide",
+  "category": "trophy",
+  "footprint": [2, 1],
+  "maxStack": 5,
+  "tier": 3,
+  "price": { "mode": "fixed", "buy": 220, "sell": 90 }
+}

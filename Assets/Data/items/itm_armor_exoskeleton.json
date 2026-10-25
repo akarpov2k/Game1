@@ -8,6 +8,7 @@
   "footprint": [2, 3],
   "maxStack": 1,
   "tier": 4,
+  "rarity": "legendary",
   "protection": { "dmg_bullet": 12, "dmg_electric": 7, "dmg_chemical": 7, "dmg_fire": 6, "dmg_rupture": 6 },
   "artifactSlots": 1,
   "durabilityMax": 120,

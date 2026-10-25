@@ -16,7 +16,18 @@ namespace AnomalyPath.Core.Combat
         /// <param name="accuracy">Базовая меткость 0..1.</param>
         /// <param name="accuracyBonus">Бонус меткости от талантов.</param>
         /// <param name="xp">Опыт за победу над актёром; у врага обязателен и больше нуля.</param>
-        public CombatBlockTemplate(int tier, int level, int health, int ap, IReadOnlyDictionary<string, int> protection, string ai, double accuracy, double accuracyBonus, int xp = 0)
+        /// <param name="attack">Чем актёр атакует; <c>null</c> — атаки нет.</param>
+        public CombatBlockTemplate(
+            int tier,
+            int level,
+            int health,
+            int ap,
+            IReadOnlyDictionary<string, int> protection,
+            string ai,
+            double accuracy,
+            double accuracyBonus,
+            int xp = 0,
+            ActorAttackTemplate? attack = null)
         {
             Tier = tier;
             Level = level;
@@ -27,10 +38,14 @@ namespace AnomalyPath.Core.Combat
             Accuracy = accuracy;
             AccuracyBonus = accuracyBonus;
             Xp = xp;
+            Attack = attack;
         }
 
         /// <summary>Опыт за победу над актёром.</summary>
         public int Xp { get; }
+
+        /// <summary>Чем актёр атакует; <c>null</c> — атаки нет.</summary>
+        public ActorAttackTemplate? Attack { get; }
 
         /// <summary>Базовая меткость актёра, 0..1.</summary>
         public double Accuracy { get; }

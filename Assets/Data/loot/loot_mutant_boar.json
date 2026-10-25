@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "lootTables",
+  "id": "loot_mutant_boar",
+  "sharedTableIds": [
+    "loot_common"
+  ],
+  "entries": [
+    { "itemId": "itm_trophy_boar_hoof", "chance": 0.7, "count": [1, 2] }
+  ]
+}

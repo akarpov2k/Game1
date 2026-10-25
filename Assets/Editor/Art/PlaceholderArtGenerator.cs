@@ -19,11 +19,22 @@ namespace AnomalyPath.Editor.Art
         private const int BackgroundWidth = 1280;
         private const int BackgroundHeight = 720;
 
-        /// <summary>Генерирует заглушки и пересобирает каталог.</summary>
+        /// <summary>
+        /// Рисует заглушки для id из данных, которых ещё нет на диске, и пересобирает каталог.
+        /// Существующие PNG не трогаются: на их месте может лежать настоящий арт.
+        /// </summary>
         [MenuItem("Tools/AnomalyPath/Сгенерировать арт-заглушки")]
-        public static void Generate()
+        public static void Generate() => GenerateCore(overwrite: false);
+
+        /// <summary>Перерисовывает заглушки заново, затирая существующие PNG.</summary>
+        [MenuItem("Tools/AnomalyPath/Сгенерировать арт-заглушки (перезаписать всё)")]
+        public static void Regenerate() => GenerateCore(overwrite: true);
+
+        private static void GenerateCore(bool overwrite)
         {
             SpriteCatalogBuilder.EnsureFolders();
+            var created = 0;
+            var skipped = 0;
 
             foreach (var icon in DataArtIds.Icons())
             {
@@ -31,13 +42,27 @@ namespace AnomalyPath.Editor.Art
                     ? icon.Id.Substring("icons/".Length)
                     : icon.Id;
                 var path = Path.Combine(SpriteCatalogBuilder.IconsFolder, name + ".png").Replace('\\', '/');
+                if (!CanWrite(path, overwrite))
+                {
+                    skipped++;
+                    continue;
+                }
+
                 WriteIcon(path, icon);
+                created++;
             }
 
             foreach (var background in DataArtIds.Backgrounds())
             {
                 var path = Path.Combine(SpriteCatalogBuilder.BackgroundsFolder, background + ".png").Replace('\\', '/');
+                if (!CanWrite(path, overwrite))
+                {
+                    skipped++;
+                    continue;
+                }
+
                 WriteBackground(path, background);
+                created++;
             }
 
             foreach (var portrait in DataArtIds.Portraits())
@@ -46,16 +71,35 @@ namespace AnomalyPath.Editor.Art
                     ? portrait.Id.Substring("portraits/".Length)
                     : portrait.Id;
                 var path = Path.Combine(SpriteCatalogBuilder.PortraitsFolder, name + ".png").Replace('\\', '/');
+                if (!CanWrite(path, overwrite))
+                {
+                    skipped++;
+                    continue;
+                }
+
                 WritePortrait(path, portrait);
+                created++;
             }
 
             var backdropPath = Path.Combine(SpriteCatalogBuilder.BackdropsFolder, ScreenBackdropName + ".png").Replace('\\', '/');
-            WriteScreenBackdrop(backdropPath);
+            if (CanWrite(backdropPath, overwrite))
+            {
+                WriteScreenBackdrop(backdropPath);
+                created++;
+            }
+            else
+            {
+                skipped++;
+            }
 
             AssetDatabase.Refresh();
             SpriteCatalogBuilder.Rebuild();
-            Debug.Log("AnomalyPath: арт-заглушки сгенерированы, каталог собран");
+            Debug.Log(
+                $"AnomalyPath: заглушки — создано {created}, пропущено {skipped}; " +
+                "существующие файлы не перезаписываются (для полной перерисовки — «перезаписать всё»)");
         }
+
+        private static bool CanWrite(string path, bool overwrite) => overwrite || !File.Exists(path);
 
         private const string ScreenBackdropName = "screen";
 
@@ -85,8 +129,18 @@ namespace AnomalyPath.Editor.Art
 
                     var designX = (IconDesignSize / 2f) + ((x - centerX) / scale);
                     var designY = (IconDesignSize / 2f) + ((y - centerY) / scale);
-                    if (designX >= 0 && designX < IconDesignSize && designY >= 0 && designY < IconDesignSize &&
-                        InGlyph(icon, (int)designX, (int)designY))
+
+                    // Оружие рисуется стволом влево (правило проекта): глиф винтовки зеркалится
+                    // по горизонтали, у пистолета ствол уже слева.
+                    var glyphX = Mathf.RoundToInt(designX);
+                    if (IsRifle(icon))
+                    {
+                        glyphX = IconDesignSize - 1 - glyphX;
+                    }
+
+                    var glyphY = Mathf.RoundToInt(designY);
+                    if (glyphX >= 0 && glyphX < IconDesignSize && glyphY >= 0 && glyphY < IconDesignSize &&
+                        InGlyph(icon, glyphX, glyphY))
                     {
                         color = Color.Lerp(color, Color.white, 0.85f);
                     }
@@ -274,6 +328,9 @@ namespace AnomalyPath.Editor.Art
                 Mathf.Clamp01(color.b * (0.88f + shift)),
                 color.a);
         }
+
+        private static bool IsRifle(DataArtIds.IconId icon) =>
+            string.Equals(icon.Category, "weapon", StringComparison.Ordinal) && icon.FootprintHeight >= 3;
 
         private static bool InGlyph(DataArtIds.IconId icon, int x, int y)
         {

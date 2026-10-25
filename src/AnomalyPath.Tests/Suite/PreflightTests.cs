@@ -26,7 +26,7 @@ namespace AnomalyPath.Tests
                 Equal(0, result.Report.Warnings.Count, "предупреждения");
                 Contains(result.Report.Summary, "пройдена", "сводка");
                 True(result.CanStart, "игра может стартовать");
-                Equal(18, result.Services!.Resolve<IItemRepository>().All.Count, "предметы из сервисов");
+                Equal(21, result.Services!.Resolve<IItemRepository>().All.Count, "предметы из сервисов");
             });
 
             Check("preflight: данные читаются один раз", () =>

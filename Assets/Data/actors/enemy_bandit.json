@@ -5,6 +5,8 @@
   "type": "enemy",
   "nameKey": "actor.enemy_bandit.name",
   "roles": ["human"],
+  "rarity": "common",
+  "lootTable": "loot_human",
   "combat": {
     "tier": 1,
     "level": 1,
@@ -13,6 +15,7 @@
     "xp": 40,
     "protection": { "dmg_bullet": 2 },
     "ai": "aggressive",
-    "accuracy": 0.7
+    "accuracy": 0.7,
+    "attack": { "weaponId": "wpn_akm" }
   }
 }

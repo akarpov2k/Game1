@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using AnomalyPath.Core.Abstractions;
+using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.Save;
 using AnomalyPath.Core.Session;
@@ -51,6 +52,8 @@ namespace AnomalyPath.Runtime
         private QuestScreen _quests = null!;
         private TalentScreen _talents = null!;
         private ExitDialog _exitDialog = null!;
+        private LootDialog _lootDialog = null!;
+        private IInventoryService _inventory = null!;
 
         /// <inheritdoc />
         public UiFactory Ui { get; private set; } = null!;
@@ -139,6 +142,7 @@ namespace AnomalyPath.Runtime
             Nicknames = services.Resolve<INicknameGenerator>();
             Rules = services.Resolve<IGameRulesRepository>();
             Texts = services.Resolve<IGameTexts>();
+            _inventory = services.Resolve<IInventoryService>();
 
             var iconIds = new List<string>(Items.All.Count);
             foreach (var item in Items.All)
@@ -190,6 +194,7 @@ namespace AnomalyPath.Runtime
             _screens.Add(_talents);
 
             _exitDialog = new ExitDialog(this, canvas);
+            _lootDialog = new LootDialog(this, _inventory, canvas);
             ShowMainMenu();
         }
 
@@ -197,6 +202,11 @@ namespace AnomalyPath.Runtime
         /// <returns><c>true</c>, если Esc обработан.</returns>
         public bool HandleEscape()
         {
+            if (_lootDialog != null && _lootDialog.HandleEscape())
+            {
+                return true;
+            }
+
             if (_exitDialog != null && _exitDialog.HandleEscape())
             {
                 return true;
@@ -317,6 +327,24 @@ namespace AnomalyPath.Runtime
 
         /// <inheritdoc />
         public void ShowExitDialog() => _exitDialog.Show();
+
+        /// <summary>Показывает диалог лута после победы над противником.</summary>
+        /// <param name="loot">Выпавшие предметы; пустой список — диалог не открывается.</param>
+        public void ShowLoot(IReadOnlyList<ItemInstance> loot)
+        {
+            if (loot == null || loot.Count == 0)
+            {
+                return;
+            }
+
+            var player = Session?.State.Player;
+            if (player == null)
+            {
+                return;
+            }
+
+            _lootDialog.Show(player, loot);
+        }
 
         /// <inheritdoc />
         public void HideExitDialog() => _exitDialog.Hide();

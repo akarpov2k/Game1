@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Localization;
+using AnomalyPath.Core.Templates;
 using AnomalyPath.Core.Trade;
 
 namespace AnomalyPath.Core.Combat
@@ -23,6 +24,8 @@ namespace AnomalyPath.Core.Combat
         /// <param name="locationId">Локация или <c>null</c>.</param>
         /// <param name="roles">Роли актёра.</param>
         /// <param name="trader">Блок торговли у торговца.</param>
+        /// <param name="rarity">Ступень редкости актёра.</param>
+        /// <param name="lootTableId">Таблица лута; только у врага.</param>
         public ActorTemplate(
             string id,
             ActorType type,
@@ -34,7 +37,9 @@ namespace AnomalyPath.Core.Combat
             string? factionId = null,
             string? locationId = null,
             IReadOnlyList<string>? roles = null,
-            TraderBlockTemplate? trader = null)
+            TraderBlockTemplate? trader = null,
+            Rarity rarity = global::AnomalyPath.Core.Templates.Rarity.Common,
+            string? lootTableId = null)
         {
             Id = id;
             Type = type;
@@ -47,6 +52,8 @@ namespace AnomalyPath.Core.Combat
             LocationId = locationId;
             Roles = roles ?? Array.Empty<string>();
             Trader = trader;
+            Rarity = rarity;
+            LootTableId = lootTableId;
         }
 
         /// <summary>Идентификатор.</summary>
@@ -81,6 +88,12 @@ namespace AnomalyPath.Core.Combat
 
         /// <summary>Блок торговли; только у <c>type = trader</c>.</summary>
         public TraderBlockTemplate? Trader { get; }
+
+        /// <summary>Ступень редкости актёра; у врага множит шансы лута.</summary>
+        public Rarity Rarity { get; }
+
+        /// <summary>Таблица лута; допустима только у <c>type = enemy</c>.</summary>
+        public string? LootTableId { get; }
 
         /// <summary>Проверяет, есть ли у актёра роль.</summary>
         /// <param name="role">Код роли.</param>
@@ -117,6 +130,12 @@ namespace AnomalyPath.Core.Combat
             var portraitMode = ReadPortraitMode(value, sourcePath);
             var combat = ReadCombat(value, type, id, sourcePath);
             var trader = ReadTrader(value, type, roles, sourcePath);
+            var lootTableId = DataMap.OptionalString(value, "lootTable");
+            if (lootTableId != null && type != ActorType.Enemy)
+            {
+                throw new DataException(sourcePath, CoreErrors.LootTableOnNonEnemy, id);
+            }
+
             return new ActorTemplate(
                 id,
                 type,
@@ -128,7 +147,25 @@ namespace AnomalyPath.Core.Combat
                 DataMap.OptionalString(value, "factionId"),
                 DataMap.OptionalString(value, "locationId"),
                 roles,
-                trader);
+                trader,
+                ReadRarity(value, sourcePath),
+                lootTableId);
+        }
+
+        private static Rarity ReadRarity(JsonValue value, string sourcePath)
+        {
+            var code = DataMap.OptionalString(value, "rarity");
+            if (code == null)
+            {
+                return global::AnomalyPath.Core.Templates.Rarity.Common;
+            }
+
+            if (!SchemaEnum.TryParse(code, out Rarity rarity))
+            {
+                throw new DataException(sourcePath, CoreErrors.UnknownRarity, code);
+            }
+
+            return rarity;
         }
 
         private static PortraitMode ReadPortraitMode(JsonValue value, string sourcePath)
@@ -234,7 +271,29 @@ namespace AnomalyPath.Core.Combat
                 throw new DataException(sourcePath, CoreErrors.MissingNumberField, "xp");
             }
 
-            return new CombatBlockTemplate(tier, level, health, ap, protection, ai, accuracy, accuracyBonus, xp);
+            var attack = ReadAttack(block, type, id, sourcePath);
+            return new CombatBlockTemplate(tier, level, health, ap, protection, ai, accuracy, accuracyBonus, xp, attack);
+        }
+
+        private static ActorAttackTemplate? ReadAttack(JsonValue block, ActorType type, string id, string sourcePath)
+        {
+            var hasAttack = block.TryGet("attack", out var attackValue);
+            if (type != ActorType.Enemy)
+            {
+                if (hasAttack)
+                {
+                    throw new DataException(sourcePath, CoreErrors.AttackOnNonEnemy, id);
+                }
+
+                return null;
+            }
+
+            if (!hasAttack || !attackValue.IsObject)
+            {
+                throw new DataException(sourcePath, CoreErrors.ActorWithoutAttack, id);
+            }
+
+            return ActorAttackTemplate.FromJson(attackValue, sourcePath);
         }
     }
 }

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "lootTables",
+  "id": "loot_human",
+  "sharedTableIds": [
+    "loot_common"
+  ],
+  "entries": [
+    { "itemId": "wpn_pm", "chance": 0.3 },
+    { "itemId": "wpn_ak74", "chance": 0.3 },
+    { "itemId": "wpn_akm", "chance": 0.3 },
+    { "itemId": "wpn_sv98", "chance": 0.3 },
+    { "itemId": "itm_armor_jacket", "chance": 0.3 },
+    { "itemId": "itm_armor_plate", "chance": 0.3 },
+    { "itemId": "itm_helmet_light", "chance": 0.2 },
+    { "itemId": "itm_backpack_small", "chance": 0.1 },
+    { "itemId": "itm_belt_artifact", "chance": 0.1 }
+  ]
+}

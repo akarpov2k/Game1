@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "loot",
+  "id": "loot",
+  "tierBands": [
+    { "offset": -1, "chance": 0.2 },
+    { "offset": 0, "chance": 0.6 },
+    { "offset": 1, "chance": 0.2 }
+  ]
+}

@@ -686,6 +686,36 @@ namespace AnomalyPath.Runtime.Ui.Core
         Talent_Result_No_Points,
 
         /// <summary>Действие с талантом недоступно.</summary>
-        Talent_Result_Invalid
+        Talent_Result_Invalid,
+
+        /// <summary>Заголовок диалога лута.</summary>
+        Loot_Title,
+
+        /// <summary>Кнопка «Забрать всё».</summary>
+        Loot_Take_All,
+
+        /// <summary>Кнопка «Закрыть» диалога лута.</summary>
+        Loot_Close,
+
+        /// <summary>Противник ничего не оставил.</summary>
+        Loot_Empty,
+
+        /// <summary>Инвентарь полон, часть лута ушла в переполнение.</summary>
+        Loot_Full,
+
+        /// <summary>Подсказка диалога лута.</summary>
+        Loot_Hint,
+
+        /// <summary>ВРЕМЕННО: подпись блока тестового противника на основном экране.</summary>
+        Game_Test_Enemy_Label,
+
+        /// <summary>ВРЕМЕННО: кнопка «Убить» у тестового противника.</summary>
+        Game_Test_Enemy_Kill,
+
+        /// <summary>ВРЕМЕННО: тестовый противник убит, опыт получен.</summary>
+        Game_Test_Victory,
+
+        /// <summary>ВРЕМЕННО: тестовый бой не удалось завершить.</summary>
+        Game_Test_Kill_Failed
     }
 }

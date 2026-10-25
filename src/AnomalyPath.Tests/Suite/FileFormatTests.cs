@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using AnomalyPath.Core.Data;
+using AnomalyPath.Core.Loot;
 using AnomalyPath.Core.Quests;
 using AnomalyPath.Core.Talents;
 
@@ -246,6 +247,32 @@ namespace AnomalyPath.Tests
                     });
             });
 
+            Check("формат: атака врага — оружие и естественное оружие", () =>
+            {
+                var armed = AnomalyPath.Core.Combat.ActorTemplate.FromJson(
+                    AnomalyPath.Core.Json.JsonParser.Parse(
+                        "{\"kind\":\"actors\",\"id\":\"enemy_a\",\"type\":\"enemy\",\"nameKey\":\"n\"," +
+                        "\"combat\":{\"tier\":1,\"level\":1,\"health\":10,\"ap\":5,\"xp\":10," +
+                        "\"ai\":\"aggressive\",\"accuracy\":0.7,\"attack\":{\"weaponId\":\"wpn_akm\"}}}",
+                        "test"),
+                    "test");
+                Equal("wpn_akm", armed.Combat!.Attack!.WeaponId, "оружие");
+                False(armed.Combat.Attack.IsNatural, "атака оружием");
+
+                var natural = AnomalyPath.Core.Combat.ActorTemplate.FromJson(
+                    AnomalyPath.Core.Json.JsonParser.Parse(
+                        "{\"kind\":\"actors\",\"id\":\"enemy_b\",\"type\":\"enemy\",\"nameKey\":\"n\"," +
+                        "\"combat\":{\"tier\":1,\"level\":1,\"health\":10,\"ap\":5,\"xp\":10," +
+                        "\"ai\":\"aggressive\",\"accuracy\":0.7," +
+                        "\"attack\":{\"damage\":8,\"damageTypeId\":\"dmg_rupture\",\"range\":\"melee\"}}}",
+                        "test"),
+                    "test");
+                True(natural.Combat!.Attack!.IsNatural, "естественная атака");
+                Equal(8.0, natural.Combat.Attack.Damage, "урон");
+                Equal("dmg_rupture", natural.Combat.Attack.DamageTypeId, "тип урона");
+                Equal(AnomalyPath.Core.Combat.DistanceZone.Melee, natural.Combat.Attack.Range, "дистанция");
+            });
+
             Check("формат: локация с привязкой торговцев", () =>
             {
                 WithFixture(
@@ -330,6 +357,36 @@ namespace AnomalyPath.Tests
                         Equal("icons/tal_a", tree.Nodes[0].Icon, "картинка");
                         Equal(TalentStat.ApRestore, tree.Nodes[0].Effects[0].Stat, "характеристика");
                         Equal(1.0, tree.Nodes[0].Effects[0].PerRank, "прибавка");
+                    });
+            });
+
+            Check("формат: таблица лута и настройка полос", () =>
+            {
+                WithFixture(
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("loot.json", "loot/loot_tbl.json"),
+                        ["loot.json"] = "{\"schemaVersion\":1,\"kind\":\"loot\",\"id\":\"loot\"," +
+                                        "\"tierBands\":[{\"offset\":-1,\"chance\":0.2}," +
+                                        "{\"offset\":0,\"chance\":0.6},{\"offset\":1,\"chance\":0.2}]}",
+                        ["loot/loot_tbl.json"] = "{\"schemaVersion\":1,\"kind\":\"lootTables\",\"id\":\"loot_tbl\"," +
+                                                 "\"sharedTableIds\":[\"loot_common\"],\"entries\":[" +
+                                                 "{\"itemId\":\"itm_a\",\"chance\":0.5,\"count\":[1,3]}," +
+                                                 "{\"itemId\":\"itm_b\",\"always\":true}]}"
+                    },
+                    root =>
+                    {
+                        var data = new DataLoader(new FileSystemDataSource(root)).Load();
+                        Equal(1, data.All("lootTables").Count, "lootTables");
+                        var table = LootTable.FromJson(data.OfKind("lootTables")["loot_tbl"], "loot");
+                        Equal("loot_tbl", table.Id, "id таблицы");
+                        Equal(1, table.SharedTableIds.Count, "общих таблиц");
+                        Equal(2, table.Entries.Count, "записей");
+                        Equal("itm_a", table.Entries[0].ItemId, "предмет");
+                        Equal(3, table.Entries[0].CountMax, "максимум стопки");
+                        True(table.Entries[1].Always, "always");
+                        var settings = LootSettings.FromJson(data.OfKind("loot")["loot"], "loot");
+                        Equal(3, settings.Bands.Count, "полос");
                     });
             });
 

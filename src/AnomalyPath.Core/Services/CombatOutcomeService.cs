@@ -1,9 +1,11 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Combat;
-using AnomalyPath.Core.Inventory;
+using AnomalyPath.Core.Data;
+using AnomalyPath.Core.Loot;
 using AnomalyPath.Core.Player;
 using AnomalyPath.Core.Session;
 
@@ -18,6 +20,7 @@ namespace AnomalyPath.Core.Services
         private readonly IDeathService _death;
         private readonly IGameRulesRepository _rules;
         private readonly IFormulaRepository _formulas;
+        private readonly ILootService _loot;
         private readonly CombatSettingsTemplate _settings;
         private readonly BalanceTemplate _balance;
 
@@ -27,19 +30,22 @@ namespace AnomalyPath.Core.Services
         /// <param name="formulas">Формулы: опыт за победу.</param>
         /// <param name="settings">Настройки боя: ссылка на формулу опыта.</param>
         /// <param name="balance">Константы баланса для формулы.</param>
+        /// <param name="loot">Бросок лута с побеждённого противника.</param>
         /// <exception cref="ArgumentNullException">Зависимость не задана.</exception>
         public CombatOutcomeService(
             IDeathService death,
             IGameRulesRepository rules,
             IFormulaRepository formulas,
             CombatSettingsTemplate settings,
-            BalanceTemplate balance)
+            BalanceTemplate balance,
+            ILootService loot)
         {
             _death = death ?? throw new ArgumentNullException(nameof(death));
             _rules = rules ?? throw new ArgumentNullException(nameof(rules));
             _formulas = formulas ?? throw new ArgumentNullException(nameof(formulas));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _balance = balance ?? throw new ArgumentNullException(nameof(balance));
+            _loot = loot ?? throw new ArgumentNullException(nameof(loot));
         }
 
         /// <inheritdoc />
@@ -75,10 +81,34 @@ namespace AnomalyPath.Core.Services
         private CombatOutcome ResolveVictory(GameSession session, PlayerState player, CombatState combat)
         {
             player.SetHealth(ToHealth(combat.Player.Health));
-            var xp = CalculateXp(combat.Enemy.Template, session.State.World.CurrentLocation.Tier);
+            var location = session.State.World.CurrentLocation;
+            var xp = CalculateXp(combat.Enemy.Template, location.Tier);
             player.AddXp(xp);
+            var loot = _loot.Roll(new LootContext(
+                combat.Enemy.Template.Id,
+                combat.Enemy.Template.Rarity,
+                combat.Enemy.Template.LootTableId,
+                location.Tier,
+                NextLootSeed(session, combat)));
             session.SetCombat(null);
-            return CombatOutcome.Victory(xp, Array.Empty<ItemInstance>());
+            return CombatOutcome.Victory(xp, loot);
+        }
+
+        /// <summary>
+        /// Seed броска: мир, противник, экземпляр локации, время и номер броска. Номер берётся
+        /// из состояния мира и растёт на каждую победу, иначе повторный бой в той же локации
+        /// и в тот же час выдавал бы тот же лут.
+        /// </summary>
+        private static int NextLootSeed(GameSession session, CombatState combat)
+        {
+            var world = session.State.World;
+            var clock = world.Clock;
+            var key = combat.Enemy.Template.Id
+                + "#" + world.CurrentLocation.InstanceId
+                + "#" + clock.Day.ToString(CultureInfo.InvariantCulture)
+                + "#" + clock.Hours.ToString("R", CultureInfo.InvariantCulture)
+                + "#" + world.NextLootSerial().ToString(CultureInfo.InvariantCulture);
+            return StableHash.Combine(world.Map.Seed, key);
         }
 
         private CombatOutcome ResolveDefeat(GameSession session, PlayerState player, CombatState combat)

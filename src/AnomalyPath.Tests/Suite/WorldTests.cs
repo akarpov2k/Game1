@@ -495,6 +495,35 @@ namespace AnomalyPath.Tests
                     () => new WorldState(map, "route", 5, 10, new WorldClock(1, 8, 6, 22), WeatherKind.Clear, "route"),
                     "сохранённый хаб не хаб");
             });
+
+            Check("лут: счётчик бросков растёт и восстанавливается из сейва", () =>
+            {
+                var map = new WorldMap(
+                    1,
+                    new List<LocationInstance>
+                    {
+                        new LocationInstance("hub_a", "loc_hub", 1, "bg", LocationNodeType.Hub, 0, 0)
+                    },
+                    new List<WorldEdge>(),
+                    "hub_a",
+                    10,
+                    6,
+                    22);
+                var state = WorldState.Start(map);
+                Equal(0, state.LootSerial, "новый мир");
+                Equal(1, state.NextLootSerial(), "первый бросок");
+                Equal(2, state.NextLootSerial(), "второй бросок");
+                Equal(2, state.LootSerial, "счётчик после двух бросков");
+
+                var restored = new WorldState(
+                    map, "hub_a", 10, 10, new WorldClock(1, 8, 6, 22), WeatherKind.Clear, null, 7);
+                Equal(7, restored.LootSerial, "счётчик из сейва");
+
+                Throws<DataException>(
+                    () => new WorldState(
+                        map, "hub_a", 10, 10, new WorldClock(1, 8, 6, 22), WeatherKind.Clear, null, -1),
+                    "отрицательный счётчик");
+            });
         }
 
         private void ValidationTests()
