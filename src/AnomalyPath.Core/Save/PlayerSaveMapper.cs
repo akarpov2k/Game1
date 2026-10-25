@@ -93,7 +93,8 @@ namespace AnomalyPath.Core.Save
                 player.Unlocks,
                 player.Reputation,
                 player.TalentPoints,
-                player.TalentRanks);
+                player.TalentRanks,
+                player.LevelHealthBonus);
         }
 
         /// <summary>Восстанавливает игрока из снимка.</summary>
@@ -203,7 +204,8 @@ namespace AnomalyPath.Core.Save
                 data.Unlocks,
                 data.Reputation,
                 data.TalentPoints,
-                data.TalentRanks);
+                data.TalentRanks,
+                data.LevelHealthBonus);
         }
 
         private static bool TryPlace(

@@ -8,6 +8,10 @@
     "loot/loot_human.json",
     "loot/loot_mutant_wolf.json",
     "loot/loot_mutant_boar.json",
-    "loot/loot_mutant_bear.json"
+    "loot/loot_mutant_bear.json",
+    "loot/loot_stash_0.json",
+    "loot/loot_stash_1.json",
+    "loot/loot_stash_2.json",
+    "loot/loot_jackpot.json"
   ]
 }

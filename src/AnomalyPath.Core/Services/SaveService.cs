@@ -18,15 +18,21 @@ namespace AnomalyPath.Core.Services
     {
         private readonly ISaveStorage _storage;
         private readonly IItemRepository _items;
+        private readonly IGameRulesRepository? _rules;
 
         /// <summary>Создаёт сервис поверх хранилища.</summary>
         /// <param name="storage">Хранилище слотов.</param>
         /// <param name="items">Репозиторий предметов для восстановления инвентаря.</param>
-        /// <exception cref="ArgumentNullException">Зависимость не задана.</exception>
-        public SaveService(ISaveStorage storage, IItemRepository items)
+        /// <param name="rules">
+        /// Правила прохождения: значение потери опыта для сейвов, записанных до появления
+        /// настройки; <c>null</c> — без подстановки, такие сейвы читаются с нулём.
+        /// </param>
+        /// <exception cref="ArgumentNullException">Хранилище или предметы не заданы.</exception>
+        public SaveService(ISaveStorage storage, IItemRepository items, IGameRulesRepository? rules = null)
         {
             _storage = storage ?? throw new ArgumentNullException(nameof(storage));
             _items = items ?? throw new ArgumentNullException(nameof(items));
+            _rules = rules;
         }
 
         /// <inheritdoc />
@@ -62,12 +68,15 @@ namespace AnomalyPath.Core.Services
                     : new NewGameSettingsSaveData(
                         state.Settings.InsuranceChance,
                         state.Settings.TradeDifficulty,
-                        state.Settings.Permadeath),
+                        state.Settings.Permadeath,
+                        state.Settings.XpLossChance),
                 ToTraderData(state.Traders),
                 ToQuestData(state.Quests),
                 state.QuestSerial,
                 world.LastHubId,
-                world.LootSerial);
+                world.LootSerial,
+                world.StashChecks,
+                world.StashOpenings);
             var game = new SaveGame(
                 SaveGame.CurrentSchemaVersion,
                 SaveGame.CurrentSaveVersion,
@@ -112,6 +121,21 @@ namespace AnomalyPath.Core.Services
                     location.MarkEnemyGone();
                 }
 
+                if (item.StashRolled)
+                {
+                    location.MarkStashRolled();
+                }
+
+                if (item.StashPresent)
+                {
+                    location.MarkStashPresent();
+                }
+
+                if (item.StashOpened)
+                {
+                    location.MarkStashOpened();
+                }
+
                 locations.Add(location);
             }
 
@@ -147,7 +171,9 @@ namespace AnomalyPath.Core.Services
                 clock,
                 weather,
                 world.LastHubId,
-                world.LootSerial);
+                world.LootSerial,
+                world.StashChecks,
+                world.StashOpenings);
             var player = game.Player == null
                 ? null
                 : PlayerSaveMapper.FromSaveData(game.Player, _items, slot);
@@ -156,7 +182,8 @@ namespace AnomalyPath.Core.Services
                 : new NewGameSettings(
                     game.World.Settings.InsuranceChance,
                     game.World.Settings.TradeDifficulty,
-                    permadeath: game.World.Settings.Permadeath);
+                    permadeath: game.World.Settings.Permadeath,
+                    xpLossChance: game.World.Settings.XpLossChance ?? _rules?.Rules?.XpLossChance ?? 0);
             return new GameState(state, player, settings, LoadTraders(game.World.Traders), LoadQuests(game.World.Quests), game.World.QuestSerial);
         }
 
@@ -213,7 +240,10 @@ namespace AnomalyPath.Core.Services
                     location.Danger,
                     location.Visited,
                     location.Cleared,
-                    location.EnemyGone));
+                    location.EnemyGone,
+                    location.StashRolled,
+                    location.StashPresent,
+                    location.StashOpened));
             }
 
             return result;

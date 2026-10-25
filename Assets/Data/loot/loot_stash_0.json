@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "lootTables",
+  "id": "loot_stash_0",
+  "entries": [
+    { "itemId": "ammo_9x18", "chance": 0.8, "count": [10, 20], "ignoreTierBand": true },
+    { "itemId": "itm_helmet_light", "chance": 0.35, "ignoreTierBand": true },
+    { "itemId": "wpn_pm", "chance": 0.25, "ignoreTierBand": true },
+    { "itemId": "itm_belt_artifact", "chance": 0.2, "ignoreTierBand": true }
+  ]
+}

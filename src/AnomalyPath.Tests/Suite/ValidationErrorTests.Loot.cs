@@ -14,6 +14,13 @@ namespace AnomalyPath.Tests
             const string settings = "{\"schemaVersion\":1,\"kind\":\"loot\",\"id\":\"loot\",\"tierBands\":[" +
                                     "{\"offset\":-1,\"chance\":0.2},{\"offset\":0,\"chance\":0.6}," +
                                     "{\"offset\":1,\"chance\":0.2}]}";
+            const string stashSettings = "{\"schemaVersion\":1,\"kind\":\"loot\",\"id\":\"loot\",\"tierBands\":[" +
+                                         "{\"offset\":-1,\"chance\":0.2},{\"offset\":0,\"chance\":0.6}," +
+                                         "{\"offset\":1,\"chance\":0.2}],\"stashes\":{\"baseChance\":0.05," +
+                                         "\"chanceGrowth\":0.02,\"chanceCap\":0.5,\"jackpotBaseChance\":0.01," +
+                                         "\"jackpotChanceGrowth\":0.01,\"jackpotChanceCap\":1.0,\"pools\":[" +
+                                         "{\"tier\":1,\"lootTableId\":\"loot_pool\"}]," +
+                                         "\"jackpotLootTableId\":\"loot_jackpot\"}}";
 
             var cases = new (string Name, Dictionary<string, string> Files, string Fragment)[]
             {
@@ -90,6 +97,30 @@ namespace AnomalyPath.Tests
                         ["loot/loot_x.json"] = "{ \"kind\":\"lootTables\",\"id\":\"loot_x\" }"
                     },
                     "Сумма вкладов полос"),
+                (
+                    "ошибка: предмет джекпота ниже особой редкости",
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog(
+                            "loot.json",
+                            "loot/loot_pool.json",
+                            "loot/loot_jackpot.json",
+                            "items/a.json"),
+                        ["loot.json"] = stashSettings,
+                        ["loot/loot_pool.json"] = "{ \"kind\":\"lootTables\",\"id\":\"loot_pool\" }",
+                        ["loot/loot_jackpot.json"] = "{ \"kind\":\"lootTables\",\"id\":\"loot_jackpot\"," +
+                                                     "\"entries\":[{\"itemId\":\"wpn_a\",\"chance\":0.5}] }",
+                        ["items/a.json"] = Weapon("wpn_a")
+                    },
+                    "ниже особой редкости"),
+                (
+                    "ошибка: таблица пула тайников не найдена",
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("loot.json"),
+                        ["loot.json"] = stashSettings
+                    },
+                    "Таблица пула тайников не найдена"),
             };
 
             foreach (var testCase in cases)

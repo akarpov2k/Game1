@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "lootTables",
+  "id": "loot_stash_2",
+  "entries": [
+    { "itemId": "wpn_akm", "chance": 0.35, "ignoreTierBand": true },
+    { "itemId": "wpn_sv98", "chance": 0.3, "ignoreTierBand": true },
+    { "itemId": "itm_armor_plate", "chance": 0.3, "ignoreTierBand": true },
+    { "itemId": "ammo_762x54", "chance": 0.5, "count": [5, 12], "ignoreTierBand": true },
+    { "itemId": "art_fire_ember", "chance": 0.15, "ignoreTierBand": true },
+    { "itemId": "art_electric_spark", "chance": 0.15, "ignoreTierBand": true }
+  ]
+}

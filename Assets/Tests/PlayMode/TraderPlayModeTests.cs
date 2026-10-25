@@ -41,9 +41,12 @@ namespace AnomalyPath.Tests.PlayMode
             var player = screen!.Session!.State.Player!;
             var moneyBefore = player.Money;
             var ammoBefore = RequirementsTemplate.CountItem(player, "ammo_9x18");
-            Assert.IsNotNull(GameObject.Find("Buy_ammo_9x18"), "Нет кнопки покупки патронов");
+            var ammoRow = GameObject.Find("Buy_ammo_9x18");
+            Assert.IsNotNull(ammoRow, "Нет строки покупки патронов");
+            var buy = ammoRow!.transform.Find("Buy");
+            Assert.IsNotNull(buy, "У строки покупки патронов нет кнопки");
 
-            Click("Buy_ammo_9x18");
+            buy!.GetComponent<Button>().onClick.Invoke();
             yield return null;
 
             Assert.AreEqual(moneyBefore - 6, player.Money, "Деньги должны уменьшиться на цену патрона");

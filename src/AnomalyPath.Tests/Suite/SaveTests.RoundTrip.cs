@@ -237,22 +237,28 @@ namespace AnomalyPath.Tests
                     var state = WorldState.Start(map);
                     var storage = new FileSaveStorage(root);
                     var service = new SaveService(storage, items);
-                    var settings = new NewGameSettings(0.4, 1.5);
+                    var settings = new NewGameSettings(0.4, 1.5, xpLossChance: 0.6);
                     service.Save(
                         new GameState(state, NewPlayer(items), settings),
                         "slot_1",
                         0,
                         new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
-                    var text = File.ReadAllText(storage.GetPath("slot_1"))
+                    var path = storage.GetPath("slot_1");
+                    var text = File.ReadAllText(path)
                         .Replace("\"insuranceChance\": 0.4", "\"lootLossFactor\": 0.4")
                         .Replace($"\"schemaVersion\": {SaveGame.CurrentSchemaVersion}", "\"schemaVersion\": 3")
                         .Replace($"\"saveVersion\": {SaveGame.CurrentSaveVersion}", "\"saveVersion\": 3");
-                    File.WriteAllText(storage.GetPath("slot_1"), text);
+                    var oldGame = JsonParser.Parse(text, "slot_1");
+                    oldGame.Get("world").Get("settings").Members.Remove("xpLossChance");
+                    File.WriteAllText(path, JsonWriter.Write(oldGame));
 
-                    var loaded = service.Load("slot_1");
+                    var rules = Bootstrap.Build(_dataRoot).Resolve<IGameRulesRepository>();
+                    var oldService = new SaveService(storage, items, rules);
+                    var loaded = oldService.Load("slot_1");
                     Equal(0.4, loaded.Settings!.InsuranceChance, "страховка из старого поля");
                     Equal(1.5, loaded.Settings.TradeDifficulty, "торговля");
                     False(loaded.Settings.Permadeath, "пермасмерть по умолчанию");
+                    Equal(0.4, loaded.Settings.XpLossChance, "потеря опыта из правил по умолчанию");
                 });
             });
 
@@ -272,6 +278,108 @@ namespace AnomalyPath.Tests
 
                     var rifle = service.Load("slot_1").Player!.Inventory.Find("inst_rifle")!;
                     Equal(0, rifle.MagazineRounds, "старое оружие разряжено");
+                });
+            });
+
+            Check("сейв: тайник и счётчики сохраняются", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    state.RegisterStashCheck();
+                    state.RegisterStashCheck();
+                    state.RegisterStashOpening();
+                    state.CurrentLocation.MarkStashRolled();
+                    state.CurrentLocation.MarkStashPresent();
+                    state.CurrentLocation.MarkStashOpened();
+                    var service = new SaveService(new FileSaveStorage(root), items);
+                    service.Save(new GameState(state, null), "slot_1", 0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+
+                    var loaded = service.Load("slot_1").World;
+                    Equal(2, loaded.StashChecks, "проверки без тайника");
+                    Equal(1, loaded.StashOpenings, "вскрытия без джекпота");
+                    True(loaded.CurrentLocation.StashRolled, "локация проверена");
+                    True(loaded.CurrentLocation.StashPresent, "тайник есть");
+                    True(loaded.CurrentLocation.StashOpened, "тайник вскрыт");
+                });
+            });
+
+            Check("сейв: старый сейв без тайника читается с false", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    state.CurrentLocation.MarkStashRolled();
+                    state.CurrentLocation.MarkStashPresent();
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(new GameState(state, null), "slot_1", 0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var text = File.ReadAllText(storage.GetPath("slot_1"))
+                        .Replace("\"stashRolled\"", "\"stashRolledRemoved\"")
+                        .Replace("\"stashPresent\"", "\"stashPresentRemoved\"")
+                        .Replace("\"stashOpened\"", "\"stashOpenedRemoved\"");
+                    File.WriteAllText(storage.GetPath("slot_1"), text);
+
+                    var loaded = service.Load("slot_1").World;
+                    False(loaded.CurrentLocation.StashRolled, "проверка не сохранена");
+                    False(loaded.CurrentLocation.StashPresent, "тайника нет");
+                    False(loaded.CurrentLocation.StashOpened, "тайник не вскрыт");
+                });
+            });
+
+            Check("сейв: старый сейв без счётчиков тайников читается с нулями", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(new GameState(state, null), "slot_1", 0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var text = File.ReadAllText(storage.GetPath("slot_1"))
+                        .Replace("\"stashChecks\"", "\"stashChecksRemoved\"")
+                        .Replace("\"stashOpenings\"", "\"stashOpeningsRemoved\"");
+                    File.WriteAllText(storage.GetPath("slot_1"), text);
+
+                    var loaded = service.Load("slot_1").World;
+                    Equal(0, loaded.StashChecks, "проверки");
+                    Equal(0, loaded.StashOpenings, "вскрытия");
+                });
+            });
+
+            Check("сейв: вскрытый тайник без наличия — ошибка", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    state.CurrentLocation.MarkStashRolled();
+                    state.CurrentLocation.MarkStashPresent();
+                    state.CurrentLocation.MarkStashOpened();
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(new GameState(state, null), "slot_1", 0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var path = storage.GetPath("slot_1");
+                    var game = JsonParser.Parse(File.ReadAllText(path), "slot_1");
+                    foreach (var location in game.Get("world").Get("locations").Items)
+                    {
+                        if (string.Equals(
+                                location.Get("instanceId").Text,
+                                state.CurrentLocationId,
+                                StringComparison.Ordinal))
+                        {
+                            location.Members["stashPresent"] = JsonValue.FromBool(false);
+                        }
+                    }
+
+                    File.WriteAllText(path, JsonWriter.Write(game));
+                    Throws<DataException>(() => service.Load("slot_1"), "несогласованное состояние");
                 });
             });
 

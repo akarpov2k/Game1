@@ -6,5 +6,19 @@
     { "offset": -1, "chance": 0.2 },
     { "offset": 0, "chance": 0.6 },
     { "offset": 1, "chance": 0.2 }
-  ]
+  ],
+  "stashes": {
+    "baseChance": 0.05,
+    "chanceGrowth": 0.02,
+    "chanceCap": 0.5,
+    "jackpotBaseChance": 0.01,
+    "jackpotChanceGrowth": 0.01,
+    "jackpotChanceCap": 1.0,
+    "pools": [
+      { "tier": 0, "lootTableId": "loot_stash_0" },
+      { "tier": 1, "lootTableId": "loot_stash_1" },
+      { "tier": 2, "lootTableId": "loot_stash_2" }
+    ],
+    "jackpotLootTableId": "loot_jackpot"
+  }
 }

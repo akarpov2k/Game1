@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AnomalyPath.Core.Combat;
 using AnomalyPath.Core.Death;
 using AnomalyPath.Core.Inventory;
+using AnomalyPath.Core.Loot;
 using AnomalyPath.Core.Session;
 using AnomalyPath.Core.World;
 
@@ -60,6 +61,19 @@ namespace AnomalyPath.Core.Abstractions
         /// <param name="edgeId">Id ребра.</param>
         /// <returns>Результат перехода.</returns>
         TravelResult Travel(GameSession session, string edgeId);
+
+        /// <summary>
+        /// Проверяет появление тайника в текущей локации. Хаб не проверяется, одна локация
+        /// проверяется один раз; повторный вызов на уже проверенной локации ничего не делает.
+        /// </summary>
+        /// <param name="session">Игровая сессия.</param>
+        /// <returns><c>true</c>, если на локации появился тайник.</returns>
+        bool RollLocationStash(GameSession session);
+
+        /// <summary>Вскрывает тайник текущей локации: пул по тиру либо пул джекпота.</summary>
+        /// <param name="session">Игровая сессия.</param>
+        /// <returns>Статус, лут и признак джекпота.</returns>
+        StashOpenResult OpenStash(GameSession session);
 
         /// <summary>Начинает бой с противником.</summary>
         /// <param name="session">Игровая сессия.</param>

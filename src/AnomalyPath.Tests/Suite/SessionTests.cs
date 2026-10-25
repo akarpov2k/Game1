@@ -8,6 +8,7 @@ using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Di;
 using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Inventory;
+using AnomalyPath.Core.Loot;
 using AnomalyPath.Core.Player;
 using AnomalyPath.Core.Save;
 using AnomalyPath.Core.Services;
@@ -47,11 +48,37 @@ namespace AnomalyPath.Tests
                     saves,
                     newGame,
                     services.Resolve<IDeathService>(),
-                    services.Resolve<ICombatOutcomeService>());
+                    services.Resolve<ICombatOutcomeService>(),
+                    progression: services.Resolve<IProgressionService>(),
+                    stashes: services.Resolve<IStashService>());
                 TravelTests(services, sessions);
+                StashSessionTests(services, sessions);
                 CombatTests(services, sessions, actors, items);
                 DeathSessionTests(services, sessions, items);
                 SaveLoadTests(services, sessions);
+            });
+        }
+
+        private void StashSessionTests(ServiceContainer services, IGameSessionService sessions)
+        {
+            Check("сессия: тайник в хабе не проверяется", () =>
+            {
+                var session = NewSession(services, withPlayer: true);
+                False(sessions.RollLocationStash(session), "хаб");
+                False(session.State.World.CurrentLocation.StashPresent, "тайника нет");
+            });
+
+            Check("сессия: вскрытие тайника делегируется сервису", () =>
+            {
+                var session = NewSession(services, withPlayer: true);
+                var location = session.State.World.CurrentLocation;
+                location.MarkStashRolled();
+                location.MarkStashPresent();
+
+                var result = sessions.OpenStash(session);
+
+                Equal(StashOpenStatus.Opened, result.Status, "статус");
+                True(location.StashOpened, "тайник вскрыт");
             });
         }
 
@@ -226,7 +253,7 @@ namespace AnomalyPath.Tests
                 var session = NewSession(
                     services,
                     withPlayer: true,
-                    new NewGameSettings(0.25, 1.75, permadeath: true));
+                    new NewGameSettings(0.25, 1.75, permadeath: true, xpLossChance: 0.7));
                 sessions.Save(session, "slot_settings");
 
                 var loaded = sessions.Load("slot_settings");
@@ -234,6 +261,37 @@ namespace AnomalyPath.Tests
                 Equal(0.25, loaded.State.Settings!.InsuranceChance, "insuranceChance");
                 Equal(1.75, loaded.State.Settings.TradeDifficulty, "tradeDifficulty");
                 True(loaded.State.Settings.Permadeath, "permadeath");
+                Equal(0.7, loaded.State.Settings.XpLossChance, "xpLossChance");
+            });
+
+            Check("сессия: загрузка подтягивает уровень по накопленному опыту", () =>
+            {
+                var session = NewSession(services, withPlayer: true);
+                session.State.Player!.AddXp(744);
+                sessions.Save(session, "slot_level");
+
+                var loaded = sessions.Load("slot_level");
+
+                Equal(6, loaded.State.Player!.Level, "уровень");
+                Equal(2, loaded.State.Player.TalentPoints, "очки талантов за уровни 5 и 6");
+                Equal(4, loaded.State.Player.LevelHealthBonus, "прибавка здоровья");
+            });
+
+            Check("сессия: бонус здоровья за уровни учитывается в бою", () =>
+            {
+                var session = NewSession(services, withPlayer: true);
+                services.Resolve<IProgressionService>().AddXp(session.State.Player!, 537);
+                var actors = services.Resolve<IActorRepository>();
+
+                True(
+                    sessions.StartCombat(
+                        session,
+                        actors.Get("actor_player"),
+                        actors.Get("enemy_bandit"),
+                        DistanceZone.Mid),
+                    "бой начат");
+
+                Equal(102, session.Combat!.Player.MaxHealth, "100 базовых + 2 за пятый уровень");
             });
 
             Check("сессия: сохранение и загрузка состояния", () =>

@@ -27,6 +27,7 @@ namespace AnomalyPath.Core.Save
         /// <param name="reputation">Репутация по фракциям.</param>
         /// <param name="talentPoints">Свободные очки талантов; по умолчанию 0.</param>
         /// <param name="talentRanks">Ранги талантов по id.</param>
+        /// <param name="levelHealthBonus">Прибавка к максимуму здоровья за уровни; по умолчанию 0.</param>
         public PlayerSaveData(
             string id,
             string name,
@@ -44,7 +45,8 @@ namespace AnomalyPath.Core.Save
             IReadOnlyList<string>? unlocks = null,
             IReadOnlyDictionary<string, int>? reputation = null,
             int talentPoints = 0,
-            IReadOnlyDictionary<string, int>? talentRanks = null)
+            IReadOnlyDictionary<string, int>? talentRanks = null,
+            int levelHealthBonus = 0)
         {
             Id = id;
             Name = name ?? string.Empty;
@@ -54,6 +56,7 @@ namespace AnomalyPath.Core.Save
             ApMax = apMax;
             Money = money;
             TalentPoints = talentPoints;
+            LevelHealthBonus = levelHealthBonus;
             Items = items;
             Inventory = inventory;
             Equipment = equipment;
@@ -88,6 +91,9 @@ namespace AnomalyPath.Core.Save
 
         /// <summary>Свободные очки талантов.</summary>
         public int TalentPoints { get; }
+
+        /// <summary>Прибавка к максимуму здоровья за уровни.</summary>
+        public int LevelHealthBonus { get; }
 
         /// <summary>Все экземпляры предметов.</summary>
         public IReadOnlyList<ItemSaveData> Items { get; }
@@ -129,6 +135,7 @@ namespace AnomalyPath.Core.Save
             value.Members["apMax"] = JsonValue.FromNumber(ApMax);
             value.Members["money"] = JsonValue.FromNumber(Money);
             value.Members["talentPoints"] = JsonValue.FromNumber(TalentPoints);
+            value.Members["levelHealthBonus"] = JsonValue.FromNumber(LevelHealthBonus);
             var items = JsonValue.NewArray();
             foreach (var item in Items)
             {
@@ -189,7 +196,8 @@ namespace AnomalyPath.Core.Save
             var health = DataMap.RequireInt(value, "health", sourcePath);
             var apMax = DataMap.RequireInt(value, "apMax", sourcePath);
             var talentPoints = DataMap.OptionalInt(value, "talentPoints", 0);
-            if (level < 1 || xp < 0 || health < 0 || apMax < 0 || talentPoints < 0)
+            var levelHealthBonus = DataMap.OptionalInt(value, "levelHealthBonus", 0);
+            if (level < 1 || xp < 0 || health < 0 || apMax < 0 || talentPoints < 0 || levelHealthBonus < 0)
             {
                 throw new DataException(sourcePath, CoreErrors.SaveMissingField, "player");
             }
@@ -227,7 +235,8 @@ namespace AnomalyPath.Core.Save
                 DataMap.OptionalStringArray(value, "unlocks"),
                 ReadReputation(value),
                 talentPoints,
-                ReadTalentRanks(value, sourcePath));
+                ReadTalentRanks(value, sourcePath),
+                levelHealthBonus);
         }
 
         private static IReadOnlyList<ItemSaveData> ReadItems(JsonValue value, string sourcePath)

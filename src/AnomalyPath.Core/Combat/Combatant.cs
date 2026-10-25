@@ -13,13 +13,18 @@ namespace AnomalyPath.Core.Combat
         /// <param name="template">Актёр.</param>
         /// <param name="equipment">Экипировка игрока, если есть.</param>
         /// <param name="modifiers">Бонусы талантов игрока; <c>null</c> — без бонусов.</param>
+        /// <param name="healthBonus">Прибавка к максимуму здоровья за уровни игрока; 0 — без неё.</param>
         /// <exception cref="System.ArgumentNullException">Шаблон не передан.</exception>
-        public Combatant(ActorTemplate template, EquipmentState? equipment = null, TalentModifiers? modifiers = null)
+        public Combatant(
+            ActorTemplate template,
+            EquipmentState? equipment = null,
+            TalentModifiers? modifiers = null,
+            int healthBonus = 0)
         {
             Template = template ?? throw new System.ArgumentNullException(nameof(template));
             Equipment = equipment;
             var bonus = modifiers ?? TalentModifiers.None;
-            MaxHealth = (template.Combat?.Health ?? 0) + bonus.HealthMax;
+            MaxHealth = (template.Combat?.Health ?? 0) + bonus.HealthMax + healthBonus;
             Health = MaxHealth;
             MaxAp = (template.Combat?.Ap ?? 0) + bonus.ApMax;
             Ap = MaxAp;

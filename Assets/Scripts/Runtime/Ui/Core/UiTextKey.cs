@@ -3,7 +3,8 @@ namespace AnomalyPath.Runtime.Ui.Core
 {
     /// <summary>
     /// Ключи видимых текстов интерфейса. Код ресурса — <c>ui.</c> + имя члена в нижнем регистре,
-    /// сами тексты лежат в <c>strings.{ru,en}.json</c>.
+    /// сами тексты лежат в <c>strings.{ru,en}.json</c>. Порядок членов — часть сериализации
+    /// (см. комментарий в конце перечисления): новые ключи только дописываются в конец.
     /// </summary>
     public enum UiTextKey
     {
@@ -716,6 +717,29 @@ namespace AnomalyPath.Runtime.Ui.Core
         Game_Test_Victory,
 
         /// <summary>ВРЕМЕННО: тестовый бой не удалось завершить.</summary>
-        Game_Test_Kill_Failed
+        Game_Test_Kill_Failed,
+
+        // Ключи ниже добавлены после сборки префабов. Порядок членов enum
+        // сериализуется числом в `LocalizedText.key`, поэтому новые ключи
+        // дописываются только в конец: вставка в середину сдвигает уже
+        // сохранённые значения и подписи префабов начинают показывать чужой текст.
+
+        /// <summary>Подпись коэффициента потери опыта при смерти.</summary>
+        NewGame_XpLoss_Label,
+
+        /// <summary>Название тайника на локации.</summary>
+        Game_Stash,
+
+        /// <summary>Подсказка вскрыть тайник.</summary>
+        Game_Stash_Hint,
+
+        /// <summary>Сообщение о срабатывании джекпота.</summary>
+        Game_Jackpot,
+
+        /// <summary>Тайник уже вскрыт.</summary>
+        Game_Stash_Opened,
+
+        /// <summary>На локации нет тайника.</summary>
+        Game_Stash_None
     }
 }

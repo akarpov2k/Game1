@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "lootTables",
+  "id": "loot_stash_1",
+  "entries": [
+    { "itemId": "ammo_545", "chance": 0.65, "count": [10, 20], "ignoreTierBand": true },
+    { "itemId": "itm_armor_jacket", "chance": 0.3, "ignoreTierBand": true },
+    { "itemId": "itm_backpack_small", "chance": 0.2, "ignoreTierBand": true },
+    { "itemId": "wpn_ak74", "chance": 0.3, "ignoreTierBand": true },
+    { "itemId": "ammo_762x54", "chance": 0.25, "count": [3, 8], "ignoreTierBand": true }
+  ]
+}

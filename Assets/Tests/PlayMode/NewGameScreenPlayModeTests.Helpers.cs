@@ -145,7 +145,15 @@ namespace AnomalyPath.Tests.PlayMode
         {
             var corners = new Vector3[4];
             rect.GetWorldCorners(corners);
-            return Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);
+            var min = corners[0];
+            var max = corners[0];
+            for (var i = 1; i < corners.Length; i++)
+            {
+                min = Vector3.Min(min, corners[i]);
+                max = Vector3.Max(max, corners[i]);
+            }
+
+            return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
         }
 
         private static bool IsItemBox(string name) =>

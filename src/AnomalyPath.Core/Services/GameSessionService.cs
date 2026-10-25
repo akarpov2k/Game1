@@ -5,6 +5,7 @@ using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Combat;
 using AnomalyPath.Core.Death;
 using AnomalyPath.Core.Inventory;
+using AnomalyPath.Core.Loot;
 using AnomalyPath.Core.Session;
 using AnomalyPath.Core.World;
 
@@ -21,6 +22,8 @@ namespace AnomalyPath.Core.Services
         private readonly ICombatOutcomeService _outcomes;
         private readonly IQuestService? _quests;
         private readonly ITalentService? _talents;
+        private readonly IProgressionService? _progression;
+        private readonly IStashService? _stashes;
 
         /// <summary>Создаёт сервис сессии.</summary>
         /// <param name="travel">Переходы по миру.</param>
@@ -31,6 +34,10 @@ namespace AnomalyPath.Core.Services
         /// <param name="outcomes">Итог боя: опыт, лут и респавн.</param>
         /// <param name="quests">Квесты: учёт убийств в бою; <c>null</c> — не учитывать.</param>
         /// <param name="talents">Таланты: бонусы игрока в бою; <c>null</c> — без бонусов.</param>
+        /// <param name="progression">
+        /// Прогрессия: подтягивание уровня при загрузке; <c>null</c> — не подтягивать.
+        /// </param>
+        /// <param name="stashes">Тайники на локациях; <c>null</c> — тайников нет.</param>
         /// <exception cref="ArgumentNullException">Зависимость не задана.</exception>
         public GameSessionService(
             ITravelService travel,
@@ -40,7 +47,9 @@ namespace AnomalyPath.Core.Services
             IDeathService death,
             ICombatOutcomeService outcomes,
             IQuestService? quests = null,
-            ITalentService? talents = null)
+            ITalentService? talents = null,
+            IProgressionService? progression = null,
+            IStashService? stashes = null)
         {
             _travel = travel ?? throw new ArgumentNullException(nameof(travel));
             _combat = combat ?? throw new ArgumentNullException(nameof(combat));
@@ -50,6 +59,8 @@ namespace AnomalyPath.Core.Services
             _outcomes = outcomes ?? throw new ArgumentNullException(nameof(outcomes));
             _quests = quests;
             _talents = talents;
+            _progression = progression;
+            _stashes = stashes;
         }
 
         /// <inheritdoc />
@@ -69,7 +80,17 @@ namespace AnomalyPath.Core.Services
         }
 
         /// <inheritdoc />
-        public GameSession Load(string slot) => new GameSession(_saves.Load(slot));
+        public GameSession Load(string slot)
+        {
+            var state = _saves.Load(slot);
+            if (_progression != null && state.Player != null)
+            {
+                // Старые сейвы копили опыт без повышения уровня: подтягиваем уровень и награды.
+                _progression.SyncLevel(state.Player);
+            }
+
+            return new GameSession(state);
+        }
 
         /// <inheritdoc />
         public GameSession StartNew(int seed, string loadoutId, NewGameSettings settings)
@@ -79,7 +100,9 @@ namespace AnomalyPath.Core.Services
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            return new GameSession(_newGame.Create(seed, loadoutId, settings));
+            var session = new GameSession(_newGame.Create(seed, loadoutId, settings));
+            RollLocationStash(session);
+            return session;
         }
 
         /// <inheritdoc />
@@ -125,9 +148,43 @@ namespace AnomalyPath.Core.Services
                 throw new ArgumentNullException(nameof(session));
             }
 
-            return session.InCombat
-                ? new TravelResult(TravelStatus.InCombat)
-                : _travel.Travel(session.State.World, edgeId);
+            if (session.InCombat)
+            {
+                return new TravelResult(TravelStatus.InCombat);
+            }
+
+            var result = _travel.Travel(session.State.World, edgeId);
+            if (result.Succeeded)
+            {
+                RollLocationStash(session);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public bool RollLocationStash(GameSession session)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            return _stashes != null &&
+                   _stashes.RollOnEntry(session.State.World, session.State.World.CurrentLocation);
+        }
+
+        /// <inheritdoc />
+        public StashOpenResult OpenStash(GameSession session)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            return _stashes == null
+                ? StashOpenResult.NoStash()
+                : _stashes.Open(session.State.World, session.State.World.CurrentLocation);
         }
 
         /// <inheritdoc />
@@ -160,7 +217,8 @@ namespace AnomalyPath.Core.Services
                 enemy,
                 distance,
                 scenario,
-                _talents?.GetModifiers(player)));
+                _talents?.GetModifiers(player),
+                player.LevelHealthBonus));
             return true;
         }
 

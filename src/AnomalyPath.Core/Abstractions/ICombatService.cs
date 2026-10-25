@@ -14,6 +14,7 @@ namespace AnomalyPath.Core.Abstractions
         /// <param name="distance">Начальная дистанция.</param>
         /// <param name="scenario">Сценарий боя; <c>null</c> — обычный бой, игрок ходит первым.</param>
         /// <param name="playerModifiers">Бонусы талантов игрока; <c>null</c> — без бонусов.</param>
+        /// <param name="playerHealthBonus">Прибавка к максимуму здоровья за уровни игрока; 0 — без неё.</param>
         /// <returns>Состояние боя.</returns>
         AnomalyPath.Core.Combat.CombatState Start(
             AnomalyPath.Core.Combat.ActorTemplate playerActor,
@@ -21,7 +22,8 @@ namespace AnomalyPath.Core.Abstractions
             AnomalyPath.Core.Combat.ActorTemplate enemy,
             AnomalyPath.Core.Combat.DistanceZone distance,
             AnomalyPath.Core.Combat.CombatScenario? scenario = null,
-            AnomalyPath.Core.Talents.TalentModifiers? playerModifiers = null);
+            AnomalyPath.Core.Talents.TalentModifiers? playerModifiers = null,
+            int playerHealthBonus = 0);
 
         /// <summary>Атакует текущим ходящим участником.</summary>
         /// <param name="state">Состояние боя.</param>

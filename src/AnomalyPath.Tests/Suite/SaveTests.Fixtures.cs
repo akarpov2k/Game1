@@ -24,7 +24,8 @@ namespace AnomalyPath.Tests
         private PlayerState NewPlayer(
             IItemRepository items,
             int talentPoints = 0,
-            IReadOnlyDictionary<string, int>? talentRanks = null)
+            IReadOnlyDictionary<string, int>? talentRanks = null,
+            int levelHealthBonus = 0)
         {
             var grid = new GridContainer("player", 8, 4);
             var rifle = new ItemInstance("inst_rifle", "wpn_ak74", 1, 80, 100, "ak74_variant", magazine: 30);
@@ -48,7 +49,8 @@ namespace AnomalyPath.Tests
                 "Игрок",
                 1500,
                 talentPoints: talentPoints,
-                talentRanks: talentRanks);
+                talentRanks: talentRanks,
+                levelHealthBonus: levelHealthBonus);
         }
 
         private void WithSaveRoot(Action<string> body)

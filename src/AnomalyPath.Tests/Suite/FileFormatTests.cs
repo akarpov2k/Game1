@@ -368,7 +368,12 @@ namespace AnomalyPath.Tests
                         ["catalog.json"] = Catalog("loot.json", "loot/loot_tbl.json"),
                         ["loot.json"] = "{\"schemaVersion\":1,\"kind\":\"loot\",\"id\":\"loot\"," +
                                         "\"tierBands\":[{\"offset\":-1,\"chance\":0.2}," +
-                                        "{\"offset\":0,\"chance\":0.6},{\"offset\":1,\"chance\":0.2}]}",
+                                        "{\"offset\":0,\"chance\":0.6},{\"offset\":1,\"chance\":0.2}]," +
+                                        "\"stashes\":{\"baseChance\":0.05,\"chanceGrowth\":0.02," +
+                                        "\"chanceCap\":0.5,\"jackpotBaseChance\":0.01," +
+                                        "\"jackpotChanceGrowth\":0.01,\"jackpotChanceCap\":1.0," +
+                                        "\"pools\":[{\"tier\":1,\"lootTableId\":\"loot_tbl\"}]," +
+                                        "\"jackpotLootTableId\":\"loot_tbl\"}}",
                         ["loot/loot_tbl.json"] = "{\"schemaVersion\":1,\"kind\":\"lootTables\",\"id\":\"loot_tbl\"," +
                                                  "\"sharedTableIds\":[\"loot_common\"],\"entries\":[" +
                                                  "{\"itemId\":\"itm_a\",\"chance\":0.5,\"count\":[1,3]}," +
@@ -387,6 +392,10 @@ namespace AnomalyPath.Tests
                         True(table.Entries[1].Always, "always");
                         var settings = LootSettings.FromJson(data.OfKind("loot")["loot"], "loot");
                         Equal(3, settings.Bands.Count, "полос");
+                        True(settings.Stashes != null, "блок тайников");
+                        Equal(1, settings.Stashes!.Pools.Count, "пулов тайников");
+                        Equal(1, settings.Stashes.Pools[0].Tier, "тир пула");
+                        Equal(0.07, System.Math.Round(settings.Stashes.Chance(1), 2), "шанс с ростом");
                     });
             });
 

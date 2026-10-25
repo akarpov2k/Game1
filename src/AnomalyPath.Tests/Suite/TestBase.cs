@@ -239,12 +239,13 @@ namespace AnomalyPath.Tests
 
             return new Dictionary<string, string>
             {
-                ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json", "talents.json"),
+                ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json", "talents.json", "progression.json"),
                 ["items/a.json"] = Weapon("wpn_a"),
                 ["combat.json"] = CombatJson(),
                 ["equipment.json"] = EquipmentJson(),
                 ["topology.json"] = TopologyJson(),
                 ["talents.json"] = TalentsJson(),
+                ["progression.json"] = ProgressionJson(),
                 ["Localization/errors.ru.json"] = ru,
                 ["Localization/errors.en.json"] = enWithExtra,
                 ["Localization/strings.ru.json"] = "{\"n\":\"Название\"}",
@@ -296,6 +297,12 @@ namespace AnomalyPath.Tests
             "\"descriptionKey\":\"n\",\"nodes\":[{\"id\":\"tal_a\",\"titleKey\":\"n\"," +
             "\"descriptionKey\":\"n\",\"row\":0,\"column\":0,\"maxRank\":1,\"requiredPoints\":0," +
             "\"effects\":[{\"stat\":\"accuracy\",\"perRank\":0.01}]}]}";
+
+        protected string ProgressionJson() =>
+            "{\"schemaVersion\":1,\"kind\":\"progression\",\"id\":\"progression\",\"levelBaseXp\":100," +
+            "\"levelGrowthPercent\":20,\"killXpPerRank\":10,\"rarityBonusPercent\":10," +
+            "\"maxRank\":5,\"maxRarity\":5,\"levelRewardStartLevel\":5," +
+            "\"levelUpTalentPoints\":1,\"levelUpHealth\":2}";
 
         protected string TopologyJson() =>
             "{\"schemaVersion\":1,\"kind\":\"topology\",\"id\":\"topology\",\"transitions\":[]," +

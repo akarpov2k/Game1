@@ -10,6 +10,7 @@ using AnomalyPath.Core.Loadouts;
 using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.Loot;
 using AnomalyPath.Core.Nicks;
+using AnomalyPath.Core.Progression;
 using AnomalyPath.Core.Quests;
 using AnomalyPath.Core.Repositories;
 using AnomalyPath.Core.Rules;
@@ -141,6 +142,10 @@ namespace AnomalyPath.Core.Validation
                 else if (kind == LootSettings.RecordId)
                 {
                     Try(() => LootSettings.FromJson(resolved, pair.Key), issues);
+                }
+                else if (kind == ProgressionSettings.RecordId)
+                {
+                    Try(() => ProgressionSettings.FromJson(resolved, pair.Key), issues);
                 }
             }
 

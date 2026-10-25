@@ -67,7 +67,7 @@ namespace AnomalyPath.Runtime.Screens.Character
             try
             {
                 var rules = _host.Rules.Rules;
-                var bonus = _host.Talents.GetModifiers(player).HealthMax;
+                var bonus = _host.Talents.GetModifiers(player).HealthMax + player.LevelHealthBonus;
                 if (rules == null)
                 {
                     return Math.Max(1, player.Health + bonus);
@@ -77,7 +77,7 @@ namespace AnomalyPath.Runtime.Screens.Character
             }
             catch (Exception)
             {
-                return Math.Max(1, player.Health);
+                return Math.Max(1, player.Health + player.LevelHealthBonus);
             }
         }
     }

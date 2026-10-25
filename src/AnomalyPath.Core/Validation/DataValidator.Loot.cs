@@ -83,6 +83,84 @@ namespace AnomalyPath.Core.Validation
                         CoreText.Format(CoreErrors.LootTableNotFound, actor.LootTableId)));
                 }
             }
+
+            ValidateStashes(loot, items, issues);
+        }
+
+        private static void ValidateStashes(
+            ILootRepository loot,
+            ItemRepository items,
+            List<ValidationIssue> issues)
+        {
+            var stashes = loot.Settings.Stashes;
+            if (stashes == null)
+            {
+                return;
+            }
+
+            foreach (var pool in stashes.Pools)
+            {
+                if (!loot.TryGet(pool.LootTableId, out _))
+                {
+                    issues.Add(new ValidationIssue(
+                        LootSettings.RecordId,
+                        CoreErrors.StashTableNotFound,
+                        CoreText.Format(CoreErrors.StashTableNotFound, pool.LootTableId)));
+                }
+            }
+
+            if (!loot.TryGet(stashes.JackpotLootTableId, out var jackpot))
+            {
+                issues.Add(new ValidationIssue(
+                    LootSettings.RecordId,
+                    CoreErrors.StashTableNotFound,
+                    CoreText.Format(CoreErrors.StashTableNotFound, stashes.JackpotLootTableId)));
+                return;
+            }
+
+            ValidateJackpotRarity(
+                jackpot,
+                loot,
+                items,
+                new HashSet<string>(StringComparer.Ordinal),
+                issues);
+        }
+
+        private static void ValidateJackpotRarity(
+            LootTable table,
+            ILootRepository loot,
+            ItemRepository items,
+            HashSet<string> visited,
+            List<ValidationIssue> issues)
+        {
+            if (!visited.Add(table.Id))
+            {
+                return;
+            }
+
+            foreach (var entry in table.Entries)
+            {
+                if (!items.TryGet(entry.ItemId, out var template))
+                {
+                    continue;
+                }
+
+                if (template.Rarity < Rarity.Special)
+                {
+                    issues.Add(new ValidationIssue(
+                        table.Id,
+                        CoreErrors.StashJackpotRarity,
+                        CoreText.Format(CoreErrors.StashJackpotRarity, entry.ItemId)));
+                }
+            }
+
+            foreach (var sharedId in table.SharedTableIds)
+            {
+                if (loot.TryGet(sharedId, out var shared))
+                {
+                    ValidateJackpotRarity(shared, loot, items, visited, issues);
+                }
+            }
         }
 
         private static void ExpandLootTable(

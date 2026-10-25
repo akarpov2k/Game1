@@ -28,6 +28,8 @@ namespace AnomalyPath.Core.Save
         /// <param name="questSerial">Счётчик выданных квестов.</param>
         /// <param name="lastHubId">Последний посещённый хаб; <c>null</c> в старых сейвах.</param>
         /// <param name="lootSerial">Счётчик бросков лута; в старых сейвах 0.</param>
+        /// <param name="stashChecks">Проверки локаций без тайника; в старых сейвах 0.</param>
+        /// <param name="stashOpenings">Вскрытия тайников без джекпота; в старых сейвах 0.</param>
         public WorldSaveData(
             string startLocationId,
             string currentLocationId,
@@ -46,7 +48,9 @@ namespace AnomalyPath.Core.Save
             IReadOnlyList<QuestSaveData>? quests = null,
             int questSerial = 0,
             string? lastHubId = null,
-            int lootSerial = 0)
+            int lootSerial = 0,
+            int stashChecks = 0,
+            int stashOpenings = 0)
         {
             StartLocationId = startLocationId;
             CurrentLocationId = currentLocationId;
@@ -66,6 +70,8 @@ namespace AnomalyPath.Core.Save
             QuestSerial = questSerial;
             LastHubId = lastHubId;
             LootSerial = lootSerial;
+            StashChecks = stashChecks;
+            StashOpenings = stashOpenings;
         }
 
         /// <summary>Стартовая локация.</summary>
@@ -122,6 +128,12 @@ namespace AnomalyPath.Core.Save
         /// <summary>Счётчик бросков лута; в старых сейвах 0.</summary>
         public int LootSerial { get; }
 
+        /// <summary>Проверки локаций без тайника; в старых сейвах 0.</summary>
+        public int StashChecks { get; }
+
+        /// <summary>Вскрытия тайников без джекпота; в старых сейвах 0.</summary>
+        public int StashOpenings { get; }
+
         /// <summary>Сериализует снимок в JSON-узел.</summary>
         /// <returns>Объект сохранения мира.</returns>
         public JsonValue ToJson()
@@ -169,6 +181,8 @@ namespace AnomalyPath.Core.Save
             value.Members["traders"] = traders;
             value.Members["questSerial"] = JsonValue.FromNumber(QuestSerial);
             value.Members["lootSerial"] = JsonValue.FromNumber(LootSerial);
+            value.Members["stashChecks"] = JsonValue.FromNumber(StashChecks);
+            value.Members["stashOpenings"] = JsonValue.FromNumber(StashOpenings);
             var quests = JsonValue.NewArray();
             foreach (var quest in Quests)
             {
@@ -226,6 +240,13 @@ namespace AnomalyPath.Core.Save
                 throw new DataException(sourcePath, CoreErrors.SaveMissingField, "lootSerial");
             }
 
+            var stashChecks = DataMap.OptionalInt(value, "stashChecks", 0);
+            var stashOpenings = DataMap.OptionalInt(value, "stashOpenings", 0);
+            if (stashChecks < 0 || stashOpenings < 0)
+            {
+                throw new DataException(sourcePath, CoreErrors.SaveMissingField, "stashChecks");
+            }
+
             return new WorldSaveData(
                 startLocationId,
                 currentLocationId,
@@ -244,7 +265,9 @@ namespace AnomalyPath.Core.Save
                 quests,
                 questSerial,
                 lastHubId,
-                lootSerial);
+                lootSerial,
+                stashChecks,
+                stashOpenings);
         }
 
         private static IReadOnlyList<QuestSaveData> ReadQuests(JsonValue value, string sourcePath)

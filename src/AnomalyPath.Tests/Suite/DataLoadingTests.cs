@@ -51,6 +51,9 @@ namespace AnomalyPath.Tests
                 Equal(4.0, rules.Get("tierCount").Number, "tierCount");
                 Equal(0.15, rules.Get("insuranceChance").Number, "insuranceChance");
                 Equal(0.05, rules.Get("insuranceStep").Number, "insuranceStep");
+                Equal(0.4, rules.Get("xpLossChance").Number, "xpLossChance");
+                Equal(0.1, rules.Get("xpLossStep").Number, "xpLossStep");
+                Equal(1.0, rules.Get("xpLossMax").Number, "xpLossMax");
                 Equal(0.3, rules.Get("respawnPercent").Number, "respawnPercent");
             });
 

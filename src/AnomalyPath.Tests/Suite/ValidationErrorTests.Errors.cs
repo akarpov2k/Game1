@@ -164,6 +164,62 @@ namespace AnomalyPath.Tests
                                              "\"attack\":{\"weaponId\":\"wpn_x\"}} }",
                     },
                     "без блока weapon"),
+                (
+                    "ошибка: нет записи прогрессии",
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json"),
+                        ["items/a.json"] = Weapon("wpn_a"),
+                        ["combat.json"] = CombatJson(),
+                        ["equipment.json"] = EquipmentJson(),
+                        ["topology.json"] = TopologyJson(),
+                    },
+                    "Настройки прогрессии не загружены"),
+                (
+                    "ошибка: отрицательный рост кривой прогрессии",
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json", "progression.json"),
+                        ["items/a.json"] = Weapon("wpn_a"),
+                        ["combat.json"] = CombatJson(),
+                        ["equipment.json"] = EquipmentJson(),
+                        ["topology.json"] = TopologyJson(),
+                        ["progression.json"] = "{\"schemaVersion\":1,\"kind\":\"progression\",\"id\":\"progression\",\"levelBaseXp\":100," +
+                                               "\"levelGrowthPercent\":-5,\"killXpPerRank\":10,\"rarityBonusPercent\":10," +
+                                               "\"maxRank\":5,\"maxRarity\":5}",
+                    },
+                    "levelGrowthPercent"),
+                (
+                    "ошибка: чужой id записи прогрессии",
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json", "progression.json"),
+                        ["items/a.json"] = Weapon("wpn_a"),
+                        ["combat.json"] = CombatJson(),
+                        ["equipment.json"] = EquipmentJson(),
+                        ["topology.json"] = TopologyJson(),
+                        ["progression.json"] = "{\"schemaVersion\":1,\"kind\":\"progression\",\"id\":\"progress\",\"levelBaseXp\":100," +
+                                               "\"levelGrowthPercent\":20,\"killXpPerRank\":10,\"rarityBonusPercent\":10," +
+                                               "\"maxRank\":5,\"maxRarity\":5}",
+                    },
+                    "id записи прогрессии должен быть"),
+                (
+                    "ошибка: две записи прогрессии",
+                    new Dictionary<string, string>
+                    {
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json", "progression.json", "progression2.json"),
+                        ["items/a.json"] = Weapon("wpn_a"),
+                        ["combat.json"] = CombatJson(),
+                        ["equipment.json"] = EquipmentJson(),
+                        ["topology.json"] = TopologyJson(),
+                        ["progression.json"] = "{\"schemaVersion\":1,\"kind\":\"progression\",\"id\":\"progression_alt\",\"levelBaseXp\":100," +
+                                               "\"levelGrowthPercent\":20,\"killXpPerRank\":10,\"rarityBonusPercent\":10," +
+                                               "\"maxRank\":5,\"maxRarity\":5}",
+                        ["progression2.json"] = "{\"schemaVersion\":1,\"kind\":\"progression\",\"id\":\"progression\",\"levelBaseXp\":100," +
+                                                "\"levelGrowthPercent\":20,\"killXpPerRank\":10,\"rarityBonusPercent\":10," +
+                                                "\"maxRank\":5,\"maxRarity\":5}",
+                    },
+                    "Запись прогрессии должна быть ровно одна"),
             };
 
             foreach (var testCase in cases)

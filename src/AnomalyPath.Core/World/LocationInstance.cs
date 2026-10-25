@@ -78,8 +78,26 @@ namespace AnomalyPath.Core.World
         /// <summary>Покинул ли противник локацию после успешного побега.</summary>
         public bool EnemyGone { get; private set; }
 
+        /// <summary>Проверялось ли появление тайника при входе.</summary>
+        public bool StashRolled { get; private set; }
+
+        /// <summary>Есть ли на локации невскрытый тайник.</summary>
+        public bool StashPresent { get; private set; }
+
+        /// <summary>Вскрыт ли тайник локации.</summary>
+        public bool StashOpened { get; private set; }
+
         /// <summary>Отмечает, что игрок был здесь.</summary>
         public void MarkVisited() => Visited = true;
+
+        /// <summary>Отмечает проверку появления тайника при входе.</summary>
+        public void MarkStashRolled() => StashRolled = true;
+
+        /// <summary>Отмечает, что на локации появился тайник.</summary>
+        public void MarkStashPresent() => StashPresent = true;
+
+        /// <summary>Отмечает, что тайник локации вскрыт.</summary>
+        public void MarkStashOpened() => StashOpened = true;
 
         /// <summary>Отмечает локацию зачищенной.</summary>
         public void MarkCleared() => Cleared = true;

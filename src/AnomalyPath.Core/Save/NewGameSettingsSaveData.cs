@@ -12,11 +12,20 @@ namespace AnomalyPath.Core.Save
         /// <param name="insuranceChance">Коэффициент страховки надетых вещей, 0..1.</param>
         /// <param name="tradeDifficulty">Коэффициент усложнения торговли, не меньше 0.</param>
         /// <param name="permadeath">Выбран ли режим постоянной смерти.</param>
-        public NewGameSettingsSaveData(double insuranceChance, double tradeDifficulty, bool permadeath = false)
+        /// <param name="xpLossChance">
+        /// Доля опыта текущего уровня, теряемая при смерти, 0..1; <c>null</c> — в старом сейве
+        /// поля нет, загрузчик подставит значение из правил.
+        /// </param>
+        public NewGameSettingsSaveData(
+            double insuranceChance,
+            double tradeDifficulty,
+            bool permadeath = false,
+            double? xpLossChance = null)
         {
             InsuranceChance = insuranceChance;
             TradeDifficulty = tradeDifficulty;
             Permadeath = permadeath;
+            XpLossChance = xpLossChance;
         }
 
         /// <summary>Коэффициент страховки надетых вещей, 0..1.</summary>
@@ -28,6 +37,9 @@ namespace AnomalyPath.Core.Save
         /// <summary><c>true</c>, если выбран режим постоянной смерти.</summary>
         public bool Permadeath { get; }
 
+        /// <summary>Доля опыта текущего уровня, теряемая при смерти; <c>null</c> в старых сейвах.</summary>
+        public double? XpLossChance { get; }
+
         /// <summary>Сериализует настройки.</summary>
         /// <returns>JSON-объект.</returns>
         public JsonValue ToJson()
@@ -36,6 +48,11 @@ namespace AnomalyPath.Core.Save
             value.Members["insuranceChance"] = JsonValue.FromNumber(InsuranceChance);
             value.Members["tradeDifficulty"] = JsonValue.FromNumber(TradeDifficulty);
             value.Members["permadeath"] = JsonValue.FromBool(Permadeath);
+            if (XpLossChance.HasValue)
+            {
+                value.Members["xpLossChance"] = JsonValue.FromNumber(XpLossChance.Value);
+            }
+
             return value;
         }
 
@@ -63,10 +80,17 @@ namespace AnomalyPath.Core.Save
                 throw new DataException(sourcePath, CoreErrors.SaveSettings, "tradeDifficulty");
             }
 
+            var xpLossChance = DataMap.OptionalDouble(value, "xpLossChance");
+            if (xpLossChance.HasValue && (xpLossChance.Value < 0 || xpLossChance.Value > 1))
+            {
+                throw new DataException(sourcePath, CoreErrors.SaveSettings, "xpLossChance");
+            }
+
             return new NewGameSettingsSaveData(
                 insuranceChance,
                 tradeDifficulty,
-                DataMap.OptionalBool(value, "permadeath", false));
+                DataMap.OptionalBool(value, "permadeath", false),
+                xpLossChance);
         }
     }
 }

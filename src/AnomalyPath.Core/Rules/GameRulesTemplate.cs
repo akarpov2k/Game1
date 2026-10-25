@@ -32,6 +32,9 @@ namespace AnomalyPath.Core.Rules
         /// <param name="previewMaxRows">Предел рядов в окне предпросмотра набора.</param>
         /// <param name="savePageSize">Число ячеек сохранения на странице.</param>
         /// <param name="respawnPercent">Доля здоровья и потолка еды/воды после смерти, 0..1.</param>
+        /// <param name="xpLossChance">Доля опыта текущего уровня, теряемая при смерти, 0..1.</param>
+        /// <param name="xpLossStep">Шаг изменения доли потери опыта, больше 0.</param>
+        /// <param name="xpLossMax">Максимум доли потери опыта, 0..1.</param>
         /// <param name="maxActiveQuests">Предел одновременно взятых квестов.</param>
         /// <param name="questOffersPerTrader">Сколько квестов показывает один торговец.</param>
         /// <param name="questOfferCooldownHours">Задержка перед появлением нового квеста в освободившемся слоте.</param>
@@ -54,6 +57,9 @@ namespace AnomalyPath.Core.Rules
             int previewMaxRows,
             int savePageSize,
             double respawnPercent,
+            double xpLossChance,
+            double xpLossStep,
+            double xpLossMax,
             int maxActiveQuests = 3,
             int questOffersPerTrader = 4,
             int questOfferCooldownHours = 6,
@@ -89,6 +95,9 @@ namespace AnomalyPath.Core.Rules
             PreviewMaxRows = previewMaxRows;
             SavePageSize = savePageSize;
             RespawnPercent = respawnPercent;
+            XpLossChance = xpLossChance;
+            XpLossStep = xpLossStep;
+            XpLossMax = xpLossMax;
             MaxActiveQuests = maxActiveQuests;
             QuestOffersPerTrader = questOffersPerTrader;
             QuestOfferCooldownHours = questOfferCooldownHours;
@@ -146,6 +155,18 @@ namespace AnomalyPath.Core.Rules
 
         /// <summary>Доля здоровья и потолка еды/воды после смерти, 0..1.</summary>
         public double RespawnPercent { get; }
+
+        /// <summary>
+        /// Доля опыта, накопленного на текущем уровне, которая теряется при смерти. Потеря
+        /// не опускает прогресс ниже нуля и не понижает уровень.
+        /// </summary>
+        public double XpLossChance { get; }
+
+        /// <summary>Шаг изменения доли потери опыта в меню новой игры, больше 0.</summary>
+        public double XpLossStep { get; }
+
+        /// <summary>Максимум доли потери опыта в меню новой игры, 0..1.</summary>
+        public double XpLossMax { get; }
 
         /// <summary>Предел одновременно взятых квестов.</summary>
         public int MaxActiveQuests { get; }
@@ -257,6 +278,29 @@ namespace AnomalyPath.Core.Rules
                 throw new DataException(path, CoreErrors.RulesChance, "respawnPercent");
             }
 
+            var xpLossChance = DataMap.RequireDouble(value, "xpLossChance", path);
+            if (xpLossChance < 0 || xpLossChance > 1)
+            {
+                throw new DataException(path, CoreErrors.RulesChance, "xpLossChance");
+            }
+
+            var xpLossStep = DataMap.RequireDouble(value, "xpLossStep", path);
+            if (xpLossStep <= 0)
+            {
+                throw new DataException(path, CoreErrors.PositiveValue, "xpLossStep");
+            }
+
+            var xpLossMax = DataMap.RequireDouble(value, "xpLossMax", path);
+            if (xpLossMax <= 0 || xpLossMax > 1)
+            {
+                throw new DataException(path, CoreErrors.RulesChance, "xpLossMax");
+            }
+
+            if (xpLossChance > xpLossMax)
+            {
+                throw new DataException(path, CoreErrors.RangeOrder, "xpLossMax");
+            }
+
             var maxActiveQuests = DataMap.OptionalInt(value, "maxActiveQuests", 3);
             if (maxActiveQuests < 1)
             {
@@ -298,6 +342,9 @@ namespace AnomalyPath.Core.Rules
                 previewMaxRows,
                 savePageSize,
                 respawnPercent,
+                xpLossChance,
+                xpLossStep,
+                xpLossMax,
                 maxActiveQuests,
                 questOffersPerTrader,
                 questOfferCooldownHours,

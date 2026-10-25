@@ -21,12 +21,14 @@ namespace AnomalyPath.Tests
     public sealed class DeathTests : TestBase
     {
         private readonly string _dataRoot;
+        private readonly IProgressionService _progression;
 
         /// <summary>Создаёт категорию тестов смерти.</summary>
         /// <param name="dataRoot">Корень данных проекта.</param>
         public DeathTests(string dataRoot)
         {
             _dataRoot = dataRoot;
+            _progression = Bootstrap.Build(dataRoot).Resolve<IProgressionService>();
         }
 
         /// <inheritdoc />
@@ -36,7 +38,40 @@ namespace AnomalyPath.Tests
             InventoryTests();
             InsuranceTests();
             PermadeathTests();
+            ExperienceTests();
             EdgeCaseTests();
+        }
+
+        private void ExperienceTests()
+        {
+            Check("смерть: теряет 40% опыта текущего уровня", () =>
+            {
+                var fixture = Fixture(chance: 0, random: new SequenceRandom(), level: 3, xp: 270, xpLoss: 0.4);
+                var result = fixture.Service.Apply(fixture.State);
+
+                Equal(20, result.XpLost, "потеряно опыта");
+                Equal(250, fixture.Player.Xp, "остаток опыта");
+                Equal(3, fixture.Player.Level, "уровень не понизился");
+            });
+
+            Check("смерть: 100% потери обнуляют прогресс, но не уровень", () =>
+            {
+                var fixture = Fixture(chance: 0, random: new SequenceRandom(), level: 3, xp: 270, xpLoss: 1);
+                var result = fixture.Service.Apply(fixture.State);
+
+                Equal(50, result.XpLost, "потеряно опыта");
+                Equal(220, fixture.Player.Xp, "опыт на начале уровня");
+                Equal(3, fixture.Player.Level, "уровень");
+            });
+
+            Check("смерть: без настройки опыт не теряется", () =>
+            {
+                var fixture = Fixture(chance: 0, random: new SequenceRandom(), level: 3, xp: 270);
+                var result = fixture.Service.Apply(fixture.State);
+
+                Equal(0, result.XpLost, "потеряно опыта");
+                Equal(270, fixture.Player.Xp, "опыт не изменился");
+            });
         }
 
         private void RegistrationTests()
@@ -165,7 +200,13 @@ namespace AnomalyPath.Tests
             });
         }
 
-        private FixtureState Fixture(double chance, IDeathRandom random, bool permadeath = false)
+        private FixtureState Fixture(
+            double chance,
+            IDeathRandom random,
+            bool permadeath = false,
+            int level = 1,
+            int xp = 0,
+            double xpLoss = 0)
         {
             var items = new ItemRepository(new[]
             {
@@ -193,8 +234,8 @@ namespace AnomalyPath.Tests
 
             var player = new PlayerState(
                 "player",
-                1,
-                0,
+                level,
+                xp,
                 10,
                 10,
                 grid,
@@ -206,8 +247,8 @@ namespace AnomalyPath.Tests
                 new GameState(
                     WorldStateForTests(),
                     player,
-                    new NewGameSettings(chance, 1, permadeath: permadeath)),
-                new DeathService(items, random));
+                    new NewGameSettings(chance, 1, permadeath: permadeath, xpLossChance: xpLoss)),
+                new DeathService(items, random, _progression));
         }
 
         private static WorldState WorldStateForTests()

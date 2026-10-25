@@ -45,5 +45,26 @@ namespace AnomalyPath.Core.Localization
 
         /// <summary>Предмет записи лута не найден.</summary>
         public const string LootItemNotFound = "error.loot_item_not_found";
+
+        /// <summary>Блок настроек тайников задан неверно.</summary>
+        public const string StashSettings = "error.stash_settings";
+
+        /// <summary>Шанс, рост или предел шанса тайника вне диапазона 0..1.</summary>
+        public const string StashChanceRange = "error.stash_chance_range";
+
+        /// <summary>Пул тайников задан неверно.</summary>
+        public const string StashPool = "error.stash_pool";
+
+        /// <summary>Тир пула тайников повторяется.</summary>
+        public const string StashPoolDuplicate = "error.stash_pool_duplicate";
+
+        /// <summary>В настройках тайников нет ни одного пула.</summary>
+        public const string StashPoolEmpty = "error.stash_pool_empty";
+
+        /// <summary>Таблица пула тайников или джекпота не найдена.</summary>
+        public const string StashTableNotFound = "error.stash_table_not_found";
+
+        /// <summary>Предмет пула джекпота ниже особой редкости.</summary>
+        public const string StashJackpotRarity = "error.stash_jackpot_rarity";
     }
 }

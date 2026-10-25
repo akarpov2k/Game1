@@ -9,6 +9,7 @@ using AnomalyPath.Core.Equipment;
 using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.Nicks;
+using AnomalyPath.Core.Progression;
 using AnomalyPath.Core.Repositories;
 using AnomalyPath.Core.Services;
 using AnomalyPath.Core.Validation;
@@ -69,6 +70,7 @@ namespace AnomalyPath.Core
             var quests = QuestRepository.FromLoadedData(data);
             var talents = TalentRepository.FromLoadedData(data);
             var loot = LootRepository.FromLoadedData(data);
+            var progression = LoadProgression(data);
 
             var inventory = new InventoryService(items, instanceIds);
             var travel = new TravelService();
@@ -89,8 +91,11 @@ namespace AnomalyPath.Core
             container.RegisterSingleton<ILootRepository>(loot);
             var lootService = new LootService(loot, items, instanceIds);
             container.RegisterSingleton<ILootService>(lootService);
+            container.RegisterSingleton<IStashService>(new StashService(loot, lootService));
             var talentService = new TalentService(talents);
             container.RegisterSingleton<ITalentService>(talentService);
+            var progressionService = new ProgressionService(progression);
+            container.RegisterSingleton<IProgressionService>(progressionService);
             container.RegisterSingleton<IWorldGenerator>(world);
             container.RegisterSingleton<ITravelService>(travel);
             container.RegisterSingleton<IInstanceIdGenerator>(instanceIds);
@@ -101,7 +106,7 @@ namespace AnomalyPath.Core
             container.RegisterSingleton<IEconomySettings>(economySettings);
             var deathRandom = new SeededDeathRandom(1);
             container.RegisterSingleton<IDeathRandom>(deathRandom);
-            var deathService = new DeathService(items, deathRandom);
+            var deathService = new DeathService(items, deathRandom, progressionService);
             container.RegisterSingleton<IDeathService>(deathService);
             container.RegisterSingleton<ICombatOutcomeService>(new CombatOutcomeService(
                 deathService,
@@ -109,7 +114,8 @@ namespace AnomalyPath.Core
                 formulas,
                 combatSettings,
                 balance,
-                lootService));
+                lootService,
+                progressionService));
             var equipmentService = new EquipmentService(items, inventory);
             container.RegisterSingleton<IEquipmentService>(equipmentService);
             container.RegisterSingleton<ICharacterActions>(new CharacterActions(items, inventory, equipmentService));
@@ -198,6 +204,17 @@ namespace AnomalyPath.Core
             return records.Count == 0
                 ? Rules.EconomySettings.Default
                 : Rules.EconomySettings.FromJson(records[0], "economy");
+        }
+
+        private static ProgressionSettings LoadProgression(LoadedData data)
+        {
+            var records = data.All(ProgressionSettings.RecordId);
+            if (records.Count == 0)
+            {
+                throw new DataException(ProgressionSettings.RecordId, CoreErrors.ProgressionMissing);
+            }
+
+            return ProgressionSettings.FromJson(records[0], ProgressionSettings.RecordId);
         }
     }
 }

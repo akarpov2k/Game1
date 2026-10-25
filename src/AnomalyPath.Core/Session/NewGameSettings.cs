@@ -19,13 +19,18 @@ namespace AnomalyPath.Core.Session
         /// <c>true</c> — режим постоянной смерти: при смерти удаляется всё, включая снаряжение,
         /// а страховка не применяется. По умолчанию <c>false</c>.
         /// </param>
+        /// <param name="xpLossChance">
+        /// Доля опыта текущего уровня, теряемая при смерти, 0..1; по умолчанию 0 — без потери
+        /// (так читаются сейвы без настройки, значение им подставляет загрузчик).
+        /// </param>
         /// <exception cref="ArgumentOutOfRangeException">Значение вне допустимых границ.</exception>
         public NewGameSettings(
             double insuranceChance,
             double tradeDifficulty,
             string? nickname = null,
             int nicknameMaxLength = 0,
-            bool permadeath = false)
+            bool permadeath = false,
+            double xpLossChance = 0)
         {
             if (insuranceChance < 0 || insuranceChance > 1)
             {
@@ -41,6 +46,13 @@ namespace AnomalyPath.Core.Session
                     CoreText.Format(CoreErrors.NonNegative, nameof(tradeDifficulty)));
             }
 
+            if (xpLossChance < 0 || xpLossChance > 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(xpLossChance),
+                    CoreText.Format(CoreErrors.ChanceRange, nameof(xpLossChance)));
+            }
+
             var trimmed = nickname?.Trim() ?? string.Empty;
             if (nicknameMaxLength > 0 && trimmed.Length > nicknameMaxLength)
             {
@@ -53,6 +65,7 @@ namespace AnomalyPath.Core.Session
             TradeDifficulty = tradeDifficulty;
             Nickname = trimmed;
             Permadeath = permadeath;
+            XpLossChance = xpLossChance;
         }
 
         /// <summary>
@@ -63,6 +76,12 @@ namespace AnomalyPath.Core.Session
 
         /// <summary>Коэффициент усложнения торговли.</summary>
         public double TradeDifficulty { get; }
+
+        /// <summary>
+        /// Доля опыта, накопленного на текущем уровне, которая теряется при смерти.
+        /// Потеря не опускает прогресс ниже нуля и не понижает уровень.
+        /// </summary>
+        public double XpLossChance { get; }
 
         /// <summary>Ник персонажа; пусто — сгенерировать случайный.</summary>
         public string Nickname { get; }

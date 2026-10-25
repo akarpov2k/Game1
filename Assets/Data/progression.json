@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "progression",
+  "id": "progression",
+  "levelBaseXp": 100,
+  "levelGrowthPercent": 20,
+  "killXpPerRank": 10,
+  "rarityBonusPercent": 10,
+  "maxRank": 5,
+  "maxRarity": 5,
+  "levelRewardStartLevel": 5,
+  "levelUpTalentPoints": 1,
+  "levelUpHealth": 2
+}

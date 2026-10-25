@@ -97,6 +97,44 @@ namespace AnomalyPath.Tests
                 False(session.InCombat, "бой завершён");
             });
 
+            Check("итог: победа повышает уровень и выдаёт награды за него", () =>
+            {
+                var services = Bootstrap.Build(_dataRoot);
+                var state = NewState(services);
+                var player = state.Player!;
+                var progression = services.Resolve<IProgressionService>();
+                progression.AddXp(player, 536);
+                Equal(4, player.Level, "до боя четвёртый уровень");
+                MoveToTiered(state);
+                var session = StartFight(services, state, "enemy_bandit", out var combat);
+                Win(services.Resolve<ICombatService>(), combat);
+
+                services.Resolve<ICombatOutcomeService>().Resolve(session);
+
+                Equal(5, player.Level, "пятый уровень после победы");
+                Equal(1, player.TalentPoints, "очко талантов за пятый уровень");
+                Equal(2, player.LevelHealthBonus, "прибавка здоровья за пятый уровень");
+            });
+
+            Check("итог: поражение теряет долю опыта текущего уровня", () =>
+            {
+                var services = Bootstrap.Build(_dataRoot);
+                var state = NewState(services, xpLoss: 0.4);
+                var player = state.Player!;
+                services.Resolve<IProgressionService>().AddXp(player, 270);
+                Equal(3, player.Level, "третий уровень до боя");
+                MoveToWild(state);
+                var session = StartFight(services, state, "enemy_bandit", out var combat);
+                Lose(services.Resolve<ICombatService>(), combat);
+
+                var outcome = services.Resolve<ICombatOutcomeService>().Resolve(session);
+
+                Equal(CombatOutcomeStatus.Defeat, outcome.Status, "статус");
+                Equal(20, outcome.Death!.XpLost, "потеряно 40% от 50");
+                Equal(250, player.Xp, "остаток опыта");
+                Equal(3, player.Level, "уровень не понизился");
+            });
+
             Check("итог: лут детерминирован для одного seed и состояния", () =>
             {
                 var services = Bootstrap.Build(_dataRoot);
@@ -253,9 +291,12 @@ namespace AnomalyPath.Tests
             return string.Join(",", parts);
         }
 
-        private static GameState NewState(ServiceContainer services, bool permadeath = false)
+        private static GameState NewState(
+            ServiceContainer services,
+            bool permadeath = false,
+            double xpLoss = 0)
         {
-            var settings = new NewGameSettings(0, 1, permadeath: permadeath);
+            var settings = new NewGameSettings(0, 1, permadeath: permadeath, xpLossChance: xpLoss);
             return services.Resolve<INewGameService>().Create(42, "loadout_rifleman", settings);
         }
 

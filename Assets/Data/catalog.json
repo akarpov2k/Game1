@@ -20,6 +20,7 @@
     "balance.json",
     "economy.json",
     "rules.json",
+    "progression.json",
     "talents.json",
     "actors/col_actors.json",
     "loadouts/col_loadouts.json",

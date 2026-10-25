@@ -18,17 +18,21 @@ namespace AnomalyPath.Core.Services
     {
         private readonly IItemRepository _items;
         private readonly IDeathRandom _random;
+        private readonly IProgressionService _progression;
 
         /// <summary>Создаёт сервис смерти.</summary>
         /// <param name="items">Репозиторий предметов: нужен признак «не утрачиваемый».</param>
         /// <param name="random">Источник бросков страховки.</param>
+        /// <param name="progression">Прогрессия: потеря доли опыта текущего уровня.</param>
         /// <exception cref="ArgumentNullException">Зависимость не задана.</exception>
         public DeathService(
             IItemRepository items,
-            IDeathRandom random)
+            IDeathRandom random,
+            IProgressionService progression)
         {
             _items = items ?? throw new ArgumentNullException(nameof(items));
             _random = random ?? throw new ArgumentNullException(nameof(random));
+            _progression = progression ?? throw new ArgumentNullException(nameof(progression));
         }
 
         /// <inheritdoc />
@@ -49,6 +53,8 @@ namespace AnomalyPath.Core.Services
                 return new DeathResult(lost, kept, insured, permadeath);
             }
 
+            var xpLost = _progression.LoseXpOnDeath(player, state.Settings?.XpLossChance ?? 0);
+
             // Инвентарь теряется целиком: страховка на него не распространяется.
             foreach (var item in new List<ItemInstance>(player.Inventory.Items))
             {
@@ -64,7 +70,7 @@ namespace AnomalyPath.Core.Services
 
             var chance = state.Settings?.InsuranceChance ?? 0;
             ApplyToEquipment(player.Equipment, permadeath, chance, lost, kept, insured);
-            return new DeathResult(lost, kept, insured, permadeath);
+            return new DeathResult(lost, kept, insured, permadeath, xpLost);
         }
 
         private void ApplyToEquipment(

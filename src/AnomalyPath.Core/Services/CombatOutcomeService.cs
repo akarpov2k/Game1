@@ -12,8 +12,9 @@ using AnomalyPath.Core.Session;
 namespace AnomalyPath.Core.Services
 {
     /// <summary>
-    /// Итог боя: победа даёт опыт и лут, поражение применяет смерть и, кроме пермасмерти,
-    /// возвращает игрока в последний хаб с урезанными здоровьем, едой и водой.
+    /// Итог боя: победа даёт опыт (с повышением уровня) и лут, поражение применяет смерть
+    /// с потерей доли опыта и, кроме пермасмерти, возвращает игрока в последний хаб
+    /// с урезанными здоровьем, едой и водой.
     /// </summary>
     public sealed class CombatOutcomeService : ICombatOutcomeService
     {
@@ -21,6 +22,7 @@ namespace AnomalyPath.Core.Services
         private readonly IGameRulesRepository _rules;
         private readonly IFormulaRepository _formulas;
         private readonly ILootService _loot;
+        private readonly IProgressionService _progression;
         private readonly CombatSettingsTemplate _settings;
         private readonly BalanceTemplate _balance;
 
@@ -31,6 +33,7 @@ namespace AnomalyPath.Core.Services
         /// <param name="settings">Настройки боя: ссылка на формулу опыта.</param>
         /// <param name="balance">Константы баланса для формулы.</param>
         /// <param name="loot">Бросок лута с побеждённого противника.</param>
+        /// <param name="progression">Прогрессия: начисление опыта и повышение уровня.</param>
         /// <exception cref="ArgumentNullException">Зависимость не задана.</exception>
         public CombatOutcomeService(
             IDeathService death,
@@ -38,7 +41,8 @@ namespace AnomalyPath.Core.Services
             IFormulaRepository formulas,
             CombatSettingsTemplate settings,
             BalanceTemplate balance,
-            ILootService loot)
+            ILootService loot,
+            IProgressionService progression)
         {
             _death = death ?? throw new ArgumentNullException(nameof(death));
             _rules = rules ?? throw new ArgumentNullException(nameof(rules));
@@ -46,6 +50,7 @@ namespace AnomalyPath.Core.Services
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _balance = balance ?? throw new ArgumentNullException(nameof(balance));
             _loot = loot ?? throw new ArgumentNullException(nameof(loot));
+            _progression = progression ?? throw new ArgumentNullException(nameof(progression));
         }
 
         /// <inheritdoc />
@@ -83,7 +88,7 @@ namespace AnomalyPath.Core.Services
             player.SetHealth(ToHealth(combat.Player.Health));
             var location = session.State.World.CurrentLocation;
             var xp = CalculateXp(combat.Enemy.Template, location.Tier);
-            player.AddXp(xp);
+            _progression.AddXp(player, xp);
             var loot = _loot.Roll(new LootContext(
                 combat.Enemy.Template.Id,
                 combat.Enemy.Template.Rarity,

@@ -32,6 +32,7 @@ namespace AnomalyPath.Core.Player
         /// <param name="reputation">Репутация по фракциям.</param>
         /// <param name="talentPoints">Свободные очки талантов; по умолчанию 0.</param>
         /// <param name="talentRanks">Ранги талантов по id; пусто — ни одного.</param>
+        /// <param name="levelHealthBonus">Прибавка к максимуму здоровья за уровни; по умолчанию 0.</param>
         /// <exception cref="ArgumentException">id пуст или зависимости не заданы.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Числовые значения вне допустимых границ.</exception>
         public PlayerState(
@@ -50,7 +51,8 @@ namespace AnomalyPath.Core.Player
             IReadOnlyList<string>? unlocks = null,
             IReadOnlyDictionary<string, int>? reputation = null,
             int talentPoints = 0,
-            IReadOnlyDictionary<string, int>? talentRanks = null)
+            IReadOnlyDictionary<string, int>? talentRanks = null,
+            int levelHealthBonus = 0)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -59,7 +61,8 @@ namespace AnomalyPath.Core.Player
                     nameof(id));
             }
 
-            if (level < 1 || xp < 0 || health < 0 || apMax < 0 || money < 0 || talentPoints < 0)
+            if (level < 1 || xp < 0 || health < 0 || apMax < 0 || money < 0 || talentPoints < 0 ||
+                levelHealthBonus < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(level));
             }
@@ -83,6 +86,7 @@ namespace AnomalyPath.Core.Player
             ApMax = apMax;
             Money = money;
             TalentPoints = talentPoints;
+            LevelHealthBonus = levelHealthBonus;
             Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
             Equipment = equipment ?? throw new ArgumentNullException(nameof(equipment));
             Skills = skills ?? throw new ArgumentNullException(nameof(skills));
@@ -108,10 +112,16 @@ namespace AnomalyPath.Core.Player
         public string Name { get; }
 
         /// <summary>Уровень.</summary>
-        public int Level { get; }
+        public int Level { get; private set; }
 
-        /// <summary>Опыт.</summary>
+        /// <summary>Опыт, накопленный за всё прохождение.</summary>
         public int Xp { get; private set; }
+
+        /// <summary>
+        /// Прибавка к максимуму здоровья, полученная за повышения уровня. Хранится отдельно,
+        /// потому что к максимуму добавляются ещё базовое здоровье актёра и бонусы талантов.
+        /// </summary>
+        public int LevelHealthBonus { get; private set; }
 
         /// <summary>Текущее здоровье.</summary>
         public int Health { get; private set; }
@@ -173,6 +183,50 @@ namespace AnomalyPath.Core.Player
             }
 
             Xp += amount;
+        }
+
+        /// <summary>Списывает опыт, но не больше накопленного.</summary>
+        /// <param name="amount">Сколько опыта забрать; не меньше нуля.</param>
+        /// <returns>Сколько опыта списано на самом деле.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Количество отрицательно.</exception>
+        public int RemoveXp(int amount)
+        {
+            if (amount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(amount));
+            }
+
+            var removed = Math.Min(amount, Xp);
+            Xp -= removed;
+            return removed;
+        }
+
+        /// <summary>Записывает уровень; понижать его сервис прогрессии не даёт.</summary>
+        /// <param name="level">Новый уровень, не меньше единицы.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Уровень меньше единицы.</exception>
+        public void SetLevel(int level)
+        {
+            if (level < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(level),
+                    CoreText.Format(CoreErrors.LevelOutOfRange, level));
+            }
+
+            Level = level;
+        }
+
+        /// <summary>Добавляет прибавку к максимуму здоровья за уровни.</summary>
+        /// <param name="amount">Сколько добавить; не меньше нуля.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Количество отрицательно.</exception>
+        public void AddLevelHealthBonus(int amount)
+        {
+            if (amount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(amount));
+            }
+
+            LevelHealthBonus += amount;
         }
 
         /// <summary>Устанавливает текущее здоровье.</summary>

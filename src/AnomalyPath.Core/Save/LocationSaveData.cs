@@ -20,6 +20,9 @@ namespace AnomalyPath.Core.Save
         /// <param name="visited">Был ли игрок.</param>
         /// <param name="cleared">Зачищена ли.</param>
         /// <param name="enemyGone">Покинул ли противник локацию после побега.</param>
+        /// <param name="stashRolled">Проверялось ли появление тайника.</param>
+        /// <param name="stashPresent">Есть ли на локации тайник.</param>
+        /// <param name="stashOpened">Вскрыт ли тайник.</param>
         public LocationSaveData(
             string instanceId,
             string templateId,
@@ -30,7 +33,10 @@ namespace AnomalyPath.Core.Save
             double danger,
             bool visited,
             bool cleared,
-            bool enemyGone = false)
+            bool enemyGone = false,
+            bool stashRolled = false,
+            bool stashPresent = false,
+            bool stashOpened = false)
         {
             InstanceId = instanceId;
             TemplateId = templateId;
@@ -42,6 +48,9 @@ namespace AnomalyPath.Core.Save
             Visited = visited;
             Cleared = cleared;
             EnemyGone = enemyGone;
+            StashRolled = stashRolled;
+            StashPresent = stashPresent;
+            StashOpened = stashOpened;
         }
 
         /// <summary>Id экземпляра.</summary>
@@ -74,6 +83,15 @@ namespace AnomalyPath.Core.Save
         /// <summary>Покинул ли противник локацию после успешного побега.</summary>
         public bool EnemyGone { get; }
 
+        /// <summary>Проверялось ли появление тайника.</summary>
+        public bool StashRolled { get; }
+
+        /// <summary>Есть ли на локации тайник.</summary>
+        public bool StashPresent { get; }
+
+        /// <summary>Вскрыт ли тайник.</summary>
+        public bool StashOpened { get; }
+
         /// <summary>Сериализует запись.</summary>
         /// <returns>JSON-объект.</returns>
         public JsonValue ToJson()
@@ -89,6 +107,9 @@ namespace AnomalyPath.Core.Save
             value.Members["visited"] = JsonValue.FromBool(Visited);
             value.Members["cleared"] = JsonValue.FromBool(Cleared);
             value.Members["enemyGone"] = JsonValue.FromBool(EnemyGone);
+            value.Members["stashRolled"] = JsonValue.FromBool(StashRolled);
+            value.Members["stashPresent"] = JsonValue.FromBool(StashPresent);
+            value.Members["stashOpened"] = JsonValue.FromBool(StashOpened);
             return value;
         }
 
@@ -113,7 +134,11 @@ namespace AnomalyPath.Core.Save
             var visited = DataMap.OptionalBool(value, "visited", false);
             var cleared = DataMap.OptionalBool(value, "cleared", false);
             var enemyGone = DataMap.OptionalBool(value, "enemyGone", false);
-            if (tier < 0 || danger < 0 || danger > 1)
+            var stashRolled = DataMap.OptionalBool(value, "stashRolled", false);
+            var stashPresent = DataMap.OptionalBool(value, "stashPresent", false);
+            var stashOpened = DataMap.OptionalBool(value, "stashOpened", false);
+            if (tier < 0 || danger < 0 || danger > 1 ||
+                (stashPresent && !stashRolled) || (stashOpened && !stashPresent))
             {
                 throw new DataException(sourcePath, CoreErrors.SaveMissingField, "location");
             }
@@ -128,7 +153,10 @@ namespace AnomalyPath.Core.Save
                 danger,
                 visited,
                 cleared,
-                enemyGone);
+                enemyGone,
+                stashRolled,
+                stashPresent,
+                stashOpened);
         }
     }
 }

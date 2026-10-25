@@ -11,12 +11,14 @@ namespace AnomalyPath.Core.Death
             IReadOnlyList<ItemInstance> lost,
             IReadOnlyList<ItemInstance> kept,
             IReadOnlyList<ItemInstance> insured,
-            bool permadeath)
+            bool permadeath,
+            int xpLost = 0)
         {
             Lost = lost;
             Kept = kept;
             Insured = insured;
             Permadeath = permadeath;
+            XpLost = xpLost;
         }
 
         /// <summary>Предметы, убранные из инвентаря и слотов.</summary>
@@ -30,5 +32,8 @@ namespace AnomalyPath.Core.Death
 
         /// <summary><c>true</c>, если действовал режим полной потери.</summary>
         public bool Permadeath { get; }
+
+        /// <summary>Сколько опыта потеряно при смерти.</summary>
+        public int XpLost { get; }
     }
 }

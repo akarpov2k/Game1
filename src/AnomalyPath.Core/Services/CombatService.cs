@@ -67,7 +67,8 @@ namespace AnomalyPath.Core.Services
             ActorTemplate enemy,
             DistanceZone distance,
             CombatScenario? scenario = null,
-            TalentModifiers? playerModifiers = null)
+            TalentModifiers? playerModifiers = null,
+            int playerHealthBonus = 0)
         {
             if (playerActor == null)
             {
@@ -84,7 +85,7 @@ namespace AnomalyPath.Core.Services
                 throw new ArgumentNullException(nameof(enemy));
             }
 
-            var player = new Combatant(playerActor, playerEquipment, playerModifiers);
+            var player = new Combatant(playerActor, playerEquipment, playerModifiers, playerHealthBonus);
             var opponent = new Combatant(enemy);
             return new CombatState(player, opponent, distance, scenario ?? CombatScenario.Normal, CreateEnemyWeapon(enemy));
         }

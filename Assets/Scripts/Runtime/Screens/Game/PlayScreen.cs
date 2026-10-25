@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using AnomalyPath.Core.Loot;
 using AnomalyPath.Core.Quests;
 using AnomalyPath.Core.World;
 using AnomalyPath.Runtime.Screens;
@@ -242,8 +243,19 @@ namespace AnomalyPath.Runtime.Screens.Game
                 ? string.Empty
                 : UiText.Format(_host.Texts, UiTextKey.Common_Money, player.Money);
 
-            // В данных пока нет экземпляров объектов локации: структура есть, отрисовки нет.
-            _object.Hide();
+            _host.Sessions.RollLocationStash(session);
+            if (location.StashPresent && !location.StashOpened)
+            {
+                _object.Show(
+                    UiText.Get(_host.Texts, UiTextKey.Game_Stash),
+                    UiText.Get(_host.Texts, UiTextKey.Game_Stash_Hint),
+                    OpenStash);
+            }
+            else
+            {
+                _object.Hide();
+            }
+
             _testEnemy.Refresh();
 
             if (session.InCombat)
@@ -257,7 +269,7 @@ namespace AnomalyPath.Runtime.Screens.Game
             AddTraderActions(session, location, actions);
             AddQuestActions(session, location, actions);
             actions.Add(new PlayAction(
-                "Quests",
+                "GameQuests",
                 UiText.Get(_host.Texts, UiTextKey.Game_Quests),
                 () => _host.ShowQuests(null)));
             foreach (var edge in edges)
@@ -336,6 +348,48 @@ namespace AnomalyPath.Runtime.Screens.Game
             _host.Quests.NotifyLocationCleared(session, locationInstanceId);
             Show();
             ShowToast(UiText.Get(_host.Texts, UiTextKey.Game_Cleared));
+        }
+
+        private void OpenStash()
+        {
+            var session = _host.Session;
+            if (session == null)
+            {
+                ShowToast(UiText.Get(_host.Texts, UiTextKey.Common_No_Game), error: true);
+                return;
+            }
+
+            StashOpenResult result;
+            try
+            {
+                result = _host.Sessions.OpenStash(session);
+            }
+            catch (Exception error)
+            {
+                ShowToast(UiText.Format(_host.Texts, UiTextKey.Game_Travel_Error, error.Message), error: true);
+                return;
+            }
+
+            if (result.Status == StashOpenStatus.NoStash)
+            {
+                ShowToast(UiText.Get(_host.Texts, UiTextKey.Game_Stash_None), error: true);
+                return;
+            }
+
+            if (result.Status == StashOpenStatus.AlreadyOpened)
+            {
+                ShowToast(UiText.Get(_host.Texts, UiTextKey.Game_Stash_Opened), error: true);
+                Show();
+                return;
+            }
+
+            Show();
+            if (result.Jackpot)
+            {
+                ShowToast(UiText.Get(_host.Texts, UiTextKey.Game_Jackpot));
+            }
+
+            _host.ShowLoot(result.Loot);
         }
 
         private void Travel(string edgeId)

@@ -52,6 +52,9 @@ namespace AnomalyPath.Tests
                 True(Math.Abs(rules.TradeDifficultyMax - 3) < 1e-9, "tradeDifficultyMax");
                 True(Math.Abs(rules.TradeDifficultyStep - 0.1) < 1e-9, "tradeDifficultyStep");
                 True(Math.Abs(rules.RespawnPercent - 0.3) < 1e-9, "respawnPercent");
+                True(Math.Abs(rules.XpLossChance - 0.4) < 1e-9, "xpLossChance");
+                True(Math.Abs(rules.XpLossStep - 0.1) < 1e-9, "xpLossStep");
+                True(Math.Abs(rules.XpLossMax - 1) < 1e-9, "xpLossMax");
                 Equal(24, rules.NicknameMaxLength, "nicknameMaxLength");
                 Equal(32, rules.PreviewMaxRows, "previewMaxRows");
                 Equal(6, rules.SavePageSize, "savePageSize");
@@ -100,6 +103,9 @@ namespace AnomalyPath.Tests
                 True(Math.Abs(rules.InsuranceChance - 0.15) < 1e-9, "insuranceChance");
                 True(Math.Abs(rules.InsuranceStep - 0.05) < 1e-9, "insuranceStep");
                 True(Math.Abs(rules.RespawnPercent - 0.3) < 1e-9, "respawnPercent");
+                True(Math.Abs(rules.XpLossChance - 0.4) < 1e-9, "xpLossChance");
+                True(Math.Abs(rules.XpLossStep - 0.1) < 1e-9, "xpLossStep");
+                True(Math.Abs(rules.XpLossMax - 1) < 1e-9, "xpLossMax");
                 Equal("rules", rules.Id, "id");
                 Equal(1000, rules.StartingMoney, "startingMoney по умолчанию");
             });
@@ -126,7 +132,13 @@ namespace AnomalyPath.Tests
                 ("insuranceStep 0", Rules(insuranceStep: 0), CoreErrors.PositiveValue),
                 ("respawnPercent 0", Rules(respawnPercent: 0), CoreErrors.RulesChance),
                 ("respawnPercent 1.5", Rules(respawnPercent: 1.5), CoreErrors.RulesChance),
-                ("respawnPercent -0.1", Rules(respawnPercent: -0.1), CoreErrors.RulesChance)
+                ("respawnPercent -0.1", Rules(respawnPercent: -0.1), CoreErrors.RulesChance),
+                ("xpLossChance 1.5", Rules(xpLossChance: 1.5), CoreErrors.RulesChance),
+                ("xpLossChance -0.1", Rules(xpLossChance: -0.1), CoreErrors.RulesChance),
+                ("xpLossStep 0", Rules(xpLossStep: 0), CoreErrors.PositiveValue),
+                ("xpLossMax 0", Rules(xpLossMax: 0), CoreErrors.RulesChance),
+                ("xpLossMax 1.5", Rules(xpLossMax: 1.5), CoreErrors.RulesChance),
+                ("xpLossChance выше максимума", Rules(xpLossChance: 0.8, xpLossMax: 0.5), CoreErrors.RangeOrder)
             };
 
             foreach (var item in invalid)
@@ -169,12 +181,18 @@ namespace AnomalyPath.Tests
             int gridWidth = 8,
             int needsMax = 100,
             int startingMoney = 1000,
-            double respawnPercent = 0.3)
+            double respawnPercent = 0.3,
+            double xpLossChance = 0.4,
+            double xpLossStep = 0.1,
+            double xpLossMax = 1)
         {
             var insurance = insuranceChance.ToString(CultureInfo.InvariantCulture);
             var step = insuranceStep.ToString(CultureInfo.InvariantCulture);
             var respawn = respawnPercent.ToString(CultureInfo.InvariantCulture);
-            return $"{{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"{id}\",\"insuranceChance\":{insurance},\"insuranceStep\":{step},\"respawnPercent\":{respawn},\"baseRows\":{baseRows},\"tierCount\":{tierCount},\"playerActorId\":\"{playerActorId}\",\"gridWidth\":{gridWidth},\"needsMax\":{needsMax},\"startingMoney\":{startingMoney},\"tradeDifficulty\":1,\"tradeDifficultyMax\":3,\"tradeDifficultyStep\":0.1,\"nicknameMaxLength\":24,\"previewMaxRows\":32,\"savePageSize\":6}}";
+            var xpLoss = xpLossChance.ToString(CultureInfo.InvariantCulture);
+            var xpStep = xpLossStep.ToString(CultureInfo.InvariantCulture);
+            var xpMax = xpLossMax.ToString(CultureInfo.InvariantCulture);
+            return $"{{\"schemaVersion\":1,\"kind\":\"rules\",\"id\":\"{id}\",\"insuranceChance\":{insurance},\"insuranceStep\":{step},\"xpLossChance\":{xpLoss},\"xpLossStep\":{xpStep},\"xpLossMax\":{xpMax},\"respawnPercent\":{respawn},\"baseRows\":{baseRows},\"tierCount\":{tierCount},\"playerActorId\":\"{playerActorId}\",\"gridWidth\":{gridWidth},\"needsMax\":{needsMax},\"startingMoney\":{startingMoney},\"tradeDifficulty\":1,\"tradeDifficultyMax\":3,\"tradeDifficultyStep\":0.1,\"nicknameMaxLength\":24,\"previewMaxRows\":32,\"savePageSize\":6}}";
         }
     }
 }

@@ -8,7 +8,7 @@ using AnomalyPath.Core.Localization;
 namespace AnomalyPath.Core.Loot
 {
     /// <summary>
-    /// Настройка лута: полосы тира предмета относительно тира локации.
+    /// Настройка лута: полосы тира предмета относительно тира локации и блок тайников.
     /// Единственная запись вида <c>loot</c>, файл <c>loot.json</c>.
     /// </summary>
     public sealed class LootSettings
@@ -30,9 +30,10 @@ namespace AnomalyPath.Core.Loot
 
         /// <summary>Создаёт настройку лута из полос тира.</summary>
         /// <param name="bands">Полосы тира; сумма вкладов 1.0.</param>
+        /// <param name="stashes">Настройки тайников; <c>null</c> — тайников в игре нет.</param>
         /// <exception cref="ArgumentNullException">Полосы не заданы.</exception>
         /// <exception cref="ArgumentException">Полос нет или сумма вкладов не равна 1.</exception>
-        public LootSettings(IReadOnlyList<TierBand> bands)
+        public LootSettings(IReadOnlyList<TierBand> bands, StashSettings? stashes = null)
         {
             if (bands == null)
             {
@@ -56,10 +57,14 @@ namespace AnomalyPath.Core.Loot
             }
 
             _bands = bands;
+            Stashes = stashes;
         }
 
         /// <summary>Полосы тира: сдвиг относительно тира локации и вклад в шанс.</summary>
         public IReadOnlyList<TierBand> Bands => _bands;
+
+        /// <summary>Настройки тайников и джекпота; <c>null</c> — блок в данных не задан.</summary>
+        public StashSettings? Stashes { get; }
 
         /// <summary>Читает настройку лута из записи данных.</summary>
         /// <param name="value">Загруженная запись.</param>
@@ -104,7 +109,8 @@ namespace AnomalyPath.Core.Loot
                 throw new DataException(sourcePath, CoreErrors.LootBandSum, sum);
             }
 
-            return new LootSettings(bands);
+            var stashes = StashSettings.FromJson(value, sourcePath);
+            return new LootSettings(bands, stashes);
         }
 
         /// <summary>

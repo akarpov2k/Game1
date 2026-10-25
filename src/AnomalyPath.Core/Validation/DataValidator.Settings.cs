@@ -10,6 +10,7 @@ using AnomalyPath.Core.Loadouts;
 using AnomalyPath.Core.Localization;
 using AnomalyPath.Core.Loot;
 using AnomalyPath.Core.Nicks;
+using AnomalyPath.Core.Progression;
 using AnomalyPath.Core.Quests;
 using AnomalyPath.Core.Repositories;
 using AnomalyPath.Core.Rules;
@@ -69,6 +70,26 @@ namespace AnomalyPath.Core.Validation
             else if (loot.Count == 1)
             {
                 Try(() => LootSettings.FromJson(loot[0], LootSettings.RecordId), issues);
+            }
+
+            var progression = data.All(ProgressionSettings.RecordId);
+            if (progression.Count == 0)
+            {
+                issues.Add(new ValidationIssue(
+                    ProgressionSettings.RecordId,
+                    CoreErrors.ProgressionMissing,
+                    CoreText.Get(CoreErrors.ProgressionMissing)));
+            }
+            else if (progression.Count > 1)
+            {
+                issues.Add(new ValidationIssue(
+                    ProgressionSettings.RecordId,
+                    CoreErrors.ProgressionSingleRecord,
+                    CoreText.Format(CoreErrors.ProgressionSingleRecord, progression.Count)));
+            }
+            else
+            {
+                Try(() => ProgressionSettings.FromJson(progression[0], ProgressionSettings.RecordId), issues);
             }
         }
     }

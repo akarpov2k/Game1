@@ -64,7 +64,37 @@ namespace AnomalyPath.Core.Services
                 return Array.Empty<ItemInstance>();
             }
 
-            if (!_loot.TryGet(context.LootTableId!, out var table))
+            return RollTableCore(
+                context.LootTableId!,
+                context.LocationTier,
+                context.Seed,
+                ignoreTierBand: false,
+                (int)context.EnemyRarity);
+        }
+
+        /// <inheritdoc />
+        public IReadOnlyList<ItemInstance> RollTable(
+            string lootTableId,
+            int locationTier,
+            int seed,
+            bool ignoreTierBand)
+        {
+            if (string.IsNullOrWhiteSpace(lootTableId))
+            {
+                return Array.Empty<ItemInstance>();
+            }
+
+            return RollTableCore(lootTableId, locationTier, seed, ignoreTierBand, multiplier: 1);
+        }
+
+        private IReadOnlyList<ItemInstance> RollTableCore(
+            string lootTableId,
+            int locationTier,
+            int seed,
+            bool ignoreTierBand,
+            int multiplier)
+        {
+            if (!_loot.TryGet(lootTableId, out var table))
             {
                 return Array.Empty<ItemInstance>();
             }
@@ -76,8 +106,7 @@ namespace AnomalyPath.Core.Services
                 return Array.Empty<ItemInstance>();
             }
 
-            var random = new SeededWorldRandom(context.Seed);
-            var multiplier = (int)context.EnemyRarity;
+            var random = new SeededWorldRandom(seed);
             var result = new List<ItemInstance>();
 
             foreach (var entry in entries)
@@ -89,11 +118,11 @@ namespace AnomalyPath.Core.Services
 
                 if (!entry.Always)
                 {
-                    if (!entry.IgnoreTierBand)
+                    if (!ignoreTierBand && !entry.IgnoreTierBand)
                     {
                         var band = _loot.Settings.ChanceForTier(
                             template.Tier,
-                            context.LocationTier,
+                            locationTier,
                             _minItemTier,
                             _maxItemTier);
                         if (random.NextDouble() >= band)

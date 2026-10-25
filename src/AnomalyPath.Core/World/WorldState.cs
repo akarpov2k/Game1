@@ -18,6 +18,8 @@ namespace AnomalyPath.Core.World
         /// <param name="weather">Текущая погода.</param>
         /// <param name="lastHubId">Последний посещённый хаб; <c>null</c> — определить по карте.</param>
         /// <param name="lootSerial">Номер последнего броска лута; в старых сейвах 0.</param>
+        /// <param name="stashChecks">Проверки локаций без тайника с последней находки; в старых сейвах 0.</param>
+        /// <param name="stashOpenings">Вскрытия тайников без джекпота с последнего срабатывания; в старых сейвах 0.</param>
         /// <exception cref="DataException">Локация не найдена или выносливость вне границ.</exception>
         public WorldState(
             WorldMap map,
@@ -27,7 +29,9 @@ namespace AnomalyPath.Core.World
             WorldClock clock,
             WeatherKind weather = WeatherKind.Clear,
             string? lastHubId = null,
-            int lootSerial = 0)
+            int lootSerial = 0,
+            int stashChecks = 0,
+            int stashOpenings = 0)
         {
             Map = map ?? throw new ArgumentNullException(nameof(map));
             Clock = clock ?? throw new ArgumentNullException(nameof(clock));
@@ -41,6 +45,11 @@ namespace AnomalyPath.Core.World
                 throw new DataException("world.lootSerial", CoreErrors.WorldRange, "lootSerial");
             }
 
+            if (stashChecks < 0 || stashOpenings < 0)
+            {
+                throw new DataException("world.stashChecks", CoreErrors.WorldRange, "stashChecks");
+            }
+
             if (!map.TryGetLocation(currentLocationId, out _))
             {
                 throw new DataException(currentLocationId, CoreErrors.WorldInstanceNotFound, currentLocationId);
@@ -51,6 +60,8 @@ namespace AnomalyPath.Core.World
             StaminaMax = staminaMax;
             Weather = weather;
             LootSerial = lootSerial;
+            StashChecks = stashChecks;
+            StashOpenings = stashOpenings;
             LastHubId = ResolveLastHub(map, currentLocationId, lastHubId);
             Map.GetLocation(currentLocationId).MarkVisited();
         }
@@ -81,6 +92,18 @@ namespace AnomalyPath.Core.World
         /// в одном состоянии даёт новый результат, а сохранённый номер делает его проверяемым.
         /// </summary>
         public int LootSerial { get; private set; }
+
+        /// <summary>
+        /// Проверки локаций без находки тайника. Входит в шанс следующей проверки,
+        /// поэтому шанс растёт с каждой вылазкой и сбрасывается после находки.
+        /// </summary>
+        public int StashChecks { get; private set; }
+
+        /// <summary>
+        /// Вскрытия тайников без джекпота. Входит в шанс следующего вскрытия
+        /// и сбрасывается после срабатывания джекпота.
+        /// </summary>
+        public int StashOpenings { get; private set; }
 
         /// <summary>Текущая локация.</summary>
         public LocationInstance CurrentLocation => Map.GetLocation(CurrentLocationId);
@@ -145,6 +168,18 @@ namespace AnomalyPath.Core.World
         /// <summary>Выдаёт номер следующего броска лута и увеличивает счётчик.</summary>
         /// <returns>Номер броска, начиная с 1.</returns>
         public int NextLootSerial() => ++LootSerial;
+
+        /// <summary>Отмечает проверку локации без находки тайника.</summary>
+        public void RegisterStashCheck() => StashChecks++;
+
+        /// <summary>Сбрасывает счётчик проверок после находки тайника.</summary>
+        public void ResetStashChecks() => StashChecks = 0;
+
+        /// <summary>Отмечает вскрытие тайника без джекпота.</summary>
+        public void RegisterStashOpening() => StashOpenings++;
+
+        /// <summary>Сбрасывает счётчик вскрытий после срабатывания джекпота.</summary>
+        public void ResetStashOpenings() => StashOpenings = 0;
 
         private static string ResolveLastHub(WorldMap map, string currentLocationId, string? lastHubId)
         {

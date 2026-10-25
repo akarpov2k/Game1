@@ -115,12 +115,13 @@ namespace AnomalyPath.Tests
                 WithFixture(
                     new Dictionary<string, string>
                     {
-                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json", "talents.json"),
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json", "talents.json", "progression.json"),
                         ["items/a.json"] = Weapon("wpn_a"),
                         ["combat.json"] = CombatJson(),
                         ["equipment.json"] = EquipmentJson(),
                         ["topology.json"] = TopologyJson(),
                         ["talents.json"] = TalentsJson(),
+                        ["progression.json"] = ProgressionJson(),
                         ["Localization/strings.ru.json"] = "{\"n\":\"Название\"}",
                         ["Localization/strings.en.json"] = "{}"
                     },
@@ -137,12 +138,13 @@ namespace AnomalyPath.Tests
                 WithFixture(
                     new Dictionary<string, string>
                     {
-                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json", "talents.json"),
+                        ["catalog.json"] = Catalog("items/a.json", "combat.json", "equipment.json", "topology.json", "talents.json", "progression.json"),
                         ["items/a.json"] = Weapon("wpn_a"),
                         ["combat.json"] = CombatJson(),
                         ["equipment.json"] = EquipmentJson(),
                         ["topology.json"] = TopologyJson(),
-                        ["talents.json"] = TalentsJson()
+                        ["talents.json"] = TalentsJson(),
+                        ["progression.json"] = ProgressionJson()
                     },
                     root =>
                     {

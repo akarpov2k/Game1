@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "lootTables",
+  "id": "loot_jackpot",
+  "entries": [
+    { "itemId": "art_fire_ember", "chance": 0.35, "ignoreTierBand": true },
+    { "itemId": "art_electric_spark", "chance": 0.35, "ignoreTierBand": true },
+    { "itemId": "art_gravity_lens", "chance": 0.35, "ignoreTierBand": true },
+    { "itemId": "art_chemical_toxin", "chance": 0.35, "ignoreTierBand": true },
+    { "itemId": "wpn_sv98", "chance": 0.4, "ignoreTierBand": true },
+    { "itemId": "wpn_akm", "chance": 0.4, "ignoreTierBand": true },
+    { "itemId": "itm_armor_exoskeleton", "chance": 0.25, "ignoreTierBand": true }
+  ]
+}

@@ -73,6 +73,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
         private readonly List<string> _loadoutIds = new List<string>();
         private NumberField _insurance = null!;
         private NumberField _trade = null!;
+        private NumberField _xpLoss = null!;
         private CheckboxRow _permadeath = null!;
         private int _nicknameMax;
         private double _insuranceDefault;
@@ -80,6 +81,9 @@ namespace AnomalyPath.Runtime.Screens.Menu
         private double _tradeDefault;
         private double _tradeMax;
         private double _tradeStep;
+        private double _xpLossDefault;
+        private double _xpLossMax;
+        private double _xpLossStep;
         private string _selectedLoadout = string.Empty;
         private int _settingsCount;
 
@@ -120,6 +124,9 @@ namespace AnomalyPath.Runtime.Screens.Menu
             _tradeDefault = rules.TradeDifficulty;
             _tradeMax = rules.TradeDifficultyMax;
             _tradeStep = rules.TradeDifficultyStep;
+            _xpLossDefault = rules.XpLossChance;
+            _xpLossMax = rules.XpLossMax;
+            _xpLossStep = rules.XpLossStep;
 
             diceButton.onClick.AddListener(RollNickname);
             start.onClick.AddListener(StartGame);
@@ -149,9 +156,18 @@ namespace AnomalyPath.Runtime.Screens.Menu
                 _tradeStep,
                 _tradeDefault);
 
+            _xpLoss = AddSetting(
+                "XpLossRow",
+                "XpLossField",
+                UiTextKey.NewGame_XpLoss_Label,
+                0,
+                _xpLossMax,
+                _xpLossStep,
+                _xpLossDefault);
+
             _permadeath = CheckboxRow.Create(
                 Host.Ui,
-                settingsLeft,
+                settingsRight,
                 "PermadeathRow",
                 UiText.Get(Host.Texts, UiTextKey.NewGame_Permadeath_Label),
                 false);
@@ -242,6 +258,7 @@ namespace AnomalyPath.Runtime.Screens.Menu
         {
             _insurance.SetValue(_insuranceDefault);
             _trade.SetValue(_tradeDefault);
+            _xpLoss.SetValue(_xpLossDefault);
             _permadeath.SetValue(false);
         }
 
@@ -339,7 +356,8 @@ namespace AnomalyPath.Runtime.Screens.Menu
                     tradeDifficulty: _trade.Value,
                     nickname: name,
                     nicknameMaxLength: _nicknameMax,
-                    permadeath: _permadeath.Value);
+                    permadeath: _permadeath.Value,
+                    xpLossChance: _xpLoss.Value);
                 Host.Session = Host.Sessions.StartNew(seed, _selectedLoadout, settingsData);
                 Host.ShowGame();
             }

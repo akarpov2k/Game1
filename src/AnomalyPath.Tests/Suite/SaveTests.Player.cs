@@ -40,7 +40,11 @@ namespace AnomalyPath.Tests
                 {
                     var map = generator.Generate(42);
                     var state = WorldState.Start(map);
-                    var player = NewPlayer(items, 2, new Dictionary<string, int> { ["tal_steady_hand"] = 3 });
+                    var player = NewPlayer(
+                        items,
+                        2,
+                        new Dictionary<string, int> { ["tal_steady_hand"] = 3 },
+                        levelHealthBonus: 6);
                     var service = new SaveService(new FileSaveStorage(root), items);
                     service.Save(
                         new GameState(state, player),
@@ -57,6 +61,7 @@ namespace AnomalyPath.Tests
                     Equal(10, restored.ApMax, "ОД");
                     Equal(1500, restored.Money, "деньги");
                     Equal(2, restored.TalentPoints, "очки талантов");
+                    Equal(6, restored.LevelHealthBonus, "прибавка здоровья за уровни");
                     Equal(3, restored.GetTalentRank("tal_steady_hand"), "ранг таланта");
                     Equal(80, restored.Needs.Hunger, "сытость");
                     Equal(1, restored.Inventory.Items.Count, "предметов в сетке");
@@ -90,11 +95,13 @@ namespace AnomalyPath.Tests
                     var player = game.Get("player");
                     player.Members.Remove("talentPoints");
                     player.Members.Remove("talents");
+                    player.Members.Remove("levelHealthBonus");
                     File.WriteAllText(path, JsonWriter.Write(game));
 
                     var restored = service.Load("slot_1").Player!;
                     Equal(0, restored.TalentPoints, "очки по умолчанию");
                     Equal(0, restored.TalentRanks.Count, "ранги по умолчанию");
+                    Equal(0, restored.LevelHealthBonus, "прибавка здоровья по умолчанию");
                 });
             });
 
