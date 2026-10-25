@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "spawns",
+  "id": "spawn_road_crate",
+  "titleKey": "spawn.spawn_road_crate.title",
+  "objectKind": "loot",
+  "requiresTags": ["road", "outdoor"],
+  "excludesTags": ["hub"],
+  "weight": 2,
+  "minTier": 0,
+  "maxTier": 2,
+  "lootTable": "loot_human"
+}

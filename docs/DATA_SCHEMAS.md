@@ -3,7 +3,7 @@
 Дополнение к [GAME_MANIFEST.md](GAME_MANIFEST.md). Здесь только структура данных: файлы, поля, типы, правила.
 Поведение и баланс — в манифесте. Код читает эти схемы, а не наоборот.
 
-**Статус:** черновик v0.53 (2026-10-25). Соответствует манифесту v1.20.
+**Статус:** черновик v0.54 (2026-10-25). Соответствует манифесту v1.21.
 
 ---
 
@@ -39,9 +39,11 @@
 | 23 | Прокачка: дерево талантов (`talents`) | 2965 |
 | 24 | Прогрессия уровней (`progression`) | 3068 |
 
-## 0. Что нового в v0.53
+## 0. Что нового в v0.54
 
-**Тайники и джекпот.** В запись `loot` добавлен необязательный блок `stashes` (раздел 14.3.1): базовый шанс тайника 5% и прибавка 2% за проверку без находки до 50%, шанс джекпота 1% и прибавка 1% за вскрытие без джекпота до 100%, пулы по тирам локации и отдельный пул джекпота вне тиров. Джекпот заменяет обычный пул; все предметы его таблицы обязаны иметь редкость не ниже `special`. Состояние — флаги локации `stashRolled`/`stashPresent`/`stashOpened` и счётчики `world.stashChecks`/`world.stashOpenings` в сейве v13 (раздел 17); старые сейвы читаются без тайников и с нулями.
+**Объект локации.** В единственном слоте локации — NPC, тайник или объект лута; объект и тайник взаимоисключающие. Тайник — тоже запись `SpawnEntry`: сначала бросается он по своим шансам, иначе идёт взвешенный пул (NPC / объект лута / ничего). Объект выбирается при входе на локацию; seed — постоянная константа, созданная при старте игры, плюс миллисекунды реального времени и случайное число/GUID, поэтому повторная генерация того же перехода после загрузки даёт другой результат. `SpawnEntry.maxPerLocation` заменён на `unique`, `weight` в будущем считается формулой. `objectCount` — только 0/1. Объект хранится только у текущей локации (`LocationSave.object`), покинутая локация недоступна; сейв v14, старые сейвы не читаются.
+
+**Тайники и джекпот.** В запись `loot` добавлен необязательный блок `stashes` (раздел 14.3.1): базовый шанс тайника 5% и прибавка 2% за проверку без находки до 50%, шанс джекпота 1% и прибавка 1% за вскрытие без джекпота до 100%, пулы по тирам локации и отдельный пул джекпота вне тиров. Джекпот заменяет обычный пул; все предметы его таблицы обязаны иметь редкость не ниже `special`. Состояние — объект текущей локации (`object`) и счётчики `world.stashChecks`/`world.stashOpenings`; флаги локации из v0.53 убраны, сейв v14 (раздел 17).
 
 **Левелинг и потеря опыта.** `IProgressionService.AddXp` начисляет опыт, поднимает уровень и переносит излишек; `SyncLevel` подтягивает старые сейвы. Начиная с `levelRewardStartLevel` (5) каждое повышение даёт `levelUpTalentPoints` (1) очко талантов и `levelUpHealth` (2) к максимуму здоровья; прибавка живёт в `player.levelHealthBonus` (сейв v12). При смерти теряется `xpLossChance` от опыта текущего уровня (по умолчанию 40%, шаг 10%, максимум 100%; поля `xpLossChance`/`xpLossStep`/`xpLossMax` в `rules`, `world.settings.xpLossChance`), прогресс уровня не ниже нуля, уровень не понижается.
 
@@ -1325,65 +1327,55 @@ Actor                      (общие поля, раздел 12.1)
 | `id` | string | `loc_road_01` |
 | `titleKey` | string | «Разбитая трасса» |
 | `locationKind` | enum | `hub`, `wild`, `special`; поле `kind` занято видом сущности загрузчика (`locations`) |
-| `nodeType` | enum | `hub`, `route`, `site`, `interior` — роль в связной цепочке |
+| `subtype` | enum | `hub`, `path`, `building`, `terrain` — подтип, задающий правила перехода |
+| `role` | string? | код содержания внутри подтипа (`highway`, `forest`, `residential`, `laboratory`); свободная строка, значения задаются данными |
 | `tags` | string[] | словарь тегов манифеста |
 | `tier` | int | 0..N |
 | `backgrounds` | string[] | пул фонов |
 | `objectCount` | [int, int] | сколько объектов генерировать |
 | `danger` | number | 0..1 |
-| `connections` | Connection[] | переходы: куда и каким путём (раздел 14.1.1) |
-| `approachLength` | `[int, int]`? | сколько отрезков пути ведёт именно к этой локации; переопределяет `Topology.routeLength` |
+| `chainLength` | `[int, int]` | сколько локаций шаблона стоит подряд: на звене для `path`, в ветке для `building` и `terrain`; по умолчанию `[1, 1]` |
+| `chainWeights` | `{ [int]: number }` | веса значений `chainLength`; обязательны, если диапазон шире одного значения, сумма 1 |
 | `fixedEvents` | string[] | события, которые появляются всегда |
 | `traders` | string[] | id торговцев, привязанных к этому хабу; только для `locationKind = hub` |
 | `rarity` | enum | `common`, `uncommon`, `rare`, `unique` |
 | `spawnChance` | number | 0..1, шанс появления при генерации; для `rare` меньше, для `common` — 1 |
 | `unique` | bool | квестовая локация: один экземпляр на прохождение |
 
-**Роль в цепочке (`nodeType`):**
+**Подтипы (`subtype`):**
 
-| Значение | Что это | Пример |
-| --- | --- | --- |
-| `hub` | мирная зона, начало маршрутов | база, лагерь |
-| `route` | отрезок пути между точками интереса | участок трассы, коридор, поле, тоннель |
-| `site` | точка интереса в конце пути | дом у дороги, лагерь, аномалия |
-| `interior` | внутренность точки интереса | комната, подвал, второй этаж |
+| Значение | Что это | Пример | Правила перехода |
+| --- | --- | --- | --- |
+| `hub` | мирная зона, начало маршрута | база, поселение | соединяется только с `path` |
+| `path` | путь: дорога, трасса, тропа | участок трассы | продолжается `path`, даёт ветки в `building` и `terrain`, единственный подтип с выходом в хаб |
+| `building` | здание | жилой дом, завод, лаборатория | входит с `path` или другого `building`, выходит на `path` || `terrain` | местность | лес, поле, болото | входит с `path` или другой `terrain`, выходит на `path` |
 
-**Нарративная связность.** Игрок не должен «прыгать» из трассы в болото или в дом. Переход разрешён, только если совпадают роль, путь и теги: дорога продолжается дорогой, точка интереса достигается **после** отрезков пути, а внутрь дома ведёт дверь, а не сама трасса.
+**`role`** — содержание внутри подтипа. Переходы уточняются парой подтипов и, если нужно, ролью: `path → building(residential)`, `building(industrial) → building(laboratory)`, `building(laboratory) → path`. Значения роли в C# не зашиты: их читает только таблица `route.transitions` из `topology.json`, поэтому новое здание или местность добавляются данными.
+
+**Длина цепочки (`chainLength` + `chainWeights`).** «Длина» локации — сколько её экземпляров стоит подряд. Бросок взвешенный: минимум диапазона выпадает реже середины. Пример: `"chainLength": [1, 3], "chainWeights": { "1": 0.1, "2": 0.45, "3": 0.45 }`. У `path` длина задаёт число локаций на одном звене, у `building` и `terrain` — длину ветки.
+
+**Нарративная связность.** Игрок не «прыгает» из трассы в болото или в дом: путь продолжается путём, здание входит только с пути (или из другого здания по правилу), местность — с пути или другой местности, а в хаб можно только с пути.
 
 Правила:
 
-- **`route` не переходит в `site` без пути.** Сначала маршрут из нескольких `route` (длина — `Topology.routeLength`, может считаться формулой), потом `site`.
-- **`interior` не соединяется напрямую с `route` или `hub`.** Внутрь ведёт только `site` через дверь, лестницу или люк.
-- **`hub` соединяется с `route`** (дорога, тропа) и с другими хабами (быстрый переход).
-- **Один `via` на ребро:** ребро описывает ровно один способ перехода, смешивать «дорогу и дверь» нельзя.
-- Каждый тег `via` требует тегов у локации (таблица в 14.1.1): `road` — только у дороги, `corridor` — только внутри.
-- Наратив держится не только тегами: описание (`textKey`/`descriptionKey`) должно объяснять, как игрок сюда попал, но проверяется это человеком, а не валидатором.
+- **Путь не переходит в здание без ветки.** Ветка отходит от звена, её начало — правило `path → building` или `path → terrain`.
+- **Здания стоят цепочкой.** Переход между зданиями — `corridor`; цепочка «здание → здание → дорога» разрешена таблицей переходов. Помещений (`interior`) нет: внутрь здания отдельной локацией не попасть.
+- **Хаб соединяется только с путём**: выход из хаба на звено 1 и возврат действием «В хаб» с любой локации пути (см. манифест §4).
+- **Один `via` на ребро:** ребро описывает ровно один способ перехода.
+- Каждый тег `via` требует тегов у локации (таблица в 14.1.1): `road` — только у пути, `corridor` — у двух зданий.
+- Наратив держится не только тегами: описание должно объяснять, как игрок сюда попал, но проверяется это человеком, а не валидатором.
 
-### 14.1.1. `Connection` (ребро)
+### 14.1.1. Способы перехода (`via`)
 
-| Поле | Тип | Смысл |
-| --- | --- | --- |
-| `toId` | string | id `LocationTemplate` или `spawn_` шаблона ветки |
-| `via` | enum | `road`, `path`, `door`, `gate`, `stairs`, `hatch`, `corridor`, `tunnel` |
-| `length` | int? | сколько «шагов» занимает переход; для `route`-цепочек это длина отрезка ⏸ |
-| `oneWay` | bool | переход только в одну сторону; по умолчанию `false` |
-| `hidden` | bool | переход не виден без открытия (секрет, замаскированный вход) |
-| `requirements` | Requirements? | что нужно, чтобы переход открылся |
-
-**Таблица `via` → обязательные теги и допустимые роли:**
-
-| `via` | Обязательные теги | Из роли | В роль |
+| `via` | Обязательные теги | Из подтипа | В подтип |
 | --- | --- | --- | --- |
-| `road` | обе стороны: `road`, `outdoor` | `hub`, `route` | `hub`, `route`, `site` |
-| `path` | обе стороны: `outdoor` | `hub`, `route`, `site` | `hub`, `route`, `site` |
-| `door` | назначение: `indoor`; источник: `indoor` или `outdoor` | `site`, `interior` | `interior` |
-| `gate` | обе стороны: `outdoor` | `site` | `site` |
-| `stairs` | обе стороны: `indoor` | `site`, `interior` | `interior` |
-| `hatch` | назначение: `indoor` или `underground`; источник: любой из этих | `site`, `interior` | `interior` |
-| `corridor` | обе стороны: `indoor` | `interior` | `interior` |
-| `tunnel` | обе стороны: `underground` | `route` | `route` |
+| `road` | обе стороны: `road`, `outdoor` | `hub`, `path` | `hub`, `path` |
+| `path` | обе стороны: `outdoor` | `hub`, `path`, `building`, `terrain` | `hub`, `path`, `building`, `terrain` |
+| `gate` | обе стороны: `outdoor` | `building`, `terrain` | `building`, `terrain` |
+| `corridor` | обе стороны: `indoor` | `building` | `building` |
+| `tunnel` | обе стороны: `underground` | `path` | `path` |
 
-Так «дом» (`indoor`, `nodeType = site`) не может стоять в конце трассы напрямую — к нему ведёт `path`, а внутрь — `door`. Болото (`water`) не соединяется дорогой: только тропой, и только если у обеих локаций есть `outdoor`.
+Так дом (`indoor`, `subtype = building`) не может стоять в конце пути напрямую — к нему ведёт `path`. Болото (`water`) соединяется тропой, и только если у обеих локаций есть `outdoor`.
 
 ### 14.1.2. Стоимость перехода
 
@@ -1399,7 +1391,7 @@ Actor                      (общие поля, раздел 12.1)
 - Итог = `cost[via] × length`, если `length` задан; иначе просто `cost[via]`. Может считаться формулой `formula_travel_cost` (переменные `baseStamina`, `baseHours`, `length`, `danger`).
 - `stamina` списывается с `player.stamina.current`, `hours` прибавляется к `world.time`.
 - Если выносливости меньше стоимости, переход недоступен: кнопка неактивна, а не «переход в минус».
-- Внутри одной локации (дверь, коридор) стоимость обычно нулевая: `cost = { stamina: 0, hours: 0 }`.
+- Переход между зданиями (коридор) обычно бесплатный: `cost = { stamina: 0, hours: 0 }`.
 - Стоимость — данные: правка `topology.json` меняет цену всех дорог, правка одного ребра — только его.
 
 ### 14.2. `SpawnEntry`
@@ -1408,14 +1400,15 @@ Actor                      (общие поля, раздел 12.1)
 | --- | --- | --- |
 | `id` | string | `spawn_car_wreck` |
 | `titleKey` | string | «Разбитый автомобиль» |
+| `objectKind` | enum | `npc`, `stash`, `loot` — вид объекта (наследник общего объекта локации) |
 | `requiresTags` | string[] | все теги должны быть у локации |
 | `excludesTags` | string[] | ни одного не должно быть |
-| `weight` | number | > 0 |
+| `weight` | number | > 0; ⏸ в будущем считается формулой |
 | `minTier`, `maxTier` | int | диапазон |
 | `lootTable` | string | ссылка на таблицу лута |
 | `eventId` | string? | id события, которое прикреплено к объекту |
 | `actorId` | string? | id актёра (`enemy` или `npc`), который появляется вместе с объектом |
-| `maxPerLocation` | int | сколько раз может выпасть на одной локации; по умолчанию 1 |
+| `unique` | bool | квестовый объект: не выбирается случайно, только по событию или на уникальной локации |
 
 Фильтр допуска:
 
@@ -1425,6 +1418,8 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 ```
 
 Порядок разрешения объекта: сначала объект создаётся, затем срабатывает `eventId` (если задан), затем в экземпляр добавляется `actorId`. Оба поля можно задавать одновременно.
+
+**Выбор объекта.** Объект выбирается **при входе на локацию**, а не при генерации карты. Сначала бросается тайник по своим шансам (`loot.stashes`); если тайник не выпал — взвешенный выбор из подходящих записей (NPC / объект лута / ничего). На локации не больше одного объекта: объект и тайник взаимоисключающие. Seed выбора — постоянный GUID, созданный при новой игре и сохранённый в сейве (`world.objectSeed`), плюс временная часть (UTC-миллисекунды и случайное число); повторная генерация того же перехода даёт другой результат, совпадение возможно. Объекты не хранятся: они выбираются при входе; в сейв пишется только объект текущей локации.
 
 ### 14.3. `LootTable` (вид `lootTables`)
 
@@ -1497,6 +1492,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - Все предметы пула джекпота (с учётом `sharedTableIds`) обязаны иметь `rarity ≥ special`; иначе — ошибка валидации.
 - Пул тайника и пул джекпота обязаны существовать среди `LootTable`; тиры `pools` не повторяются.
 - Блок необязателен: без него тайников в игре нет.
+- Тайник — **объект спавна**: он занимает единственный слот объекта локации и не сосуществует с NPC или объектом лута. Шансы тайника привязаны к тайнику, а не к локации.
 
 ### 14.4. `LocationInstance` (состояние)
 
@@ -1504,66 +1500,79 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | --- | --- | --- |
 | `instanceId` | string | уникальный id экземпляра |
 | `templateId` | string | из какого шаблона |
-| `seed` | int | фиксирует наполнение |
+| `seed` | int | фиксирует фон и прочее наполнение локации |
 | `background` | string | выбранный фон |
-| `objects` | SpawnedObject[] | заспавненные объекты со своим состоянием |
+| `subtype` | enum | подтип локации: `hub`, `path`, `building`, `terrain` |
+| `tier` | int | тир опасности |
+| `danger` | number | сложность 0..1 |
+| `routeStep` | int | номер локации **внутри звена**: 1 у первой, у хаба 0; от него считается цена возврата в хаб |
+| `routeEdge` | int | номер звена маршрута; у хаба 0, у ветки — звено, от которого она отошла |
+| `object` | SpawnedObject? | единственный объект локации: NPC, тайник или объект лута |
 | `cleared` | bool | зачищена ли |
 | `visited` | bool | был ли игрок |
 | `enemyGone` | bool | противник покинул локацию после успешного побега и больше здесь не появляется |
-| `stashRolled` | bool | появление тайника при входе уже проверялось |
-| `stashPresent` | bool | на локации есть невскрытый тайник |
-| `stashOpened` | bool | тайник вскрыт |
 
-`SpawnedObject`: `{ objectId, spawnId, looted, resolved, state }`. `objectId` уникален внутри экземпляра, `state` — свободные изменяемые данные объекта.
+`SpawnedObject`: `{ objectId, spawnId, looted, resolved, state }`. `objectId` уникален внутри экземпляра, `state` — свободные изменяемые данные объекта. Объект существует только у текущей локации; у остальных локаций маршрута он не хранится и выбирается при входе. Облутанная локация исчезает из мира навсегда — повторный вход невозможен, маршрут при выходе обрезается (правило динамического маршрута — ⏸).
 
 ### 14.5. `Topology` (вид `topology`, единственная запись)
 
-Правила, из чего может состоять маршрут, чтобы мир был связным и логичным.
+Правила, из чего состоит маршрут: какие подтипы с какими соединяются, сколько стоит шаг, как растут ветки.
 
 | Поле | Тип | Смысл |
 | --- | --- | --- |
 | `id` | string | всегда `topology` |
-| `transitions` | Transition[] | разрешённые переходы «роль → роль через путь» |
-| `routeLength` | `[int, int]` | сколько `route`-локаций между хабом и точкой интереса ⏸; база для формулы `formula_route_length` |
-| `edgeLength` | `[int, int]` | вилка длины ребра: сколько «шагов» занимает переход, если `Connection.length` не задан; по умолчанию `[1, 2]` |
-| `costs` | `{ [via]: { stamina: int, hours: number } }` | стоимость перехода по типу пути ⏸ |
-| `hubFastTravel` | bool | можно ли ходить между хабами напрямую |
-| `hubFastTravelCost` | `{ stamina: int, hours: number }`? | цена быстрого перехода между хабами |
-| `maxBranchDepth` | int | предел вложенности веток от хаба ⏸ |
+| `route.transitions` | Transition[] | разрешённые переходы «подтип → подтип через путь» (раздел 14.5.1) |
+| `route.lookaheadEdges` | int | сколько звеньев вперёд строит генератор; ≥ 1 |
+| `route.hubReturn.stamina` | int | база возврата в хаб по выносливости; цена = база × `routeStep` (шаг внутри звена) |
+| `route.hubReturn.hours` | number | база возврата в хаб по часам; цена = база × `routeStep` |
+| `route.branches.oddRange` | `[int, int]` | сколько веток даёт нечётное звено (например `[1, 3]`); минимум ≥ 1 |
+| `route.branches.evenGrowth` | int | насколько чётное звено даёт больше веток, чем предыдущее (например 1) |
+| `route.branches.maxChains` | int | сколько цепочек локаций может быть в одной ветке; ≥ 1 (например 2) |
+| `costs` | `{ [via]: { stamina: int, hours: number } }` | стоимость одного шага по типу пути |
 | `initialStamina` | int | стартовая и максимальная выносливость игрока; обязательна |
 | `dayStartHour` | number | час начала дня; обязателен |
 | `nightStartHour` | number | час начала ночи; обязателен |
 
-`Transition`: `{ from: nodeType, to: nodeType, via: string[] }`.
+### 14.5.1. `Transition` (переход маршрута)
+
+| Поле | Тип | Смысл |
+| --- | --- | --- |
+| `from` | enum | подтип источника: `hub`, `path`, `building`, `terrain` |
+| `to` | enum | подтип назначения |
+| `fromRole` | string? | уточнение роли источника; нет поля — любая роль подтипа |
+| `toRole` | string? | уточнение роли назначения |
+| `via` | string[] | способы перехода, допустимые для этой пары (раздел 14.1.1) |
+| `weight` | number | > 0, относительный вес выбора пары при генерации |
 
 Пример:
 
 ```json
 {
   "id": "topology",
-  "transitions": [
-    { "from": "hub", "to": "route", "via": ["road", "path"] },
-    { "from": "route", "to": "route", "via": ["road", "path", "tunnel"] },
-    { "from": "route", "to": "site", "via": ["path", "gate"] },
-    { "from": "site", "to": "interior", "via": ["door", "stairs", "hatch"] },
-    { "from": "interior", "to": "interior", "via": ["corridor", "door", "stairs"] },
-    { "from": "hub", "to": "hub", "via": ["road", "path"] }
-  ],
-  "routeLength": [1, 3],
-  "edgeLength": [1, 2],
+  "route": {
+    "transitions": [
+      { "from": "hub", "to": "path", "via": ["road", "path"], "weight": 1 },
+      { "from": "path", "to": "path", "via": ["road", "path", "tunnel"], "weight": 1 },
+      { "from": "path", "to": "building", "toRole": "residential", "via": ["path", "gate"], "weight": 3 },
+      { "from": "path", "to": "building", "toRole": "industrial", "via": ["path", "gate"], "weight": 2 },
+      { "from": "building", "to": "building", "fromRole": "industrial", "toRole": "laboratory", "via": ["corridor"], "weight": 1 },
+      { "from": "building", "to": "building", "fromRole": "industrial", "toRole": "industrial", "via": ["corridor"], "weight": 1 },
+      { "from": "building", "to": "path", "via": ["path", "gate"], "weight": 1 },
+      { "from": "path", "to": "terrain", "via": ["path"], "weight": 3 },
+      { "from": "terrain", "to": "terrain", "via": ["path"], "weight": 2 },
+      { "from": "terrain", "to": "path", "via": ["path"], "weight": 1 }
+    ],
+    "lookaheadEdges": 3,
+    "hubReturn": { "stamina": 2, "hours": 0.5 },
+    "branches": { "oddRange": [1, 3], "evenGrowth": 1, "maxChains": 2 }
+  },
   "costs": {
     "road": { "stamina": 2, "hours": 1 },
     "path": { "stamina": 3, "hours": 1.5 },
     "gate": { "stamina": 1, "hours": 0.5 },
     "tunnel": { "stamina": 4, "hours": 2 },
-    "door": { "stamina": 0, "hours": 0 },
-    "stairs": { "stamina": 0, "hours": 0 },
-    "hatch": { "stamina": 0, "hours": 0 },
     "corridor": { "stamina": 0, "hours": 0 }
   },
-  "hubFastTravel": true,
-  "hubFastTravelCost": { "stamina": 5, "hours": 6 },
-  "maxBranchDepth": 4,
   "initialStamina": 10,
   "dayStartHour": 6,
   "nightStartHour": 22
@@ -1572,15 +1581,20 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 Правила:
 
-- Переход разрешён, если для пары `(from.nodeType, to.nodeType)` есть `Transition`, а `via` входит в его список **и** в таблицу 14.1.1.
-- Если переход запрещён, шаблон не загружается: ошибка на этап данных, а не «странная карта» в игре.
-- `routeLength` задаёт, сколько отрезков пути проходить до точки интереса; значение может считаться формулой (раздел 11.6), поле — база.
-- **Отрезки пути настраиваются:** глобальная вилка — `routeLength`, конкретная точка интереса может её переопределить через `LocationTemplate.approachLength`. Значение из формулы `formula_route_length` (переменные `danger`, `tier`, `locationTier`) имеет приоритет над базой.
-- **Переход стоит ресурсов:** цена по типу пути — `Topology.costs`, переопределение — `Connection.cost`. Итог умножается на `length` ребра; списывается с `player.stamina`, время прибавляется к `world.time`. Не хватает выносливости — переход недоступен.
-- **Маршрут строится на каждую точку интереса отдельно.** Для каждого `site` создаётся своя цепочка экземпляров `route`; разные локации не делят отрезки и рёбра. Число отрезков берётся из `approachLength` локации, иначе из `routeLength`; это независимый бросок на каждую локацию.
-- **Длина ребра немного случайна.** Если `Connection.length` не задан, длина выбирается из `edgeLength`; стоимость считается как `cost[via] × length`. Авторское ребро с `length` фиксирует длину и не бросает её.
-- `maxBranchDepth` ограничивает, насколько далеко от хаба может уйти ветка: защита от бесконечных цепочек.
-- Генератор маршрута: `hub` → 1..`routeLength` отрезков `route` → `site`; `interior` прикрепляется к `site`. Промежуточные локации получают объекты и события по общим правилам.
+- Переход разрешён, если есть `Transition` с подходящими `from`/`to` (и ролями, если они уточнены), а `via` входит в его список **и** в таблицу 14.1.1.
+- Роли — свободные строки: валидатор требует, чтобы `fromRole`/`toRole` встречались хотя бы у одного шаблона соответствующего подтипа (иначе правило недостижимо).
+- Если пара подтипов вообще не описана, генератор её не строит; валидатор требует, чтобы из хаба был достижим путь, а у каждого подтипа, встречающегося в данных, была хотя бы одна пара.
+- «Лаборатория только за промышленным» — отсутствие пары `path → building(laboratory)`; в лабораторию ведёт только `building(industrial) → building(laboratory)`.
+- **Ветки:** нечётное звено даёт `oddRange` веток, чётное — веток предыдущего звена плюс `evenGrowth`. Отсчёт звеньев от хаба; ветка номер звена не увеличивает.
+- **Вершины веток:** ветки крепятся к разным локациям звена — по одной на локацию, начиная с последней; если веток больше, чем локаций звена, лишние идут на последнюю. Все ветки из одной вершины — ошибка генерации.
+- **Конец звена:** последняя локация пути всегда имеет переход — в первую локацию следующего звена и в свою ветку; тупика нет. Отсюда минимум `oddRange` ≥ 1.
+- **Конец ветки:** ведёт в первую локацию следующего звена (правило «ветка → звено пути»); следующее звено строится одно, и из любой ветки в него можно перейти.
+- **Возврат в хаб:** только с `path`, цена `stamina × routeStep` и `hours × routeStep`, мгновенно. `routeStep` — номер локации внутри звена (хаб = 0), хранится в сейве: на первом шаге нового звена цена снова равна базе.
+- **Длина ветки:** одна ветка — не больше `maxChains` цепочек (по умолчанию 2), каждая цепочка — `chainLength` локаций одного шаблона. Считаются цепочки, а не локации: «промышленное + лаборатория» — две, длинная местность — одна.
+- **Окно:** `lookaheadEdges` звеньев строятся вперёд от текущего; при переходе окно сдвигается, новое звено и его ветки добавляются.
+- **Цепочки:** число локаций в звене пути и в ветке берётся из `chainLength`/`chainWeights` шаблона (раздел 14.1), минимум реже середины.
+- **Цена шага** — `costs[via]`, длина шага 1: сумма шагов и действие «В хаб» дают одинаковую цену.
+- **Один хаб** на старте; пары `hub → terrain` и `hub → building` запрещены — из хаба выходят только на путь.
 
 ## 15. Фракции, квесты, диалоги, открытия
 
@@ -1685,7 +1699,7 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 ## 17. Сейв
 
-Один файл, JSON, в `Application.persistentDataPath`. Формат **v13** сохраняет **мир и игрока**; сейвы v1 (world-only) читаются: блок `player` в них отсутствует. Запись атомарная: `save.json.tmp` → замена, предыдущая версия остаётся в `save.json.bak`; список слотов строится по файлам `*.json`. Сейвы v1–v12 читаются: недостающие `traders`, `quests`, `questSerial`, `lootSerial`, `unlocks`, `reputation`, `talentPoints`, `talents`, `levelHealthBonus`, `lastHubId`, `enemyGone`, `stashChecks`, `stashOpenings`, `stashRolled`, `stashPresent`, `stashOpened` и `settings.xpLossChance` считаются пустыми (для `lastHubId` берётся стартовый или первый хаб карты, для счётчиков — 0, для флагов — `false`, для `xpLossChance` — значение из `rules.xpLossChance`).
+Один файл, JSON, в `Application.persistentDataPath`. Формат **v18** сохраняет **мир и игрока**. Запись атомарная: `save.json.tmp` → замена, предыдущая версия остаётся в `save.json.bak`; список слотов строится по файлам `*.json`. Сейвы старше v18 не читаются — по решению пользователя сейвы пересоздаются (играбельных сборок нет). В v18 удалены подтип `interior` и способы перехода `door`, `stairs`, `hatch`: сейв со старыми кодами не читается.
 
 | Поле | Тип | Смысл |
 | --- | --- | --- |
@@ -1721,8 +1735,13 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 | `stashChecks` | int | проверки локаций без находки тайника, растят шанс следующей; в сейвах до v13 отсутствует (0) |
 | `stashOpenings` | int | вскрытия тайников без джекпота, растят шанс следующего; в сейвах до v13 отсутствует (0) |
 | `quests` | QuestSave[]? | взятые, сданные и проваленные квесты; в сейвах до v6 отсутствует |
+| `routeEdges` | int | сколько звеньев маршрута сгенерировано; в сейвах до v15 отсутствует (0) |
+| `routeTailId` | string? | id последней локации пути последнего построенного звена |
+| `routeFront` | string[]? | выходы последнего звена — концы его веток; из них достройка ведёт в первое звено следующего звена; отсутствует — пусто |
+| `routeLastBranches` | int | сколько веток дало последнее сгенерированное звено |
+| `routeSerial` | int | номер выхода из хаба: входит в seed маршрута (`Combine(seed, "route:N")`), поэтому каждый выход даёт другой маршрут, а загрузка продолжает тот же; в сейвах до v17 отсутствует (0) |
 
-`LocationSave`: `{ instanceId, templateId, seed, background, nodeType, tier, danger, visited, cleared, enemyGone, stashRolled, stashPresent, stashOpened }`.
+`LocationSave`: `{ instanceId, templateId, seed, background, subtype, tier, danger, routeStep, routeEdge, visited, cleared, enemyGone, object? }`, где `object` — единственный объект **текущей** локации (`SpawnedObject`); у остальных локаций маршрута объект не хранится.
 
 `EdgeSave`: `{ edgeId, fromId, toId, via, length, stamina, hours, oneWay, hidden }`.
 
@@ -1735,9 +1754,12 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - `traders[].actorId` уникален и существует среди актёров с `type = trader`; `lastRestockAt ≥ −1` (−1 — пополнения ещё не было); остатки `stock[].count ≥ 1`. Пустой список — запас создаётся при первом обращении.
 - `quests[].questId` существует среди шаблонов квестов; `status` — известное значение; `slot ≥ 0`; `requiredCount ≥ 1`; `killCount ≥ 0`; `locationInstanceId`, если задан, существует среди локаций; `items[].count ≥ 1`. Старые сейвы без блока читаются с пустым журналом и `questSerial = 0`.
 - `traders[].questSlots[]` — неотрицательные часы; слоты квестов дополняются до `rules.questOffersPerTrader` при первом открытии.
+- `routeEdges ≥ 0`, `routeLastBranches ≥ 0`; `routeTailId` и `routeFront[]`, если заданы, существуют среди `locations`. После достройки звена `routeFront` заменяется выходами нового звена; при пустом списке достройка связывает новое звено только с `routeTailId`.
+- `routeSerial ≥ 0`; отсутствие поля — 0. Значение только растёт: его увеличивает выход из хаба, и вместе с `seed` мира оно задаёт seed маршрута.
+- Пройденные локации в сейв не попадают: при переходе снимаются ребро назад, покинутая локация и всё позади текущей (включая невыбранные ветки маршрута). Хаб и локации, добавленные не маршрутом (цели квестов, `routeEdge = 0`), остаются.
 - `lootSerial ≥ 0`; отсутствие поля — 0, бросок тогда считается первым.
 - `stashChecks ≥ 0` и `stashOpenings ≥ 0`; отсутствие полей — 0.
-- `stashPresent` без `stashRolled` и `stashOpened` без `stashPresent` — ошибка загрузки: состояние тайника несогласовано.
+- `object` хранится только у текущей локации; `object.spawnId` существует среди `SpawnEntry`. Объект забран — повторно не появляется; локация после выхода из неё недоступна.
 - Стоимость ребра сохраняется целиком: правка `topology.json` не меняет уже сохранённый мир.
 - Неизвестная погода — ошибка загрузки; неизвестная версия `schemaVersion`/`saveVersion` — ошибка с отказом загрузки.
 
@@ -2003,11 +2025,10 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 - `Quest.kind` ∈ `story`, `repeatable`; у `repeatable` обязателен блок `repeat`.
 - `repeat.type = "life"` требует `cooldownDays ≥ 1`; `repeat.type = "timed"` требует `duration > 0`.
 - `Quest.kind = "story"` не имеет `consequences` провала и не может быть провален.
-- `locationKind` ∈ `hub`, `wild`, `special`; `nodeType` ∈ `hub`, `route`, `site`, `interior`.
+- `locationKind` ∈ `hub`, `wild`, `special`; `subtype` ∈ `hub`, `path`, `building`, `terrain`.
 - `objectCount`, `approachLength`, `edgeLength` и `routeLength` заданы парами `[min, max]` с `min ≥ 0` и `min ≤ max`; у `approachLength` и `edgeLength` минимум ≥ 1.
+- `objectCount` — только `[0, 0]` или `[1, 1]` (не больше одного объекта на локацию).
 - `danger` и `spawnChance` ∈ 0..1; `unique = true` требует `rarity = "unique"`.
-- `approachLength.max` не больше `Topology.maxBranchDepth`; если маршрут может быть длиннее одного отрезка, в топологии обязан существовать переход `route → route`.
-- `Connection.toId` → `LocationTemplate`; переход `(from.nodeType, to.nodeType, via)` разрешён `Topology.transitions`; теги обеих сторон удовлетворяют таблице `via` (14.1.1); `hub → hub` возможен только при `Topology.hubFastTravel = true`.
 - `Topology.costs` содержит цену для каждого `via`, встречающегося в `transitions`; стоимости неотрицательны; `initialStamina ≥ 0`, `0 ≤ dayStartHour < nightStartHour ≤ 24`.
 - Для генерации нужны хотя бы один `hub` и хотя бы один `site`; иначе загрузка данных считается невалидной.
 - `Stage.targetId` соответствует таблице «этап → тип цели» (раздел 15.2): `find`/`gather` → `Item`, `kill`/`talk` → `Actor` нужного типа, `visit` → `LocationTemplate`.
@@ -2018,13 +2039,15 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 
 **Связность локаций**
 
-- `LocationTemplate.nodeType` ∈ `hub`, `route`, `site`, `interior`.
-- `connections[].toId` → `LocationTemplate`; `via` из перечня 14.1.1; `oneWay`, `hidden` — bool; `length ≥ 1`, если задано.
-- Каждое ребро разрешено `Topology.transitions` для пары ролей и проходит таблицу `via` → теги.
-- `interior` не имеет рёбер в `route` и `hub`; `hub` не имеет рёбер в `interior`.
+- `LocationTemplate.subtype` ∈ `hub`, `path`, `building`, `terrain`.
+- Каждое ребро разрешено `Topology.transitions` для пары подтипов и ролей и проходит таблицу `via` → теги.
+- Локация с `chainLength.max > 1` имеет переход в свой подтип: иначе цепочку не построить (`error.world_chain_loop`).
 - У `site` есть хотя бы одно входящее ребро из `route`.
 - Каждая нехабовая локация достижима из какого-либо `hub`; висячих компонент нет.
 - `routeLength[0] ≤ routeLength[1]`; цепочка `hub → route… → site` укладывается в эти границы.
+- `route.branches.oddRange` минимум ≥ 1: у каждого звена есть хотя бы одна ветка, иначе конец звена был бы тупиком.
+- Из каждой цепочки ветки (`building` или `terrain`) существует разрешённый переход в `path`: конец ветки ведёт в следующее звено. Иначе ошибка `error.world_branch_exit`.
+- У каждого звена пути `chainLength.min ≥ 1`; число веток звена — по правилу `oddRange`/`evenGrowth`.
 - `approachLength[0] ≤ approachLength[1]`, если задано; иначе действует `Topology.routeLength` или `formula_route_length`.
 - `Topology.costs[via]` задан для каждого `via`, который встречается в `transitions`; `stamina ≥ 0`, `hours ≥ 0`.
 - `Connection.cost`, если задан, переопределяет `Topology.costs[via]`; отрицательных значений нет.
@@ -2050,10 +2073,14 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 **Генерация и контент**
 
 - `minTier ≤ maxTier`, `objectCount[0] ≤ objectCount[1]`.
-- `weight > 0` у спавна, лута и исходов.
+- `objectCount` допускает только `[0, 0]` или `[1, 1]`: на локации не больше одного объекта.
+- `weight > 0` у спавна, лута и исходов (⏸ у спавна в будущем — формула).
+- Спавн: `id` с префиксом `spawn_`; `requiresTags` и `excludesTags` — из словаря тегов манифеста §5; пересечение `requiresTags` и `excludesTags` — ошибка.
+- Спавн: `lootTable` → существующая `LootTable`; `actorId` → `Actor` типа `enemy` или `npc`; `eventId` → существующий `Event` (события появятся позже — ⏸).
+- Спавн `unique = true` — только на уникальной локации (`LocationTemplate.unique = true`) или по событию; в случайном пуле участвовать не может (⏸ особая генерация уникальных локаций).
+- Тайник — объект спавна: он занимает единственный слот объекта и не сосуществует с NPC или объектом лута; порядок выбора — раздел 14.2.
 - `rolls[0] ≤ rolls[1]`, `rolls[0] ≥ 1`.
 - `choices` не пуст; все `effects` ссылаются на существующие id.
-- `connections[].toId` ссылаются на существующие `LocationTemplate`, сами связи проверяются блоком «Связность локаций».
 
 **Таланты**
 
@@ -2677,82 +2704,64 @@ requiresTags ⊆ location.tags  И  excludesTags ∩ location.tags = ∅
 }
 ```
 
-### 20.17. Логичный маршрут: дорога → точка интереса → дом
+### 20.17. Логичный маршрут: дорога → здание → здание → дорога
 
-Три локации одной ветки. Дорога не переходит в дом напрямую: сначала отрезок трассы, потом съезд, и только затем дверь.
+Дорога не переходит в дом напрямую: ветка начинается с пути, здания стоят цепочкой (переход — `corridor`), конец ветки возвращается на путь. Помещений внутри зданий нет — здание само конечная локация.
 
 ```json
 {
+  "schemaVersion": 1,
+  "kind": "locations",
   "id": "loc_hub_01",
   "titleKey": "loc.loc_hub_01.title",
-  "kind": "hub",
-  "nodeType": "hub",
-  "tags": ["hub", "outdoor", "urban"],
+  "locationKind": "hub",
+  "subtype": "hub",
+  "tags": ["hub", "outdoor", "road"],
   "tier": 0,
   "backgrounds": ["bg_hub_day"],
-  "objectCount": [2, 4],
+  "objectCount": [0, 0],
   "danger": 0,
-  "connections": [
-    { "toId": "loc_road_01", "via": "path" },
-    { "toId": "loc_road_02", "via": "road" }
-  ]
+  "chainLength": [1, 1]
 }
 ```
 
 ```json
 {
+  "schemaVersion": 1,
+  "kind": "locations",
   "id": "loc_road_01",
   "titleKey": "loc.loc_road_01.title",
-  "kind": "wild",
-  "nodeType": "route",
+  "locationKind": "wild",
+  "subtype": "path",
+  "role": "highway",
   "tags": ["road", "outdoor"],
   "tier": 1,
   "backgrounds": ["bg_road_dawn", "bg_road_dusk"],
-  "objectCount": [2, 5],
+  "objectCount": [1, 1],
   "danger": 0.3,
-  "connections": [
-    { "toId": "loc_road_02", "via": "road", "length": 2 },
-    { "toId": "loc_house_01", "via": "path", "cost": { "stamina": 4, "hours": 2 } }
-  ]
+  "chainLength": [1, 3]
 }
 ```
 
 ```json
 {
-  "id": "loc_house_01",
-  "titleKey": "loc.loc_house_01.title",
-  "kind": "wild",
-  "nodeType": "site",
-  "tags": ["outdoor", "urban"],
+  "schemaVersion": 1,
+  "kind": "locations",
+  "id": "loc_plant_01",
+  "titleKey": "loc.loc_plant_01.title",
+  "locationKind": "wild",
+  "subtype": "building",
+  "role": "industrial",
+  "tags": ["indoor", "outdoor", "industrial"],
   "tier": 1,
-  "backgrounds": ["bg_house_ext"],
-  "objectCount": [3, 6],
-  "danger": 0.2,
-  "approachLength": [2, 3],
-  "connections": [
-    { "toId": "loc_house_01_room", "via": "door" }
-  ]
+  "backgrounds": ["bg_plant"],
+  "objectCount": [1, 1],
+  "danger": 0.5,
+  "chainLength": [2, 2]
 }
 ```
 
-```json
-{
-  "id": "loc_house_01_room",
-  "titleKey": "loc.loc_house_01_room.title",
-  "kind": "wild",
-  "nodeType": "interior",
-  "tags": ["indoor", "urban"],
-  "tier": 1,
-  "backgrounds": ["bg_room_living"],
-  "objectCount": [1, 3],
-  "danger": 0.1,
-  "connections": [
-    { "toId": "loc_house_01", "via": "door" }
-  ]
-}
-```
-
-Валидатор пропустит такую цепочку. А вот `loc_road_01 → loc_house_01` с `via: "road"` — нет: `road` требует тег `road` у обеих сторон, а у двора с домом он отсутствует. И `loc_road_01 → loc_house_01_room` напрямую тоже не пройдёт: `interior` не соединяется с `route`.
+Валидатор пропустит такую цепочку: `path → building(industrial)`, `building(industrial) → building(industrial)` через `corridor`, `building(industrial) → path`. А вот `loc_road_01 → loc_hub_01` с `via: "road"` — нет: `road` требует тег `road` у обеих сторон, а у здания его нет. Цепочка `chainLength: [2, 2]` без перехода в свой же подтип — ошибка `error.world_chain_loop`.
 
 ### 20.18. Наследование и включение
 

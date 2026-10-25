@@ -16,8 +16,8 @@ namespace AnomalyPath.Tests
                 (
                     "ошибка: торговец не привязан к хабу",
                     "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_hub\"," +
-                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"nodeType\":\"hub\"," +
-                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]}",
+                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"subtype\":\"hub\"," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0]}",
                     "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"trd_x\",\"type\":\"trader\"," +
                     "\"nameKey\":\"n\",\"roles\":[\"trader\"],\"trader\":{\"restockHours\":12," +
                     "\"playerBuyModifier\":1,\"playerSellModifier\":0.5," +
@@ -26,8 +26,8 @@ namespace AnomalyPath.Tests
                 (
                     "ошибка: торговец привязан не к хабу",
                     "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_route\"," +
-                    "\"titleKey\":\"t\",\"locationKind\":\"wild\",\"nodeType\":\"route\"," +
-                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]," +
+                    "\"titleKey\":\"t\",\"locationKind\":\"wild\",\"subtype\":\"path\"," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0]," +
                     "\"traders\":[\"trd_x\"]}",
                     "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"trd_x\",\"type\":\"trader\"," +
                     "\"nameKey\":\"n\",\"roles\":[\"trader\"],\"trader\":{\"restockHours\":12," +
@@ -37,8 +37,8 @@ namespace AnomalyPath.Tests
                 (
                     "ошибка: товар торговца не найден",
                     "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_hub\"," +
-                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"nodeType\":\"hub\"," +
-                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]," +
+                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"subtype\":\"hub\"," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0]," +
                     "\"traders\":[\"trd_x\"]}",
                     "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"trd_x\",\"type\":\"trader\"," +
                     "\"nameKey\":\"n\",\"roles\":[\"trader\"],\"trader\":{\"restockHours\":12," +
@@ -48,16 +48,16 @@ namespace AnomalyPath.Tests
                 (
                     "ошибка: у торговца нет блока торговли",
                     "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_hub\"," +
-                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"nodeType\":\"hub\"," +
-                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]}",
+                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"subtype\":\"hub\"," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0]}",
                     "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"trd_x\",\"type\":\"trader\"," +
                     "\"nameKey\":\"n\",\"roles\":[\"trader\"]}",
                     "нет блока 'trader'"),
                 (
                     "ошибка: роль торговца у не-торговца",
                     "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_hub\"," +
-                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"nodeType\":\"hub\"," +
-                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]}",
+                    "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"subtype\":\"hub\"," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0]}",
                     "{\"schemaVersion\":1,\"kind\":\"actors\",\"id\":\"npc_x\",\"type\":\"npc\"," +
                     "\"nameKey\":\"n\",\"roles\":[\"trader\"]}",
                     "Роль 'trader' задана"),

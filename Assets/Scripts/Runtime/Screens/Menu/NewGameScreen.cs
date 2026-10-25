@@ -252,7 +252,24 @@ namespace AnomalyPath.Runtime.Screens.Menu
             nickname.SetText(NextNickname());
         }
 
-        private string NextNickname() => Host.Nicknames.Generate(unchecked((int)DateTime.UtcNow.Ticks));
+        /// <summary>
+        /// Новый ник для кубика: повторяет бросок, если генератор выдал то же имя,
+        /// иначе кубик иногда не меняет подпись.
+        /// </summary>
+        private string NextNickname()
+        {
+            var current = nickname.Text;
+            for (var attempt = 0; attempt < 8; attempt++)
+            {
+                var name = Host.Nicknames.Generate(unchecked((int)DateTime.UtcNow.Ticks) + attempt);
+                if (!string.Equals(name, current, StringComparison.Ordinal))
+                {
+                    return name;
+                }
+            }
+
+            return Host.Nicknames.Generate(unchecked((int)DateTime.UtcNow.Ticks));
+        }
 
         private void ResetDifficulty()
         {

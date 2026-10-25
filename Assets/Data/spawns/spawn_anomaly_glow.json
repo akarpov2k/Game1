@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "spawns",
+  "id": "spawn_anomaly_glow",
+  "titleKey": "spawn.spawn_anomaly_glow.title",
+  "objectKind": "loot",
+  "requiresTags": ["anomaly", "outdoor"],
+  "excludesTags": ["hub"],
+  "weight": 3,
+  "minTier": 1,
+  "maxTier": 3,
+  "lootTable": "loot_human"
+}

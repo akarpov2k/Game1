@@ -252,7 +252,7 @@ namespace AnomalyPath.Tests
             var map = session.State.World.Map;
             foreach (var location in map.Locations)
             {
-                if (location.NodeType != LocationNodeType.Hub)
+                if (location.Subtype != LocationSubtype.Hub)
                 {
                     session.State.World.MoveTo(location.InstanceId);
                     return;

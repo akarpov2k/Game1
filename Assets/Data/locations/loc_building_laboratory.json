@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "locations",
+  "id": "loc_building_laboratory",
+  "titleKey": "location.building.laboratory.title",
+  "locationKind": "wild",
+  "subtype": "building",
+  "role": "laboratory",
+  "tags": ["indoor", "outdoor", "industrial"],
+  "tier": 2,
+  "backgrounds": ["bg_interior_room"],
+  "objectCount": [1, 1],
+  "danger": 0.7,
+  "chainLength": [1, 1],
+  "rarity": "rare",
+  "spawnChance": 1,
+  "unique": false
+}

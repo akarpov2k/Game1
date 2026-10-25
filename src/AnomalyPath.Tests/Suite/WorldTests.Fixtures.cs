@@ -13,62 +13,42 @@ namespace AnomalyPath.Tests
     /// <summary>Часть класса <see cref="WorldTests"/>: фикстуры и помощники.</summary>
     public sealed partial class WorldTests
     {
-        private Dictionary<string, string> WorldFixture(string hubExtra = "", string routeExtra = "")
-        {
-            var files = BaseWorldFixture();
-            if (!string.IsNullOrWhiteSpace(hubExtra))
-            {
-                files["locations/hub.json"] = LocationJson("loc_hub", "hub", "hub", "[\"hub\",\"outdoor\",\"road\"]", hubExtra);
-            }
-
-            if (!string.IsNullOrWhiteSpace(routeExtra))
-            {
-                files["locations/route.json"] = LocationJson("loc_route", "wild", "route", "[\"road\",\"outdoor\"]", routeExtra);
-            }
-
-            return files;
-        }
-
         private Dictionary<string, string> BaseWorldFixture() =>
             new Dictionary<string, string>
             {
-                ["catalog.json"] = Catalog("topology.json", "locations/hub.json", "locations/route.json", "locations/site.json", "locations/interior.json"),
+                ["catalog.json"] = Catalog("topology.json", "locations/hub.json", "locations/route.json", "locations/site.json"),
                 ["topology.json"] = WorldTopologyJson(),
                 ["locations/hub.json"] = LocationJson("loc_hub", "hub", "hub", "[\"hub\",\"outdoor\",\"road\"]"),
-                ["locations/route.json"] = LocationJson("loc_route", "wild", "route", "[\"road\",\"outdoor\"]"),
-                ["locations/site.json"] = LocationJson(
-                    "loc_site",
-                    "wild",
-                    "site",
-                    "[\"outdoor\"]",
-                    ",\"approachLength\":[1,1],\"connections\":[{\"toId\":\"loc_interior\",\"via\":\"door\"}]"),
-                ["locations/interior.json"] = LocationJson("loc_interior", "special", "interior", "[\"indoor\"]")
+                ["locations/route.json"] = LocationJson("loc_route", "wild", "path", "[\"road\",\"outdoor\"]"),
+                ["locations/site.json"] = LocationJson("loc_site", "wild", "building", "[\"indoor\",\"outdoor\"]")
             };
 
         private static string WorldTopologyJson() =>
-            "{\"schemaVersion\":1,\"kind\":\"topology\",\"id\":\"topology\"," +
-            "\"transitions\":[" +
-            "{\"from\":\"hub\",\"to\":\"route\",\"via\":[\"road\",\"path\"]}," +
-            "{\"from\":\"route\",\"to\":\"route\",\"via\":[\"road\",\"path\"]}," +
-            "{\"from\":\"route\",\"to\":\"site\",\"via\":[\"path\"]}," +
-            "{\"from\":\"site\",\"to\":\"interior\",\"via\":[\"door\"]}]," +
-            "\"routeLength\":[1,2],\"edgeLength\":[1,2],\"costs\":{" +
+            "{\"schemaVersion\":1,\"kind\":\"topology\",\"id\":\"topology\",\"route\":{\"transitions\":[" +
+            "{\"from\":\"hub\",\"to\":\"path\",\"via\":[\"road\",\"path\"]}," +
+            "{\"from\":\"path\",\"to\":\"path\",\"via\":[\"road\",\"path\"]}," +
+            "{\"from\":\"path\",\"to\":\"building\",\"via\":[\"path\"]}," +
+            "{\"from\":\"building\",\"to\":\"building\",\"via\":[\"corridor\"]}," +
+            "{\"from\":\"building\",\"to\":\"path\",\"via\":[\"path\"]}]," +
+            "\"lookaheadEdges\":2,\"hubReturn\":{\"stamina\":2,\"hours\":0.5}," +
+            "\"branches\":{\"oddRange\":[1,2],\"evenGrowth\":1,\"maxChains\":2}},\"costs\":{" +
             "\"road\":{\"stamina\":2,\"hours\":1},\"path\":{\"stamina\":3,\"hours\":1.5}," +
-            "\"door\":{\"stamina\":0,\"hours\":0}},\"maxBranchDepth\":4,\"initialStamina\":10," +
+            "\"corridor\":{\"stamina\":0,\"hours\":0}},\"initialStamina\":10," +
             "\"dayStartHour\":6,\"nightStartHour\":22}";
 
         private static string LocationJson(
             string id,
             string locationKind,
-            string nodeType,
+            string subtype,
             string tags,
             string extra = "")
         {
             var suffix = string.IsNullOrWhiteSpace(extra) ? string.Empty : "," + extra.TrimStart(',');
             return "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"" + id + "\",\"titleKey\":\"t\"," +
-                   "\"locationKind\":\"" + locationKind + "\",\"nodeType\":\"" + nodeType + "\"," +
+                   "\"locationKind\":\"" + locationKind + "\",\"subtype\":\"" + subtype + "\"," +
                    "\"tags\":" + tags + ",\"tier\":0,\"backgrounds\":[\"bg\"],\"objectCount\":[0,0]," +
-                   "\"danger\":0,\"connections\":[],\"rarity\":\"common\",\"spawnChance\":1,\"unique\":false" + suffix + "}";
+                   "\"danger\":0,\"chainLength\":[1,1],\"rarity\":\"common\"," +
+                   "\"spawnChance\":1,\"unique\":false" + suffix + "}";
         }
 
         private static string Signature(WorldMap map)
@@ -148,7 +128,7 @@ namespace AnomalyPath.Tests
             var count = 0;
             foreach (var location in path)
             {
-                if (location.NodeType == LocationNodeType.Route)
+                if (location.Subtype == LocationSubtype.Path)
                 {
                     count++;
                 }
@@ -162,7 +142,7 @@ namespace AnomalyPath.Tests
             var result = new List<string>();
             foreach (var location in path)
             {
-                if (location.NodeType == LocationNodeType.Route)
+                if (location.Subtype == LocationSubtype.Path)
                 {
                     result.Add(location.InstanceId);
                 }

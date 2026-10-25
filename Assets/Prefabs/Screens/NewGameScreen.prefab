@@ -902,7 +902,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: AnomalyPath.Runtime::AnomalyPath.Runtime.Ui.Core.LocalizedText
   label: {fileID: 2039350260365168950}
-  key: 31
+  key: ui.newgame_start
 --- !u!1 &1805475692374845033
 GameObject:
   m_ObjectHideFlags: 0
@@ -1181,7 +1181,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: AnomalyPath.Runtime::AnomalyPath.Runtime.Ui.Core.LocalizedText
   label: {fileID: 5251146392118251123}
-  key: 129
+  key: ui.newgame_back
 --- !u!1 &2085382929853624290
 GameObject:
   m_ObjectHideFlags: 0
@@ -4340,7 +4340,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: AnomalyPath.Runtime::AnomalyPath.Runtime.Ui.Core.LocalizedText
   label: {fileID: 2390297399416121589}
-  key: 39
+  key: ui.newgame_preview_empty
 --- !u!1 &7679254714134232404
 GameObject:
   m_ObjectHideFlags: 0

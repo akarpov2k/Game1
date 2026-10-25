@@ -37,13 +37,13 @@ namespace AnomalyPath.Core.Services
             }
 
             var anchorId = session.State.World.CurrentLocationId;
-            if (session.State.World.CurrentLocation.NodeType != LocationNodeType.Hub)
+            if (session.State.World.CurrentLocation.Subtype != LocationSubtype.Hub)
             {
                 anchorId = map.StartLocationId;
             }
 
             var anchor = _locations.Get(map.GetLocation(anchorId).TemplateId);
-            if (anchor.NodeType != LocationNodeType.Hub)
+            if (anchor.Subtype != LocationSubtype.Hub)
             {
                 return false;
             }
@@ -99,7 +99,7 @@ namespace AnomalyPath.Core.Services
             var candidates = new List<LocationTemplate>();
             foreach (var template in _locations.All)
             {
-                if (template.NodeType != LocationNodeType.Route)
+                if (template.Subtype != LocationSubtype.Path)
                 {
                     continue;
                 }
@@ -127,7 +127,7 @@ namespace AnomalyPath.Core.Services
                 template.Id,
                 seed,
                 background,
-                template.NodeType,
+                template.Subtype,
                 template.Tier,
                 template.Danger);
         }

@@ -16,7 +16,7 @@ namespace AnomalyPath.Tests
 
         public override void Run()
         {
-            ErrorTests(); ErrorBehaviorTests(); TraderErrorTests(); QuestErrorTests(); TalentErrorTests(); LootErrorTests();
+            ErrorTests(); ErrorBehaviorTests(); RouteErrorTests(); TraderErrorTests(); QuestErrorTests(); TalentErrorTests(); LootErrorTests(); SpawnErrorTests();
         }
     }
 }

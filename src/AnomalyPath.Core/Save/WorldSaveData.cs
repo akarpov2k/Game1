@@ -30,6 +30,12 @@ namespace AnomalyPath.Core.Save
         /// <param name="lootSerial">Счётчик бросков лута; в старых сейвах 0.</param>
         /// <param name="stashChecks">Проверки локаций без тайника; в старых сейвах 0.</param>
         /// <param name="stashOpenings">Вскрытия тайников без джекпота; в старых сейвах 0.</param>
+        /// <param name="objectSeed">Постоянная часть seed выбора объектов; <c>null</c> — новый GUID.</param>
+        /// <param name="routeEdges">Сколько звеньев маршрута сгенерировано.</param>
+        /// <param name="routeTailId">Id конца маршрута; <c>null</c> — маршрут не строился.</param>
+        /// <param name="routeLastBranches">Веток на последнем звене.</param>
+        /// <param name="routeFront">Выходы последнего звена — концы его веток.</param>
+        /// <param name="routeSerial">Номер выхода из хаба: входит в seed маршрута; в сейвах до v17 0.</param>
         public WorldSaveData(
             string startLocationId,
             string currentLocationId,
@@ -50,7 +56,13 @@ namespace AnomalyPath.Core.Save
             string? lastHubId = null,
             int lootSerial = 0,
             int stashChecks = 0,
-            int stashOpenings = 0)
+            int stashOpenings = 0,
+            string? objectSeed = null,
+            int routeEdges = 0,
+            string? routeTailId = null,
+            int routeLastBranches = 0,
+            IReadOnlyList<string>? routeFront = null,
+            int routeSerial = 0)
         {
             StartLocationId = startLocationId;
             CurrentLocationId = currentLocationId;
@@ -72,6 +84,14 @@ namespace AnomalyPath.Core.Save
             LootSerial = lootSerial;
             StashChecks = stashChecks;
             StashOpenings = stashOpenings;
+            ObjectSeed = string.IsNullOrWhiteSpace(objectSeed)
+                ? System.Guid.NewGuid().ToString("N")
+                : objectSeed!;
+            RouteEdges = routeEdges;
+            RouteTailId = routeTailId;
+            RouteLastBranches = routeLastBranches;
+            RouteFront = routeFront ?? new List<string>();
+            RouteSerial = routeSerial;
         }
 
         /// <summary>Стартовая локация.</summary>
@@ -134,6 +154,24 @@ namespace AnomalyPath.Core.Save
         /// <summary>Вскрытия тайников без джекпота; в старых сейвах 0.</summary>
         public int StashOpenings { get; }
 
+        /// <summary>Постоянная часть seed выбора объектов: GUID, созданный при новой игре.</summary>
+        public string ObjectSeed { get; }
+
+        /// <summary>Сколько звеньев маршрута сгенерировано.</summary>
+        public int RouteEdges { get; }
+
+        /// <summary>Id конца маршрута; <c>null</c> — маршрут не строился.</summary>
+        public string? RouteTailId { get; }
+
+        /// <summary>Веток на последнем звене.</summary>
+        public int RouteLastBranches { get; }
+
+        /// <summary>Выходы последнего звена — концы его веток; в сейвах до v16 пусто.</summary>
+        public IReadOnlyList<string> RouteFront { get; }
+
+        /// <summary>Номер выхода из хаба: входит в seed маршрута; в сейвах до v17 0.</summary>
+        public int RouteSerial { get; }
+
         /// <summary>Сериализует снимок в JSON-узел.</summary>
         /// <returns>Объект сохранения мира.</returns>
         public JsonValue ToJson()
@@ -183,6 +221,22 @@ namespace AnomalyPath.Core.Save
             value.Members["lootSerial"] = JsonValue.FromNumber(LootSerial);
             value.Members["stashChecks"] = JsonValue.FromNumber(StashChecks);
             value.Members["stashOpenings"] = JsonValue.FromNumber(StashOpenings);
+            value.Members["objectSeed"] = JsonValue.FromString(ObjectSeed);
+            value.Members["routeEdges"] = JsonValue.FromNumber(RouteEdges);
+            if (RouteTailId != null)
+            {
+                value.Members["routeTailId"] = JsonValue.FromString(RouteTailId);
+            }
+
+            value.Members["routeLastBranches"] = JsonValue.FromNumber(RouteLastBranches);
+            var routeFront = JsonValue.NewArray();
+            foreach (var id in RouteFront)
+            {
+                routeFront.Items.Add(JsonValue.FromString(id));
+            }
+
+            value.Members["routeFront"] = routeFront;
+            value.Members["routeSerial"] = JsonValue.FromNumber(RouteSerial);
             var quests = JsonValue.NewArray();
             foreach (var quest in Quests)
             {
@@ -247,6 +301,34 @@ namespace AnomalyPath.Core.Save
                 throw new DataException(sourcePath, CoreErrors.SaveMissingField, "stashChecks");
             }
 
+            var objectSeed = DataMap.OptionalString(value, "objectSeed");
+            var routeEdges = DataMap.OptionalInt(value, "routeEdges", 0);
+            var routeLastBranches = DataMap.OptionalInt(value, "routeLastBranches", 0);
+            if (routeEdges < 0 || routeLastBranches < 0)
+            {
+                throw new DataException(sourcePath, CoreErrors.SaveMissingField, "routeEdges");
+            }
+
+            var routeTailId = DataMap.OptionalString(value, "routeTailId");
+            var routeSerial = DataMap.OptionalInt(value, "routeSerial", 0);
+            if (routeSerial < 0)
+            {
+                throw new DataException(sourcePath, CoreErrors.SaveMissingField, "routeSerial");
+            }
+            var routeFront = new List<string>();
+            if (value.TryGet("routeFront", out var routeFrontValue) && routeFrontValue.IsArray)
+            {
+                foreach (var item in routeFrontValue.Items)
+                {
+                    if (item.Kind != JsonKind.String)
+                    {
+                        throw new DataException(sourcePath, CoreErrors.SaveMissingField, "routeFront");
+                    }
+
+                    routeFront.Add(item.Text);
+                }
+            }
+
             return new WorldSaveData(
                 startLocationId,
                 currentLocationId,
@@ -267,7 +349,13 @@ namespace AnomalyPath.Core.Save
                 lastHubId,
                 lootSerial,
                 stashChecks,
-                stashOpenings);
+                stashOpenings,
+                objectSeed,
+                routeEdges,
+                routeTailId,
+                routeLastBranches,
+                routeFront,
+                routeSerial);
         }
 
         private static IReadOnlyList<QuestSaveData> ReadQuests(JsonValue value, string sourcePath)

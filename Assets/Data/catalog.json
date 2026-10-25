@@ -13,6 +13,7 @@
     "items/col_trophies.json",
     "loot.json",
     "loot/col_loot.json",
+    "spawns/col_spawns.json",
     "damage/col_damage.json",
     "formulas/formula_damage_base.json",
     "formulas/formula_combat_xp.json",

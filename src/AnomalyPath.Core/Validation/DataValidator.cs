@@ -86,6 +86,7 @@ namespace AnomalyPath.Core.Validation
                 ValidateQuests(loaded, issues);
                 ValidateTalents(loaded, issues);
                 ValidateLoot(loaded, issues);
+                ValidateSpawns(loaded, issues);
                 AddWorldIssues(loaded, issues);
                 ValidateActorAttacks(loaded, issues);
             }

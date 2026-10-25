@@ -8,6 +8,7 @@ using AnomalyPath.Core.Json;
 using AnomalyPath.Core.Quests;
 using AnomalyPath.Core.Save;
 using AnomalyPath.Core.Session;
+using AnomalyPath.Core.Spawns;
 using AnomalyPath.Core.Trade;
 using AnomalyPath.Core.World;
 
@@ -19,6 +20,7 @@ namespace AnomalyPath.Core.Services
         private readonly ISaveStorage _storage;
         private readonly IItemRepository _items;
         private readonly IGameRulesRepository? _rules;
+        private readonly ISpawnRepository? _spawns;
 
         /// <summary>Создаёт сервис поверх хранилища.</summary>
         /// <param name="storage">Хранилище слотов.</param>
@@ -27,12 +29,18 @@ namespace AnomalyPath.Core.Services
         /// Правила прохождения: значение потери опыта для сейвов, записанных до появления
         /// настройки; <c>null</c> — без подстановки, такие сейвы читаются с нулём.
         /// </param>
+        /// <param name="spawns">Записи спавна для восстановления объекта локации; <c>null</c> — без объектов.</param>
         /// <exception cref="ArgumentNullException">Хранилище или предметы не заданы.</exception>
-        public SaveService(ISaveStorage storage, IItemRepository items, IGameRulesRepository? rules = null)
+        public SaveService(
+            ISaveStorage storage,
+            IItemRepository items,
+            IGameRulesRepository? rules = null,
+            ISpawnRepository? spawns = null)
         {
             _storage = storage ?? throw new ArgumentNullException(nameof(storage));
             _items = items ?? throw new ArgumentNullException(nameof(items));
             _rules = rules;
+            _spawns = spawns;
         }
 
         /// <inheritdoc />
@@ -76,7 +84,13 @@ namespace AnomalyPath.Core.Services
                 world.LastHubId,
                 world.LootSerial,
                 world.StashChecks,
-                world.StashOpenings);
+                world.StashOpenings,
+                world.ObjectSeed,
+                world.RouteEdges,
+                world.RouteTailId,
+                world.RouteLastBranches,
+                world.RouteFrontIds,
+                world.Map.RouteSerial);
             var game = new SaveGame(
                 SaveGame.CurrentSchemaVersion,
                 SaveGame.CurrentSaveVersion,
@@ -103,9 +117,11 @@ namespace AnomalyPath.Core.Services
                     item.TemplateId,
                     item.Seed,
                     item.Background,
-                    item.NodeType,
+                    item.Subtype,
                     item.Tier,
-                    item.Danger);
+                    item.Danger,
+                    item.RouteStep,
+                    item.RouteEdge);
                 if (item.Visited)
                 {
                     location.MarkVisited();
@@ -136,6 +152,21 @@ namespace AnomalyPath.Core.Services
                     location.MarkStashOpened();
                 }
 
+                if (item.ObjectSpawnId != null)
+                {
+                    var restored = RestoreObject(item.ObjectSpawnId);
+                    if (restored != null)
+                    {
+                        if (item.ObjectLooted)
+                        {
+                            restored.MarkLooted();
+                        }
+
+                        location.SetObject(restored);
+                        location.MarkObjectSelected();
+                    }
+                }
+
                 locations.Add(location);
             }
 
@@ -160,7 +191,12 @@ namespace AnomalyPath.Core.Services
                 world.StartLocationId,
                 world.StartingStamina,
                 world.DayStartHour,
-                world.NightStartHour);
+                world.NightStartHour,
+                world.RouteEdges,
+                world.RouteTailId,
+                world.RouteLastBranches,
+                world.RouteFront,
+                world.RouteSerial);
             var clock = new WorldClock(world.Day, world.Hours, world.DayStartHour, world.NightStartHour);
             var weather = WeatherCodec.FromCode(world.Weather, slot);
             var state = new WorldState(
@@ -173,7 +209,8 @@ namespace AnomalyPath.Core.Services
                 world.LastHubId,
                 world.LootSerial,
                 world.StashChecks,
-                world.StashOpenings);
+                world.StashOpenings,
+                world.ObjectSeed);
             var player = game.Player == null
                 ? null
                 : PlayerSaveMapper.FromSaveData(game.Player, _items, slot);
@@ -235,7 +272,7 @@ namespace AnomalyPath.Core.Services
                     location.TemplateId,
                     location.Seed,
                     location.Background,
-                    location.NodeType,
+                    location.Subtype,
                     location.Tier,
                     location.Danger,
                     location.Visited,
@@ -243,10 +280,26 @@ namespace AnomalyPath.Core.Services
                     location.EnemyGone,
                     location.StashRolled,
                     location.StashPresent,
-                    location.StashOpened));
+                    location.StashOpened,
+                    location.Object?.SpawnId,
+                    location.Object?.Looted ?? false,
+                    location.RouteStep,
+                    location.RouteEdge));
             }
 
             return result;
+        }
+
+        private LocationObject? RestoreObject(string spawnId)
+        {
+            if (spawnId == StashLocationObject.DefaultSpawnId)
+            {
+                return StashLocationObject.CreateDefault();
+            }
+
+            return _spawns != null && _spawns.TryGet(spawnId, out var entry) && entry != null
+                ? entry.CreateObject()
+                : null;
         }
 
         private static IReadOnlyList<EdgeSaveData> ToEdgeData(WorldMap map)

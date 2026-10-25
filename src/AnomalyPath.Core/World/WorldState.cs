@@ -20,6 +20,7 @@ namespace AnomalyPath.Core.World
         /// <param name="lootSerial">Номер последнего броска лута; в старых сейвах 0.</param>
         /// <param name="stashChecks">Проверки локаций без тайника с последней находки; в старых сейвах 0.</param>
         /// <param name="stashOpenings">Вскрытия тайников без джекпота с последнего срабатывания; в старых сейвах 0.</param>
+        /// <param name="objectSeed">Постоянная часть seed выбора объектов; <c>null</c> — новый GUID.</param>
         /// <exception cref="DataException">Локация не найдена или выносливость вне границ.</exception>
         public WorldState(
             WorldMap map,
@@ -31,7 +32,8 @@ namespace AnomalyPath.Core.World
             string? lastHubId = null,
             int lootSerial = 0,
             int stashChecks = 0,
-            int stashOpenings = 0)
+            int stashOpenings = 0,
+            string? objectSeed = null)
         {
             Map = map ?? throw new ArgumentNullException(nameof(map));
             Clock = clock ?? throw new ArgumentNullException(nameof(clock));
@@ -62,6 +64,9 @@ namespace AnomalyPath.Core.World
             LootSerial = lootSerial;
             StashChecks = stashChecks;
             StashOpenings = stashOpenings;
+            ObjectSeed = string.IsNullOrWhiteSpace(objectSeed)
+                ? Guid.NewGuid().ToString("N")
+                : objectSeed!;
             LastHubId = ResolveLastHub(map, currentLocationId, lastHubId);
             Map.GetLocation(currentLocationId).MarkVisited();
         }
@@ -105,8 +110,35 @@ namespace AnomalyPath.Core.World
         /// </summary>
         public int StashOpenings { get; private set; }
 
+        /// <summary>
+        /// Постоянная часть seed выбора объектов локаций: GUID, созданный при новой игре
+        /// и сохранённый в сейве. Временная часть добавляется при входе на локацию.
+        /// </summary>
+        public string ObjectSeed { get; }
+
         /// <summary>Текущая локация.</summary>
         public LocationInstance CurrentLocation => Map.GetLocation(CurrentLocationId);
+
+        /// <summary>Сколько звеньев маршрута уже сгенерировано.</summary>
+        public int RouteEdges => Map.RouteEdges;
+
+        /// <summary>Id последней локации конца маршрута; <c>null</c> — маршрут ещё не строился.</summary>
+        public string? RouteTailId => Map.RouteTailId;
+
+        /// <summary>Сколько веток дало последнее сгенерированное звено.</summary>
+        public int RouteLastBranches => Map.RouteLastBranches;
+
+        /// <summary>Выходы последнего звена — концы его веток, ведущие в следующее звено.</summary>
+        public IReadOnlyList<string> RouteFrontIds => Map.RouteFrontIds;
+
+        /// <summary>Запоминает, докуда достроен маршрут.</summary>
+        /// <param name="edges">Сколько звеньев сгенерировано.</param>
+        /// <param name="tailId">Id конца маршрута; <c>null</c> — маршрут не строился.</param>
+        /// <param name="lastBranches">Веток на последнем звене.</param>
+        /// <param name="frontIds">Выходы звена — концы его веток.</param>
+        /// <exception cref="DataException">Отрицательные значения или неизвестный конец маршрута.</exception>
+        public void MarkRoute(int edges, string? tailId, int lastBranches, IReadOnlyList<string>? frontIds = null) =>
+            Map.MarkRoute(edges, tailId, lastBranches, frontIds);
 
         /// <summary>Создаёт состояние в начале новой игры.</summary>
         /// <param name="map">Карта мира.</param>
@@ -155,7 +187,7 @@ namespace AnomalyPath.Core.World
 
             CurrentLocationId = locationId;
             location.MarkVisited();
-            if (location.NodeType == LocationNodeType.Hub)
+            if (location.Subtype == LocationSubtype.Hub)
             {
                 LastHubId = locationId;
             }
@@ -187,7 +219,7 @@ namespace AnomalyPath.Core.World
             {
                 if (!map.TryGetLocation(lastHubId, out var savedHub) ||
                     savedHub == null ||
-                    savedHub.NodeType != LocationNodeType.Hub)
+                    savedHub.Subtype != LocationSubtype.Hub)
                 {
                     throw new DataException(lastHubId, CoreErrors.WorldInstanceNotFound, lastHubId);
                 }
@@ -197,7 +229,7 @@ namespace AnomalyPath.Core.World
 
             if (map.TryGetLocation(currentLocationId, out var current) &&
                 current != null &&
-                current.NodeType == LocationNodeType.Hub)
+                current.Subtype == LocationSubtype.Hub)
             {
                 return currentLocationId;
             }
@@ -205,7 +237,7 @@ namespace AnomalyPath.Core.World
             var hubs = new List<LocationInstance>();
             foreach (var location in map.Locations)
             {
-                if (location.NodeType == LocationNodeType.Hub)
+                if (location.Subtype == LocationSubtype.Hub)
                 {
                     hubs.Add(location);
                 }

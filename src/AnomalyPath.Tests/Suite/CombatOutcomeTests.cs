@@ -304,7 +304,7 @@ namespace AnomalyPath.Tests
         {
             foreach (var location in state.World.Map.Locations)
             {
-                if (location.NodeType != LocationNodeType.Hub)
+                if (location.Subtype != LocationSubtype.Hub)
                 {
                     state.World.MoveTo(location.InstanceId);
                     return location.InstanceId;
@@ -318,7 +318,7 @@ namespace AnomalyPath.Tests
         {
             foreach (var location in state.World.Map.Locations)
             {
-                if (location.NodeType != LocationNodeType.Hub && location.Tier > 0)
+                if (location.Subtype != LocationSubtype.Hub && location.Tier > 0)
                 {
                     state.World.MoveTo(location.InstanceId);
                     return location.Tier;

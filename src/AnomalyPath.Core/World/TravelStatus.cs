@@ -14,6 +14,12 @@ namespace AnomalyPath.Core.World
         WrongLocation,
 
         /// <summary>Переход запрещён во время боя.</summary>
-        InCombat
+        InCombat,
+
+        /// <summary>В хаб можно вернуться только с пути.</summary>
+        HubUnavailable,
+
+        /// <summary>Не хватает выносливости на возврат в хаб.</summary>
+        NotEnoughStamina
     }
 }

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "spawns",
+  "id": "spawn_house_cabinet",
+  "titleKey": "spawn.spawn_house_cabinet.title",
+  "objectKind": "loot",
+  "requiresTags": ["indoor", "house"],
+  "excludesTags": ["hub"],
+  "weight": 2,
+  "minTier": 0,
+  "maxTier": 2,
+  "lootTable": "loot_human"
+}

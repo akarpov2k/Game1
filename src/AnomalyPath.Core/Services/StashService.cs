@@ -49,7 +49,7 @@ namespace AnomalyPath.Core.Services
                 throw new ArgumentNullException(nameof(location));
             }
 
-            if (_settings == null || location.NodeType == LocationNodeType.Hub || location.StashRolled)
+            if (_settings == null || location.Subtype == LocationSubtype.Hub || location.StashRolled)
             {
                 return false;
             }

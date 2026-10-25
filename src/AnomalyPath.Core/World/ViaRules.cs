@@ -5,7 +5,7 @@ using AnomalyPath.Core.Data;
 namespace AnomalyPath.Core.World
 {
     /// <summary>
-    /// Таблица допустимых тегов и ролей для каждого способа перехода.
+    /// Таблица допустимых тегов и подтипов для каждого способа перехода.
     /// Синхронизирована со схемами (раздел 14.1.1) и не зависит от топологии.
     /// </summary>
     public static class ViaRules
@@ -15,17 +15,17 @@ namespace AnomalyPath.Core.World
         /// <returns><c>true</c>, если способ поддерживается.</returns>
         public static bool IsKnown(string via) => SchemaEnum.TryParse(via, out TravelVia _);
 
-        /// <summary>Проверяет роли и теги обеих сторон перехода.</summary>
+        /// <summary>Проверяет подтипы и теги обеих сторон перехода.</summary>
         /// <param name="via">Код способа перехода.</param>
-        /// <param name="fromRole">Роль исходной локации.</param>
-        /// <param name="toRole">Роль целевой локации.</param>
+        /// <param name="from">Подтип исходной локации.</param>
+        /// <param name="to">Подтип целевой локации.</param>
         /// <param name="fromTags">Теги исходной локации.</param>
         /// <param name="toTags">Теги целевой локации.</param>
         /// <returns><c>true</c>, если переход допустим.</returns>
         public static bool Allows(
             string via,
-            LocationNodeType fromRole,
-            LocationNodeType toRole,
+            LocationSubtype from,
+            LocationSubtype to,
             IReadOnlyCollection<LocationTag> fromTags,
             IReadOnlyCollection<LocationTag> toTags)
         {
@@ -38,39 +38,39 @@ namespace AnomalyPath.Core.World
             {
                 TravelVia.Road => HasAll(fromTags, LocationTag.Road, LocationTag.Outdoor) &&
                                   HasAll(toTags, LocationTag.Road, LocationTag.Outdoor) &&
-                                  Role(fromRole, LocationNodeType.Hub, LocationNodeType.Route) &&
-                                  Role(toRole, LocationNodeType.Route, LocationNodeType.Site, LocationNodeType.Hub),
+                                  Subtype(from, LocationSubtype.Hub, LocationSubtype.Path) &&
+                                  Subtype(to, LocationSubtype.Hub, LocationSubtype.Path),
                 TravelVia.Path => HasAll(fromTags, LocationTag.Outdoor) && HasAll(toTags, LocationTag.Outdoor) &&
-                                  Role(fromRole, LocationNodeType.Hub, LocationNodeType.Route, LocationNodeType.Site) &&
-                                  Role(toRole, LocationNodeType.Route, LocationNodeType.Site, LocationNodeType.Hub),
-                TravelVia.Door => HasAll(toTags, LocationTag.Indoor) &&
-                                  HasAny(fromTags, LocationTag.Indoor, LocationTag.Outdoor) &&
-                                  Role(fromRole, LocationNodeType.Site, LocationNodeType.Interior) &&
-                                  Role(toRole, LocationNodeType.Interior),
+                                  Subtype(
+                                      from,
+                                      LocationSubtype.Hub,
+                                      LocationSubtype.Path,
+                                      LocationSubtype.Building,
+                                      LocationSubtype.Terrain) &&
+                                  Subtype(
+                                      to,
+                                      LocationSubtype.Hub,
+                                      LocationSubtype.Path,
+                                      LocationSubtype.Building,
+                                      LocationSubtype.Terrain),
                 TravelVia.Gate => HasAll(fromTags, LocationTag.Outdoor) && HasAll(toTags, LocationTag.Outdoor) &&
-                                  Role(fromRole, LocationNodeType.Site) && Role(toRole, LocationNodeType.Site),
-                TravelVia.Stairs => HasAll(fromTags, LocationTag.Indoor) && HasAll(toTags, LocationTag.Indoor) &&
-                                    Role(fromRole, LocationNodeType.Site, LocationNodeType.Interior) &&
-                                    Role(toRole, LocationNodeType.Interior),
-                TravelVia.Hatch => HasAny(toTags, LocationTag.Indoor, LocationTag.Underground) &&
-                                   HasAny(fromTags, LocationTag.Indoor, LocationTag.Underground) &&
-                                   Role(fromRole, LocationNodeType.Site, LocationNodeType.Interior) &&
-                                   Role(toRole, LocationNodeType.Interior),
+                                  Subtype(from, LocationSubtype.Building, LocationSubtype.Terrain) &&
+                                  Subtype(to, LocationSubtype.Building, LocationSubtype.Terrain),
                 TravelVia.Corridor => HasAll(fromTags, LocationTag.Indoor) && HasAll(toTags, LocationTag.Indoor) &&
-                                      Role(fromRole, LocationNodeType.Interior) &&
-                                      Role(toRole, LocationNodeType.Interior),
+                                      Subtype(from, LocationSubtype.Building) &&
+                                      Subtype(to, LocationSubtype.Building),
                 TravelVia.Tunnel => HasAll(fromTags, LocationTag.Underground) &&
                                     HasAll(toTags, LocationTag.Underground) &&
-                                    Role(fromRole, LocationNodeType.Route) && Role(toRole, LocationNodeType.Route),
+                                    Subtype(from, LocationSubtype.Path) && Subtype(to, LocationSubtype.Path),
                 _ => false
             };
         }
 
-        private static bool Role(LocationNodeType role, params LocationNodeType[] allowed)
+        private static bool Subtype(LocationSubtype subtype, params LocationSubtype[] allowed)
         {
             foreach (var item in allowed)
             {
-                if (role == item)
+                if (subtype == item)
                 {
                     return true;
                 }
@@ -90,19 +90,6 @@ namespace AnomalyPath.Core.World
             }
 
             return true;
-        }
-
-        private static bool HasAny(IReadOnlyCollection<LocationTag> tags, params LocationTag[] candidates)
-        {
-            foreach (var tag in candidates)
-            {
-                if (Contains(tags, tag))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static bool Contains(IReadOnlyCollection<LocationTag> tags, LocationTag tag)

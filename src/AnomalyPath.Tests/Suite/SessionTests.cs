@@ -18,7 +18,7 @@ using AnomalyPath.Core.World;
 namespace AnomalyPath.Tests
 {
     /// <summary>Игровая сессия: переходы, бой, атака, ходы и ограничения.</summary>
-    public sealed class SessionTests : TestBase
+    public sealed partial class SessionTests : TestBase
     {
         private readonly string _dataRoot;
 
@@ -50,8 +50,13 @@ namespace AnomalyPath.Tests
                     services.Resolve<IDeathService>(),
                     services.Resolve<ICombatOutcomeService>(),
                     progression: services.Resolve<IProgressionService>(),
-                    stashes: services.Resolve<IStashService>());
+                    stashes: services.Resolve<IStashService>(),
+                    locationObjects: services.Resolve<ILocationObjectService>(),
+                    worldGenerator: services.Resolve<IWorldGenerator>(),
+                    topology: services.Resolve<ITopologyRepository>());
                 TravelTests(services, sessions);
+                HubReturnTests(services, sessions);
+                LeaveHubTests(services, sessions);
                 StashSessionTests(services, sessions);
                 CombatTests(services, sessions, actors, items);
                 DeathSessionTests(services, sessions, items);
@@ -95,6 +100,18 @@ namespace AnomalyPath.Tests
 
                 True(result.Succeeded, "переход выполнен");
                 Equal(edge.ToId, session.State.World.CurrentLocationId, "текущая локация");
+            });
+
+            Check("сессия: при переходе выбирается объект локации", () =>
+            {
+                var session = NewSession(services, withPlayer: true);
+                var edge = sessions.AvailableEdges(session)[0];
+
+                True(sessions.Travel(session, edge.EdgeId).Succeeded, "переход");
+
+                var location = session.State.World.CurrentLocation;
+                True(location.Object != null, "объект выбран");
+                True(location.ObjectSelected, "выбор зафиксирован");
             });
 
             Check("сессия: в бою рёбер нет", () =>

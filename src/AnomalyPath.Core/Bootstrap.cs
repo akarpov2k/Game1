@@ -92,6 +92,10 @@ namespace AnomalyPath.Core
             var lootService = new LootService(loot, items, instanceIds);
             container.RegisterSingleton<ILootService>(lootService);
             container.RegisterSingleton<IStashService>(new StashService(loot, lootService));
+            var spawns = SpawnRepository.FromLoadedData(data);
+            container.RegisterSingleton<ISpawnRepository>(spawns);
+            container.RegisterSingleton<ILocationObjectService>(
+                new LocationObjectService(spawns, locations, container.Resolve<IStashService>()));
             var talentService = new TalentService(talents);
             container.RegisterSingleton<ITalentService>(talentService);
             var progressionService = new ProgressionService(progression);

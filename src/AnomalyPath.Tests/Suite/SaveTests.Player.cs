@@ -137,7 +137,7 @@ namespace AnomalyPath.Tests
                 });
             });
 
-            Check("сейв: старый world-only сейв грузится без игрока", () =>
+            Check("сейв: старая версия формата не читается", () =>
             {
                 WithSaveRoot(root =>
                 {
@@ -151,7 +151,7 @@ namespace AnomalyPath.Tests
                         .Replace($"\"saveVersion\": {SaveGame.CurrentSaveVersion}", "\"saveVersion\": 1");
                     File.WriteAllText(storage.GetPath("slot_1"), text);
 
-                    True(service.Load("slot_1").Player == null, "игрока нет");
+                    Throws<AnomalyPath.Core.Data.DataException>(() => service.Load("slot_1"), "старая версия");
                 });
             });
 

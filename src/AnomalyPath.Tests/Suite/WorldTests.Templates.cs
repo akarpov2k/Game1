@@ -15,9 +15,97 @@ namespace AnomalyPath.Tests
     {
         private void TemplateTests()
         {
+            Check("веса: минимум диапазона выпадает реже середины", () =>
+            {
+                var range = new WeightedRange(
+                    new IntRange(1, 3),
+                    new Dictionary<int, double> { [1] = 0.1, [2] = 0.45, [3] = 0.45 });
+                var random = new SeededWorldRandom(11);
+                var counts = new int[4];
+                for (var i = 0; i < 4000; i++)
+                {
+                    counts[range.Sample(random)]++;
+                }
+
+                True(counts[1] < counts[2], $"минимум {counts[1]} против середины {counts[2]}");
+                True(counts[1] < counts[3], $"минимум {counts[1]} против верха {counts[3]}");
+                True(counts[2] > 0 && counts[3] > 0, "середина и верх выпадают");
+            });
+
+            Check("веса: без весов выбор равномерный", () =>
+            {
+                var range = new WeightedRange(new IntRange(1, 2));
+                var random = new SeededWorldRandom(5);
+                var counts = new int[3];
+                for (var i = 0; i < 400; i++)
+                {
+                    counts[range.Sample(random)]++;
+                }
+
+                True(counts[1] > 100 && counts[2] > 100, "оба значения встречаются");
+            });
+
+            Check("веса: неполное покрытие диапазона — ошибка", () =>
+            {
+                var json = "{\"chainLength\":[1,3],\"chainWeights\":{\"1\":0.5,\"2\":0.5}}";
+                var error = Throws<DataException>(
+                    () => WeightedRange.Optional(
+                        JsonParser.Parse(json, "test"),
+                        "chainLength",
+                        "chainWeights",
+                        "test",
+                        new IntRange(1, 1)),
+                    "веса");
+                Equal(CoreErrors.WorldWeights, error.Code, "код");
+            });
+
+            Check("веса: значение вне диапазона — ошибка", () =>
+            {
+                var json = "{\"chainLength\":[1,2],\"chainWeights\":{\"1\":0.5,\"2\":0.4,\"3\":0.1}}";
+                var error = Throws<DataException>(
+                    () => WeightedRange.Optional(
+                        JsonParser.Parse(json, "test"),
+                        "chainLength",
+                        "chainWeights",
+                        "test",
+                        new IntRange(1, 1)),
+                    "веса");
+                Equal(CoreErrors.WorldWeights, error.Code, "код");
+            });
+
+            Check("топология: без блока route — ошибка", () =>
+            {
+                var json = "{\"id\":\"topology\",\"costs\":{\"road\":{\"stamina\":1,\"hours\":1}}," +
+                           "\"initialStamina\":10,\"dayStartHour\":6,\"nightStartHour\":22}";
+                Throws<DataException>(
+                    () => TopologyTemplate.FromJson(JsonParser.Parse(json, "test"), "test"),
+                    "route");
+            });
+
+            Check("топология: окно вперёд не меньше звена", () =>
+            {
+                var json = WorldTopologyJson().Replace("\"lookaheadEdges\":2", "\"lookaheadEdges\":0");
+                var error = Throws<DataException>(
+                    () => TopologyTemplate.FromJson(JsonParser.Parse(json, "test"), "test"),
+                    "окно");
+                Equal(CoreErrors.WorldRange, error.Code, "код");
+            });
+
+            Check("топология: роль перехода должна встречаться в данных", () =>
+            {
+                var files = BaseWorldFixture();
+                files["topology.json"] = WorldTopologyJson()
+                    .Replace("\"to\":\"building\",\"via\":[\"path\"]", "\"to\":\"building\",\"toRole\":\"laboratory\",\"via\":[\"path\"]");
+                WithFixture(files, root =>
+                {
+                    var report = Preflight.Validate(root);
+                    True(HasIssue(report, "topology", "не встречается"), "нет ошибки роли");
+                });
+            });
+
             Check("шаблон: неизвестный тег локации — ошибка схемы", () =>
             {
-                var json = LocationJson("loc_x", "wild", "site", "[\"swamp\"]");
+                var json = LocationJson("loc_x", "wild", "building", "[\"swamp\"]");
                 var error = Throws<DataException>(
                     () => LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test"),
                     "тег");
@@ -28,13 +116,14 @@ namespace AnomalyPath.Tests
             Check("схема: способы перехода читаются как enum", () =>
             {
                 True(SchemaEnum.TryParse("tunnel", out TravelVia via) && via == TravelVia.Tunnel, "tunnel");
-                True(ViaRules.IsKnown("door"), "door известен");
+                True(ViaRules.IsKnown("corridor"), "corridor известен");
+                False(ViaRules.IsKnown("door"), "дверь больше не способ перехода");
                 False(ViaRules.IsKnown("teleport"), "teleport неизвестен");
             });
 
             Check("шаблон: unique без rarity unique — ошибка", () =>
             {
-                var json = LocationJson("loc_x", "wild", "site", "[\"outdoor\"]", ",\"unique\":true");
+                var json = LocationJson("loc_x", "wild", "building", "[\"outdoor\"]", ",\"unique\":true");
                 var error = Throws<DataException>(() => LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test"), "unique");
                 Equal("error.world_unique_rarity", error.Code, "код");
             });
@@ -42,20 +131,21 @@ namespace AnomalyPath.Tests
             Check("схема: коды значений читаются только канонически", () =>
             {
                 True(SchemaEnum.TryParse("hub", out LocationKind kind) && kind == LocationKind.Hub, "тип hub");
-                True(SchemaEnum.TryParse("interior", out LocationNodeType nodeType) &&
-                     nodeType == LocationNodeType.Interior, "роль interior");
+                True(SchemaEnum.TryParse("terrain", out LocationSubtype nodeType) &&
+                     nodeType == LocationSubtype.Terrain, "подтип terrain");
+                False(SchemaEnum.TryParse("interior", out LocationSubtype _), "помещений больше нет");
                 True(SchemaEnum.TryParse("unique", out LocationRarity rarity) &&
                      rarity == LocationRarity.Unique, "редкость unique");
                 Equal("special", SchemaEnum.ToCode(LocationKind.Special), "код special");
                 False(SchemaEnum.TryParse("Hub", out LocationKind _), "верхний регистр");
                 False(SchemaEnum.TryParse("1", out LocationKind _), "число");
-                False(SchemaEnum.TryParse("hub,route", out LocationNodeType _), "список значений");
+                False(SchemaEnum.TryParse("hub,route", out LocationSubtype _), "список значений");
                 False(SchemaEnum.TryParse(string.Empty, out LocationKind _), "пустая строка");
             });
 
             Check("шаблон: неизвестный тип локации — ошибка схемы", () =>
             {
-                var json = LocationJson("loc_x", "swamp", "site", "[\"outdoor\"]");
+                var json = LocationJson("loc_x", "swamp", "building", "[\"outdoor\"]");
                 var error = Throws<DataException>(
                     () => LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test"),
                     "тип");
@@ -69,13 +159,13 @@ namespace AnomalyPath.Tests
                 var error = Throws<DataException>(
                     () => LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test"),
                     "роль");
-                Equal(CoreErrors.WorldUnknownNodeType, error.Code, "код");
+                Equal(CoreErrors.WorldUnknownSubtype, error.Code, "код");
                 Contains(error.Message, "bridge", "значение");
             });
 
             Check("шаблон: неизвестная редкость локации — ошибка схемы", () =>
             {
-                var json = LocationJson("loc_x", "wild", "site", "[\"outdoor\"]")
+                var json = LocationJson("loc_x", "wild", "building", "[\"outdoor\"]")
                     .Replace("\"common\"", "\"legendary\"");
                 var error = Throws<DataException>(
                     () => LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test"),
@@ -86,7 +176,7 @@ namespace AnomalyPath.Tests
 
             Check("шаблон: редкость по умолчанию — common", () =>
             {
-                var json = LocationJson("loc_x", "wild", "site", "[\"outdoor\"]")
+                var json = LocationJson("loc_x", "wild", "building", "[\"outdoor\"]")
                     .Replace("\"rarity\":\"common\",", string.Empty);
                 var template = LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test");
                 Equal(LocationRarity.Common, template.Rarity, "редкость");
@@ -99,14 +189,14 @@ namespace AnomalyPath.Tests
                         string.Empty,
                         "t",
                         LocationKind.Wild,
-                        LocationNodeType.Site,
+                        LocationSubtype.Building,
+                        null,
                         Array.Empty<LocationTag>(),
                         0,
                         new[] { "bg" },
                         new IntRange(0, 0),
                         0,
-                        Array.Empty<ConnectionTemplate>(),
-                        null,
+                        new WeightedRange(new IntRange(1, 1)),
                         Array.Empty<string>(),
                         LocationRarity.Common,
                         1,
@@ -123,20 +213,20 @@ namespace AnomalyPath.Tests
                         "loc_x",
                         "t",
                         LocationKind.Wild,
-                        (LocationNodeType)42,
+                        (LocationSubtype)42,
+                        null,
                         Array.Empty<LocationTag>(),
                         0,
                         new[] { "bg" },
                         new IntRange(0, 0),
                         0,
-                        Array.Empty<ConnectionTemplate>(),
-                        null,
+                        new WeightedRange(new IntRange(1, 1)),
                         Array.Empty<string>(),
                         LocationRarity.Common,
                         1,
                         false),
                     "роль");
-                Equal("nodeType", error.ParamName, "параметр");
+                Equal("subtype", error.ParamName, "параметр");
                 Contains(error.Message, "42", "значение");
             });
 
@@ -147,16 +237,11 @@ namespace AnomalyPath.Tests
                 Equal("error.world_cost", error.Code, "код");
             });
 
-            Check("ребро: length 0 — ошибка", () =>
+            Check("ребро мира: length 0 — ошибка", () =>
             {
-                var json = LocationJson(
-                    "loc_x",
-                    "wild",
-                    "site",
-                    "[\"outdoor\"]",
-                    ",\"connections\":[{\"toId\":\"loc_y\",\"via\":\"door\",\"length\":0}]");
-                var error = Throws<DataException>(() => LocationTemplate.FromJson(JsonParser.Parse(json, "test"), "test"), "length");
-                Equal("error.world_range", error.Code, "код");
+                Throws<ArgumentOutOfRangeException>(
+                    () => new WorldEdge("edge", "loc_a", "loc_b", "path", 0, new TravelCost(0, 0), false, false),
+                    "длина ребра");
             });
 
             Check("диапазон: min больше max — ошибка", () =>
@@ -179,11 +264,18 @@ namespace AnomalyPath.Tests
                 }
             });
 
-            Check("переходы: хаб соединяется с хабом дорогой", () =>
+            Check("переходы: хаб соединяется с хабом дорогой, здания — коридором", () =>
             {
                 var tags = new[] { LocationTag.Hub, LocationTag.Road, LocationTag.Outdoor };
-                True(ViaRules.Allows("road", LocationNodeType.Hub, LocationNodeType.Hub, tags, tags), "дорога между хабами");
-                False(ViaRules.Allows("door", LocationNodeType.Hub, LocationNodeType.Hub, tags, tags), "дверь между хабами");
+                True(ViaRules.Allows("road", LocationSubtype.Path, LocationSubtype.Path, tags, tags), "дорога между отрезками пути");
+                False(ViaRules.Allows("door", LocationSubtype.Path, LocationSubtype.Path, tags, tags), "дверь больше не способ перехода");
+                var indoor = new[] { LocationTag.Indoor, LocationTag.Outdoor };
+                True(
+                    ViaRules.Allows("corridor", LocationSubtype.Building, LocationSubtype.Building, indoor, indoor),
+                    "коридор между зданиями");
+                False(
+                    ViaRules.Allows("corridor", LocationSubtype.Path, LocationSubtype.Building, indoor, indoor),
+                    "коридор только между зданиями");
             });
         }
     }

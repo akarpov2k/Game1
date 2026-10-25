@@ -257,7 +257,7 @@ namespace AnomalyPath.Tests
                 1,
                 new List<LocationInstance>
                 {
-                    new LocationInstance("loc_hub", "loc_hub", 1, "bg", LocationNodeType.Hub, 1, 1)
+                    new LocationInstance("loc_hub", "loc_hub", 1, "bg", LocationSubtype.Hub, 1, 1)
                 },
                 new List<WorldEdge>(),
                 "loc_hub",

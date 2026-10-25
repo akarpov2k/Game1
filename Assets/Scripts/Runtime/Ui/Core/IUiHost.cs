@@ -40,6 +40,9 @@ namespace AnomalyPath.Runtime.Ui.Core
         /// <summary>Экипировка: число слотов артефактов и строк инвентаря.</summary>
         IEquipmentService Equipment { get; }
 
+        /// <summary>Бросок лута по таблице: объекты локаций и тайники.</summary>
+        ILootService Loot { get; }
+
         /// <summary>Действия с предметами: надеть, снять, разрядить, разобрать, выбросить.</summary>
         ICharacterActions Actions { get; }
 
@@ -63,6 +66,9 @@ namespace AnomalyPath.Runtime.Ui.Core
 
         /// <summary>Правила прохождения.</summary>
         IGameRulesRepository Rules { get; }
+
+        /// <summary>Топология: номер звена и цена возврата в хаб в сводке локации.</summary>
+        ITopologyRepository Topology { get; }
 
         /// <summary>Тексты игры по ключу.</summary>
         IGameTexts Texts { get; }
@@ -122,7 +128,8 @@ namespace AnomalyPath.Runtime.Ui.Core
 
         /// <summary>Показать диалог лута после победы над противником.</summary>
         /// <param name="loot">Выпавшие предметы; пустой список — диалог не открывается.</param>
-        void ShowLoot(IReadOnlyList<ItemInstance> loot);
+        /// <param name="onClosed">Что выполнить после закрытия; <c>null</c> — ничего.</param>
+        void ShowLoot(IReadOnlyList<ItemInstance> loot, Action? onClosed = null);
 
         /// <summary>Выйти из игры.</summary>
         void Quit();

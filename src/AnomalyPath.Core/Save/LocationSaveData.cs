@@ -14,7 +14,7 @@ namespace AnomalyPath.Core.Save
         /// <param name="templateId">Id шаблона.</param>
         /// <param name="seed">Seed наполнения.</param>
         /// <param name="background">Фон.</param>
-        /// <param name="nodeType">Роль в цепочке.</param>
+        /// <param name="subtype">Подтип локации в маршруте.</param>
         /// <param name="tier">Тир.</param>
         /// <param name="danger">Сложность.</param>
         /// <param name="visited">Был ли игрок.</param>
@@ -23,12 +23,16 @@ namespace AnomalyPath.Core.Save
         /// <param name="stashRolled">Проверялось ли появление тайника.</param>
         /// <param name="stashPresent">Есть ли на локации тайник.</param>
         /// <param name="stashOpened">Вскрыт ли тайник.</param>
+        /// <param name="objectSpawnId">Id записи объекта локации; <c>null</c> — объекта нет.</param>
+        /// <param name="objectLooted">Забран ли объект.</param>
+        /// <param name="routeStep">Сколько шагов от хаба; у хаба 0.</param>
+        /// <param name="routeEdge">Номер звена маршрута; у хаба 0.</param>
         public LocationSaveData(
             string instanceId,
             string templateId,
             int seed,
             string background,
-            LocationNodeType nodeType,
+            LocationSubtype subtype,
             int tier,
             double danger,
             bool visited,
@@ -36,13 +40,17 @@ namespace AnomalyPath.Core.Save
             bool enemyGone = false,
             bool stashRolled = false,
             bool stashPresent = false,
-            bool stashOpened = false)
+            bool stashOpened = false,
+            string? objectSpawnId = null,
+            bool objectLooted = false,
+            int routeStep = 0,
+            int routeEdge = 0)
         {
             InstanceId = instanceId;
             TemplateId = templateId;
             Seed = seed;
             Background = background;
-            NodeType = nodeType;
+            Subtype = subtype;
             Tier = tier;
             Danger = danger;
             Visited = visited;
@@ -51,6 +59,10 @@ namespace AnomalyPath.Core.Save
             StashRolled = stashRolled;
             StashPresent = stashPresent;
             StashOpened = stashOpened;
+            ObjectSpawnId = objectSpawnId;
+            ObjectLooted = objectLooted;
+            RouteStep = routeStep;
+            RouteEdge = routeEdge;
         }
 
         /// <summary>Id экземпляра.</summary>
@@ -65,8 +77,14 @@ namespace AnomalyPath.Core.Save
         /// <summary>Фон.</summary>
         public string Background { get; }
 
-        /// <summary>Роль в цепочке.</summary>
-        public LocationNodeType NodeType { get; }
+        /// <summary>Подтип локации.</summary>
+        public LocationSubtype Subtype { get; }
+
+        /// <summary>Сколько шагов от хаба; у хаба 0.</summary>
+        public int RouteStep { get; }
+
+        /// <summary>Номер звена маршрута; у хаба 0.</summary>
+        public int RouteEdge { get; }
 
         /// <summary>Тир.</summary>
         public int Tier { get; }
@@ -92,6 +110,12 @@ namespace AnomalyPath.Core.Save
         /// <summary>Вскрыт ли тайник.</summary>
         public bool StashOpened { get; }
 
+        /// <summary>Id записи объекта локации; <c>null</c> — объекта нет.</summary>
+        public string? ObjectSpawnId { get; }
+
+        /// <summary>Забран ли объект локации.</summary>
+        public bool ObjectLooted { get; }
+
         /// <summary>Сериализует запись.</summary>
         /// <returns>JSON-объект.</returns>
         public JsonValue ToJson()
@@ -101,7 +125,9 @@ namespace AnomalyPath.Core.Save
             value.Members["templateId"] = JsonValue.FromString(TemplateId);
             value.Members["seed"] = JsonValue.FromNumber(Seed);
             value.Members["background"] = JsonValue.FromString(Background);
-            value.Members["nodeType"] = JsonValue.FromString(SchemaEnum.ToCode(NodeType));
+            value.Members["subtype"] = JsonValue.FromString(SchemaEnum.ToCode(Subtype));
+            value.Members["routeStep"] = JsonValue.FromNumber(RouteStep);
+            value.Members["routeEdge"] = JsonValue.FromNumber(RouteEdge);
             value.Members["tier"] = JsonValue.FromNumber(Tier);
             value.Members["danger"] = JsonValue.FromNumber(Danger);
             value.Members["visited"] = JsonValue.FromBool(Visited);
@@ -110,6 +136,14 @@ namespace AnomalyPath.Core.Save
             value.Members["stashRolled"] = JsonValue.FromBool(StashRolled);
             value.Members["stashPresent"] = JsonValue.FromBool(StashPresent);
             value.Members["stashOpened"] = JsonValue.FromBool(StashOpened);
+            if (ObjectSpawnId != null)
+            {
+                var locationObject = JsonValue.NewObject();
+                locationObject.Members["spawnId"] = JsonValue.FromString(ObjectSpawnId);
+                locationObject.Members["looted"] = JsonValue.FromBool(ObjectLooted);
+                value.Members["object"] = locationObject;
+            }
+
             return value;
         }
 
@@ -124,11 +158,14 @@ namespace AnomalyPath.Core.Save
             var templateId = DataMap.RequireString(value, "templateId", sourcePath);
             var seed = DataMap.RequireInt(value, "seed", sourcePath);
             var background = DataMap.OptionalString(value, "background") ?? string.Empty;
-            var nodeTypeCode = DataMap.RequireString(value, "nodeType", sourcePath);
-            if (!SchemaEnum.TryParse(nodeTypeCode, out LocationNodeType nodeType))
+            var subtypeCode = DataMap.RequireString(value, "subtype", sourcePath);
+            if (!SchemaEnum.TryParse(subtypeCode, out LocationSubtype subtype))
             {
-                throw new DataException(sourcePath, CoreErrors.WorldUnknownNodeType, nodeTypeCode);
+                throw new DataException(sourcePath, CoreErrors.WorldUnknownSubtype, subtypeCode);
             }
+
+            var routeStep = DataMap.OptionalInt(value, "routeStep", 0);
+            var routeEdge = DataMap.OptionalInt(value, "routeEdge", 0);
             var tier = DataMap.OptionalInt(value, "tier", 0);
             var danger = DataMap.OptionalDouble(value, "danger") ?? 0;
             var visited = DataMap.OptionalBool(value, "visited", false);
@@ -137,7 +174,15 @@ namespace AnomalyPath.Core.Save
             var stashRolled = DataMap.OptionalBool(value, "stashRolled", false);
             var stashPresent = DataMap.OptionalBool(value, "stashPresent", false);
             var stashOpened = DataMap.OptionalBool(value, "stashOpened", false);
-            if (tier < 0 || danger < 0 || danger > 1 ||
+            string? objectSpawnId = null;
+            var objectLooted = false;
+            if (value.TryGet("object", out var objectValue) && objectValue.IsObject)
+            {
+                objectSpawnId = DataMap.OptionalString(objectValue, "spawnId");
+                objectLooted = DataMap.OptionalBool(objectValue, "looted", false);
+            }
+
+            if (tier < 0 || danger < 0 || danger > 1 || routeStep < 0 || routeEdge < 0 ||
                 (stashPresent && !stashRolled) || (stashOpened && !stashPresent))
             {
                 throw new DataException(sourcePath, CoreErrors.SaveMissingField, "location");
@@ -148,7 +193,7 @@ namespace AnomalyPath.Core.Save
                 templateId,
                 seed,
                 background,
-                nodeType,
+                subtype,
                 tier,
                 danger,
                 visited,
@@ -156,7 +201,11 @@ namespace AnomalyPath.Core.Save
                 enemyGone,
                 stashRolled,
                 stashPresent,
-                stashOpened);
+                stashOpened,
+                objectSpawnId,
+                objectLooted,
+                routeStep,
+                routeEdge);
         }
     }
 }

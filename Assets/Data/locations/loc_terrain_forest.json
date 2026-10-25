@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "locations",
+  "id": "loc_terrain_forest",
+  "titleKey": "location.terrain.forest.title",
+  "locationKind": "wild",
+  "subtype": "terrain",
+  "role": "forest",
+  "tags": ["outdoor", "forest"],
+  "tier": 1,
+  "backgrounds": ["bg_route_forest"],
+  "objectCount": [1, 1],
+  "danger": 0.4,
+  "chainLength": [1, 5],
+  "chainWeights": { "1": 0.1, "2": 0.2, "3": 0.4, "4": 0.2, "5": 0.1 },
+  "rarity": "common",
+  "spawnChance": 1,
+  "unique": false
+}

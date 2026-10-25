@@ -51,8 +51,9 @@ namespace AnomalyPath.Core.Validation
                     continue;
                 }
 
-                if (location.NodeType != LocationNodeType.Site ||
-                    location.LocationKind != LocationKind.Wild ||
+                if (location.LocationKind != LocationKind.Wild ||
+                    location.Subtype == LocationSubtype.Path ||
+                    location.Subtype == LocationSubtype.Hub ||
                     location.Unique)
                 {
                     issues.Add(new ValidationIssue(

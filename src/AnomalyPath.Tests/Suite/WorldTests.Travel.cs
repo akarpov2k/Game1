@@ -102,7 +102,7 @@ namespace AnomalyPath.Tests
             Check("локация: отметки посещения и зачистки", () =>
             {
                 var map = generator.Generate(42);
-                var location = OfTemplate(map, "loc_site_house")[0];
+                var location = OfSubtype(map, LocationSubtype.Path)[0];
                 False(location.Visited, "до отметки");
                 location.MarkVisited();
                 location.MarkCleared();
@@ -116,9 +116,9 @@ namespace AnomalyPath.Tests
                     1,
                     new List<LocationInstance>
                     {
-                        new LocationInstance("hub_a", "loc_hub", 1, "bg", LocationNodeType.Hub, 0, 0),
-                        new LocationInstance("hub_b", "loc_hub", 2, "bg", LocationNodeType.Hub, 0, 0),
-                        new LocationInstance("route", "loc_route", 3, "bg", LocationNodeType.Route, 1, 0.2)
+                        new LocationInstance("hub_a", "loc_hub", 1, "bg", LocationSubtype.Hub, 0, 0),
+                        new LocationInstance("hub_b", "loc_hub", 2, "bg", LocationSubtype.Hub, 0, 0),
+                        new LocationInstance("route", "loc_route", 3, "bg", LocationSubtype.Path, 1, 0.2)
                     },
                     new List<WorldEdge>(),
                     "hub_a",
@@ -151,7 +151,7 @@ namespace AnomalyPath.Tests
                     1,
                     new List<LocationInstance>
                     {
-                        new LocationInstance("hub_a", "loc_hub", 1, "bg", LocationNodeType.Hub, 0, 0)
+                        new LocationInstance("hub_a", "loc_hub", 1, "bg", LocationSubtype.Hub, 0, 0)
                     },
                     new List<WorldEdge>(),
                     "hub_a",

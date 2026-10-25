@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "spawns",
+  "collection": true,
+  "id": "col_spawns",
+  "entries": [
+    "spawns/spawn_anomaly_crater.json",
+    "spawns/spawn_anomaly_glow.json",
+    "spawns/spawn_car_wreck.json",
+    "spawns/spawn_forest_cache.json",
+    "spawns/spawn_forest_deadfall.json",
+    "spawns/spawn_house_cabinet.json",
+    "spawns/spawn_house_table.json",
+    "spawns/spawn_road_crate.json",
+    "spawns/spawn_room_desk.json",
+    "spawns/spawn_room_shelf.json"
+  ]
+}

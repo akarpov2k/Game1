@@ -15,33 +15,35 @@ namespace AnomalyPath.Tests
     {
         private void ValidationTests()
         {
-            Check("валидация: переход на несуществующую локацию", () =>
+            Check("валидация: в хаб можно попасть только с пути", () =>
             {
-                WithFixture(WorldFixture(",\"connections\":[{\"toId\":\"loc_missing\",\"via\":\"road\"}]"), root =>
+                var files = BaseWorldFixture();
+                files["topology.json"] = WorldTopologyJson()
+                    .Replace("\"from\":\"hub\",\"to\":\"path\"", "\"from\":\"hub\",\"to\":\"building\"");
+                WithFixture(files, root =>
                 {
                     var report = Preflight.Validate(root);
-                    True(HasIssue(report, "loc_hub", "несуществующую"), "нет ошибки target");
+                    True(HasIssue(report, "topology", "только с пути"), "нет ошибки доступа в хаб");
                 });
             });
 
-            Check("валидация: запрещённый топологией переход", () =>
+            Check("валидация: топология ссылается на подтип без локаций", () =>
             {
-                WithFixture(
-                    WorldFixture(
-                        string.Empty,
-                        routeExtra: ",\"connections\":[{\"toId\":\"loc_interior\",\"via\":\"door\"}]"),
-                    root =>
-                    {
-                        var report = Preflight.Validate(root);
-                        True(HasIssue(report, "loc_route", "запрещён"), "нет ошибки перехода");
-                    });
+                var files = BaseWorldFixture();
+                files.Remove("locations/site.json");
+                files["catalog.json"] = Catalog("topology.json", "locations/hub.json", "locations/route.json");
+                WithFixture(files, root =>
+                {
+                    var report = Preflight.Validate(root);
+                    True(HasIssue(report, "topology", "Неизвестный подтип"), "нет ошибки подтипа");
+                });
             });
 
             Check("валидация: мир без хаба", () =>
             {
                 var files = BaseWorldFixture();
                 files.Remove("locations/hub.json");
-                files["catalog.json"] = Catalog("topology.json", "locations/route.json", "locations/site.json", "locations/interior.json");
+                files["catalog.json"] = Catalog("topology.json", "locations/route.json", "locations/site.json");
                 WithFixture(files, root =>
                 {
                     var report = Preflight.Validate(root);
@@ -52,7 +54,7 @@ namespace AnomalyPath.Tests
             Check("валидация: нет маршрута до точки интереса", () =>
             {
                 var files = BaseWorldFixture();
-                files["locations/site.json"] = LocationJson("loc_site", "wild", "site", "[\"indoor\"]");
+                files["locations/site.json"] = LocationJson("loc_site", "wild", "building", "[\"indoor\"]");
                 WithFixture(files, root =>
                 {
                     var report = Preflight.Validate(root);

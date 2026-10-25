@@ -83,6 +83,9 @@ namespace AnomalyPath.Runtime
         public IEquipmentService Equipment { get; private set; } = null!;
 
         /// <inheritdoc />
+        public ILootService Loot { get; private set; } = null!;
+
+        /// <inheritdoc />
         public ILocationRepository Locations { get; private set; } = null!;
 
         /// <inheritdoc />
@@ -108,6 +111,9 @@ namespace AnomalyPath.Runtime
 
         /// <inheritdoc />
         public IGameRulesRepository Rules { get; private set; } = null!;
+
+        /// <inheritdoc />
+        public ITopologyRepository Topology { get; private set; } = null!;
 
         /// <inheritdoc />
         public IGameTexts Texts { get; private set; } = null!;
@@ -141,8 +147,10 @@ namespace AnomalyPath.Runtime
             Actors = services.Resolve<IActorRepository>();
             Nicknames = services.Resolve<INicknameGenerator>();
             Rules = services.Resolve<IGameRulesRepository>();
+            Topology = services.Resolve<ITopologyRepository>();
             Texts = services.Resolve<IGameTexts>();
             _inventory = services.Resolve<IInventoryService>();
+            Loot = services.Resolve<ILootService>();
 
             var iconIds = new List<string>(Items.All.Count);
             foreach (var item in Items.All)
@@ -330,7 +338,8 @@ namespace AnomalyPath.Runtime
 
         /// <summary>Показывает диалог лута после победы над противником.</summary>
         /// <param name="loot">Выпавшие предметы; пустой список — диалог не открывается.</param>
-        public void ShowLoot(IReadOnlyList<ItemInstance> loot)
+        /// <param name="onClosed">Что выполнить после закрытия; <c>null</c> — ничего.</param>
+        public void ShowLoot(IReadOnlyList<ItemInstance> loot, Action? onClosed = null)
         {
             if (loot == null || loot.Count == 0)
             {
@@ -343,7 +352,7 @@ namespace AnomalyPath.Runtime
                 return;
             }
 
-            _lootDialog.Show(player, loot);
+            _lootDialog.Show(player, loot, onClosed);
         }
 
         /// <inheritdoc />

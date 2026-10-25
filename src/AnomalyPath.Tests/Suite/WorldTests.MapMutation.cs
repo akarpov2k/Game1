@@ -24,7 +24,7 @@ namespace AnomalyPath.Tests
                     "loc_site_house",
                     7,
                     "bg_site_house",
-                    LocationNodeType.Site,
+                    LocationSubtype.Building,
                     1,
                     0.2);
                 map.AddLocation(location);
@@ -51,6 +51,34 @@ namespace AnomalyPath.Tests
                 True(found, "ребро добавлено");
                 Throws<DataException>(() => map.AddLocation(location), "дубль локации");
                 Throws<DataException>(() => map.AddEdge(edge), "дубль ребра");
+            });
+
+            Check("карта: пройденная локация удаляется вместе с рёбрами", () =>
+            {
+                var map = generator.Generate(42);
+                var location = new LocationInstance(
+                    "locinst_gone",
+                    "loc_site_house",
+                    7,
+                    "bg_site_house",
+                    LocationSubtype.Building,
+                    1,
+                    0.2);
+                map.AddLocation(location);
+                map.AddEdge(new WorldEdge(
+                    "edge_gone",
+                    map.StartLocationId,
+                    "locinst_gone",
+                    "path",
+                    1,
+                    new TravelCost(3, 1.5),
+                    oneWay: false,
+                    hidden: false));
+
+                map.RemoveLocation("locinst_gone");
+                False(map.ContainsLocation("locinst_gone"), "локация удалена");
+                False(map.TryGetEdge("edge_gone", out _), "ребро удалено");
+                Throws<DataException>(() => map.RemoveLocation("locinst_gone"), "повторное удаление");
             });
         }
     }

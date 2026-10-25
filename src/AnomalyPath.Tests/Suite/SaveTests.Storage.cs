@@ -114,7 +114,7 @@ namespace AnomalyPath.Tests
                 });
             });
 
-            Check("сейв: неизвестная роль локации", () =>
+            Check("сейв: неизвестный подтип локации", () =>
             {
                 WithSaveRoot(root =>
                 {
@@ -124,10 +124,10 @@ namespace AnomalyPath.Tests
                     var service = new SaveService(storage, items);
                     service.Save(new GameState(state, null), "slot_1", 0, new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var text = File.ReadAllText(storage.GetPath("slot_1"));
-                    text = text.Replace("\"nodeType\": \"hub\"", "\"nodeType\": \"bridge\"");
+                    text = text.Replace("\"subtype\": \"hub\"", "\"subtype\": \"bridge\"");
                     File.WriteAllText(storage.GetPath("slot_1"), text);
-                    var error = Throws<DataException>(() => service.Load("slot_1"), "nodeType");
-                    Equal("error.world_unknown_node_type", error.Code, "код");
+                    var error = Throws<DataException>(() => service.Load("slot_1"), "subtype");
+                    Equal("error.world_unknown_subtype", error.Code, "код");
                 });
             });
 

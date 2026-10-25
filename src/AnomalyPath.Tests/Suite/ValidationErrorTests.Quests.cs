@@ -46,8 +46,8 @@ namespace AnomalyPath.Tests
                     "\"rewards\":{\"money\":1}}",
                     "locations/loc_route.json",
                     "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_route\",\"titleKey\":\"t\"," +
-                    "\"locationKind\":\"wild\",\"nodeType\":\"route\",\"tags\":[\"road\"],\"tier\":1," +
-                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0],\"connections\":[]}",
+                    "\"locationKind\":\"wild\",\"subtype\":\"path\",\"tags\":[\"road\"],\"tier\":1," +
+                    "\"backgrounds\":[\"bg\"],\"objectCount\":[0,0]}",
                     "дикой точкой интереса"),
                 (
                     "ошибка: пул целей квеста пуст",

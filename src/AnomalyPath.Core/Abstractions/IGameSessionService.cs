@@ -63,6 +63,22 @@ namespace AnomalyPath.Core.Abstractions
         TravelResult Travel(GameSession session, string edgeId);
 
         /// <summary>
+        /// Покидает хаб: строит новый маршрут (каждый выход даёт другой) и сразу ведёт игрока
+        /// в первую локацию пути первого звена. Доступно только из хаба и вне боя.
+        /// </summary>
+        /// <param name="session">Игровая сессия.</param>
+        /// <returns>Результат перехода; <see cref="TravelStatus.WrongLocation"/>, если игрок не в хабе.</returns>
+        TravelResult LeaveHub(GameSession session);
+
+        /// <summary>
+        /// Возвращает игрока в последний хаб. Доступно только с пути: цена —
+        /// <c>route.hubReturn</c> × <c>routeStep</c> выносливости и часов, переход мгновенный.
+        /// </summary>
+        /// <param name="session">Игровая сессия.</param>
+        /// <returns>Результат возврата.</returns>
+        TravelResult ReturnToHub(GameSession session);
+
+        /// <summary>
         /// Проверяет появление тайника в текущей локации. Хаб не проверяется, одна локация
         /// проверяется один раз; повторный вызов на уже проверенной локации ничего не делает.
         /// </summary>

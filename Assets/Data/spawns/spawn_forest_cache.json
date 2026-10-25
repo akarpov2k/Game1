@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "spawns",
+  "id": "spawn_forest_cache",
+  "titleKey": "spawn.spawn_forest_cache.title",
+  "objectKind": "loot",
+  "requiresTags": ["forest", "outdoor"],
+  "excludesTags": ["hub"],
+  "weight": 2,
+  "minTier": 0,
+  "maxTier": 2,
+  "lootTable": "loot_human"
+}

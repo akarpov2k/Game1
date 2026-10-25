@@ -1,8 +1,10 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Loot;
 using AnomalyPath.Core.Quests;
+using AnomalyPath.Core.Spawns;
 using AnomalyPath.Core.World;
 using AnomalyPath.Runtime.Screens;
 using AnomalyPath.Runtime.Ui.Core;
@@ -15,7 +17,7 @@ namespace AnomalyPath.Runtime.Screens.Game
     /// Основной игровой экран: фон текущей локации, объект взаимодействия и панель действий.
     /// Один и тот же экран используется в хабе и в исследовании мира; действия строятся из состояния сессии.
     /// </summary>
-    public sealed class PlayScreen : ScreenBase
+    public sealed partial class PlayScreen : ScreenBase
     {
         private readonly IUiHost _host;
         private readonly Text _title;
@@ -125,15 +127,6 @@ namespace AnomalyPath.Runtime.Screens.Game
             return true;
         }
 
-        /// <summary>Показывает всплывающее сообщение в нижней полосе.</summary>
-        /// <param name="text">Текст сообщения.</param>
-        /// <param name="error">Показать сообщение как ошибку.</param>
-        public void ShowToast(string text, bool error = false)
-        {
-            _toast.text = text;
-            _toast.color = error ? PlayPalette.Error : UiFactory.ToastColor;
-        }
-
         private void BuildActionPanel()
         {
             var panel = _host.Ui.CreateImage("ActionPanel", Content, PlayPalette.ActionPanel);
@@ -236,25 +229,24 @@ namespace AnomalyPath.Runtime.Screens.Game
             _locationInfo.text = UiText.Format(
                 _host.Texts,
                 UiTextKey.Game_Location_Summary,
-                UiText.Get(_host.Texts, PlayText.Node(location.NodeType)),
+                UiText.Get(_host.Texts, PlayText.Subtype(location.Subtype)),
                 location.Danger);
+            if (location.Subtype == LocationSubtype.Path)
+            {
+                var returnCost = _host.Topology.Topology.HubReturnCost(location.RouteStep);
+                _locationInfo.text += Environment.NewLine + UiText.Format(
+                    _host.Texts,
+                    UiTextKey.Game_Route_Summary,
+                    location.RouteStep,
+                    returnCost.Stamina);
+            }
             _clock.Show(world.Clock);
             _money.text = player == null
                 ? string.Empty
                 : UiText.Format(_host.Texts, UiTextKey.Common_Money, player.Money);
 
             _host.Sessions.RollLocationStash(session);
-            if (location.StashPresent && !location.StashOpened)
-            {
-                _object.Show(
-                    UiText.Get(_host.Texts, UiTextKey.Game_Stash),
-                    UiText.Get(_host.Texts, UiTextKey.Game_Stash_Hint),
-                    OpenStash);
-            }
-            else
-            {
-                _object.Hide();
-            }
+            ShowLocationObject(location);
 
             _testEnemy.Refresh();
 
@@ -265,23 +257,42 @@ namespace AnomalyPath.Runtime.Screens.Game
             }
 
             var edges = _host.Sessions.AvailableEdges(session);
-            var actions = new List<PlayAction>(edges.Count + 1);
+            var actions = new List<PlayAction>(edges.Count + 3);
+            if (location.Subtype == LocationSubtype.Hub)
+            {
+                actions.Add(new PlayAction(
+                    "LeaveHub",
+                    UiText.Get(_host.Texts, UiTextKey.Game_Leave_Hub),
+                    LeaveHub));
+            }
+            else if (location.Subtype == LocationSubtype.Path)
+            {
+                actions.Add(new PlayAction(
+                    "ReturnToHub",
+                    UiText.Get(_host.Texts, UiTextKey.Game_Return_Hub),
+                    ReturnToHub));
+            }
+
+            if (location.Subtype != LocationSubtype.Hub)
+            {
+                foreach (var edge in edges)
+                {
+                    var destination = world.Map.GetLocation(edge.ToId);
+                    var label = UiText.Format(
+                        _host.Texts,
+                        UiTextKey.Game_Travel,
+                        LocationText.Title(_host, destination));
+                    var edgeId = edge.EdgeId;
+                    actions.Add(new PlayAction("Travel_" + edgeId, label, () => Travel(edgeId)));
+                }
+            }
+
             AddTraderActions(session, location, actions);
             AddQuestActions(session, location, actions);
             actions.Add(new PlayAction(
                 "GameQuests",
                 UiText.Get(_host.Texts, UiTextKey.Game_Quests),
                 () => _host.ShowQuests(null)));
-            foreach (var edge in edges)
-            {
-                var destination = world.Map.GetLocation(edge.ToId);
-                var label = UiText.Format(
-                    _host.Texts,
-                    UiTextKey.Game_Travel,
-                    LocationText.Title(_host, destination));
-                var edgeId = edge.EdgeId;
-                actions.Add(new PlayAction("Travel_" + edgeId, label, () => Travel(edgeId)));
-            }
 
             _actions.SetActions(actions, UiText.Get(_host.Texts, UiTextKey.Game_No_Actions));
         }
@@ -350,76 +361,81 @@ namespace AnomalyPath.Runtime.Screens.Game
             ShowToast(UiText.Get(_host.Texts, UiTextKey.Game_Cleared));
         }
 
-        private void OpenStash()
+        private void ShowLocationObject(LocationInstance location)
+        {
+            var current = location.Object;
+            if (current == null)
+            {
+                if (location.StashPresent && !location.StashOpened)
+                {
+                    _object.Show(
+                        UiText.Get(_host.Texts, UiTextKey.Game_Stash),
+                        UiText.Get(_host.Texts, UiTextKey.Game_Stash_Hint),
+                        OpenStash);
+                }
+                else
+                {
+                    _object.Hide();
+                }
+
+                return;
+            }
+
+            if (current.Looted)
+            {
+                _object.Hide();
+                return;
+            }
+
+            var title = UiText.Get(_host.Texts, current.TitleKey);
+            switch (current.Kind)
+            {
+                case LocationObjectKind.Stash:
+                    _object.Show(title, UiText.Get(_host.Texts, UiTextKey.Game_Stash_Hint), OpenStash);
+                    break;
+                case LocationObjectKind.Loot:
+                    _object.Show(
+                        title,
+                        UiText.Get(_host.Texts, UiTextKey.Game_Object_Hint),
+                        () => OpenLootObject(location));
+                    break;
+                default:
+                    _object.Show(
+                        title,
+                        UiText.Get(_host.Texts, UiTextKey.Game_Object_Hint),
+                        Noop);
+                    break;
+            }
+        }
+
+        private void OpenLootObject(LocationInstance location)
         {
             var session = _host.Session;
-            if (session == null)
+            if (session == null || location.Object is not LootLocationObject lootObject)
             {
-                ShowToast(UiText.Get(_host.Texts, UiTextKey.Common_No_Game), error: true);
                 return;
             }
 
-            StashOpenResult result;
-            try
+            var world = session.State.World;
+            var seed = StableHash.Combine(world.Map.Seed, location.InstanceId + "#object_loot");
+            var loot = _host.Loot.RollTable(lootObject.LootTableId, location.Tier, seed, false);
+            if (loot.Count == 0)
             {
-                result = _host.Sessions.OpenStash(session);
-            }
-            catch (Exception error)
-            {
-                ShowToast(UiText.Format(_host.Texts, UiTextKey.Game_Travel_Error, error.Message), error: true);
-                return;
-            }
-
-            if (result.Status == StashOpenStatus.NoStash)
-            {
-                ShowToast(UiText.Get(_host.Texts, UiTextKey.Game_Stash_None), error: true);
-                return;
-            }
-
-            if (result.Status == StashOpenStatus.AlreadyOpened)
-            {
-                ShowToast(UiText.Get(_host.Texts, UiTextKey.Game_Stash_Opened), error: true);
+                location.MarkObjectLooted();
+                ShowToast(UiText.Get(_host.Texts, UiTextKey.Loot_Empty));
                 Show();
                 return;
             }
 
-            Show();
-            if (result.Jackpot)
+            _host.ShowLoot(loot, () =>
             {
-                ShowToast(UiText.Get(_host.Texts, UiTextKey.Game_Jackpot));
-            }
-
-            _host.ShowLoot(result.Loot);
+                location.MarkObjectLooted();
+                Show();
+            });
         }
 
-        private void Travel(string edgeId)
+        private static void Noop()
         {
-            var session = _host.Session;
-            if (session == null)
-            {
-                ShowToast(UiText.Get(_host.Texts, UiTextKey.Common_No_Game), error: true);
-                return;
-            }
-
-            TravelResult result;
-            try
-            {
-                result = _host.Sessions.Travel(session, edgeId);
-            }
-            catch (Exception error)
-            {
-                ShowToast(UiText.Format(_host.Texts, UiTextKey.Game_Travel_Error, error.Message), error: true);
-                return;
-            }
-
-            if (!result.Succeeded)
-            {
-                ShowToast(UiText.Get(_host.Texts, PlayText.Travel(result.Status)), error: true);
-                return;
-            }
-
-            Show();
-            ShowToast(UiText.Get(_host.Texts, UiTextKey.Game_Travel_Success));
         }
 
         private static void PlaceTop(RectTransform rect, float x, float top, float width, float height)

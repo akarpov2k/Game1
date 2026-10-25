@@ -9,10 +9,10 @@ namespace AnomalyPath.Core.Save
     public sealed class SaveGame
     {
         /// <summary>Поддерживаемая версия схемы сохранения.</summary>
-        public const int CurrentSchemaVersion = 13;
+        public const int CurrentSchemaVersion = 18;
 
         /// <summary>Поддерживаемая версия формата сохранения.</summary>
-        public const int CurrentSaveVersion = 13;
+        public const int CurrentSaveVersion = 18;
 
         /// <summary>Создаёт сохранение.</summary>
         /// <param name="schemaVersion">Версия схемы.</param>
@@ -99,7 +99,7 @@ namespace AnomalyPath.Core.Save
         public static SaveGame FromJson(JsonValue value, string sourcePath)
         {
             var schemaVersion = DataMap.RequireInt(value, "schemaVersion", sourcePath);
-            if (schemaVersion < 1 || schemaVersion > CurrentSchemaVersion)
+            if (schemaVersion != CurrentSchemaVersion)
             {
                 throw new DataException(
                     sourcePath,
@@ -109,7 +109,7 @@ namespace AnomalyPath.Core.Save
             }
 
             var saveVersion = DataMap.RequireInt(value, "saveVersion", sourcePath);
-            if (saveVersion < 1 || saveVersion > CurrentSaveVersion)
+            if (saveVersion != CurrentSaveVersion)
             {
                 throw new DataException(
                     sourcePath,

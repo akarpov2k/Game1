@@ -220,10 +220,41 @@ namespace AnomalyPath.Tests.PlayMode
             }
 
             Assert.IsTrue(hasObjectStructure, "Структура объекта должна оставаться в коде экрана");
-            Assert.IsNotNull(FindAction("Travel_"), "На основном экране нет действий перехода");
+            Assert.IsNotNull(FindAction("LeaveHub"), "В хабе нет действия «Покинуть хаб»");
+            Assert.IsNull(FindAction("Travel_"), "В хабе не должно быть отдельных переходов: маршрут строится при выходе");
         }
 
-        /// <summary>Кнопка перехода перемещает игрока в другую локацию и перестраивает экран.</summary>
+        /// <summary>Кнопка «Покинуть хаб» строит маршрут и ведёт на первую дорогу.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator PlayScreen_LeaveHub_GeneratesRoute()
+        {
+            yield return LoadMain();
+
+            Click("Новая игра");
+            yield return null;
+            Click("Начать");
+            yield return null;
+
+            var screen = Object.FindAnyObjectByType<GameScreen>();
+            Assert.IsNotNull(screen, "GameScreen не найден в сцене Main");
+            var world = screen!.Session!.State.World;
+            Assert.AreEqual(LocationSubtype.Hub, world.CurrentLocation.Subtype, "Игра начинается в хабе");
+
+            var leave = FindAction("LeaveHub");
+            Assert.IsNotNull(leave, "Нет кнопки «Покинуть хаб»");
+            leave!.onClick.Invoke();
+            yield return null;
+
+            Assert.AreEqual(LocationSubtype.Path, world.CurrentLocation.Subtype, "Вышли на дорогу");
+            Assert.AreEqual(1, world.CurrentLocation.RouteEdge, "Первое звено маршрута");
+            Assert.AreEqual(1, world.CurrentLocation.RouteStep, "Первый шаг звена");
+            Assert.IsNull(FindAction("LeaveHub"), "На дороге нет действия «Покинуть хаб»");
+            Assert.IsNotNull(FindAction("Travel_"), "На дороге нет кнопок переходов по маршруту");
+            Assert.IsNotNull(FindAction("ReturnToHub"), "На дороге нет возврата в хаб");
+        }
+
+        /// <summary>Кнопка перехода по маршруту уводит на следующую локацию и снимает пройденную.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]
         public IEnumerator PlayScreen_Travel_MovesToAnotherLocation()
@@ -237,14 +268,18 @@ namespace AnomalyPath.Tests.PlayMode
 
             var screen = Object.FindAnyObjectByType<GameScreen>();
             Assert.IsNotNull(screen, "GameScreen не найден в сцене Main");
-            var before = screen.Session!.State.World.CurrentLocationId;
+            var world = screen!.Session!.State.World;
+            Click("LeaveHub");
+            yield return null;
+            var before = world.CurrentLocationId;
             var travel = FindAction("Travel_");
             Assert.IsNotNull(travel, "Нет кнопки перехода");
             travel!.onClick.Invoke();
             yield return null;
 
-            Assert.AreNotEqual(before, screen.Session!.State.World.CurrentLocationId, "Переход не сменил локацию");
-            Assert.IsTrue(GameObject.Find("InGame").activeSelf, "После перехода пропал основной экран");
+            Assert.AreNotEqual(before, world.CurrentLocationId, "Переход не сменил локацию");
+            Assert.IsFalse(world.Map.ContainsLocation(before), "Пройденная локация осталась на карте");
+            Assert.IsTrue(GameObject.Find("InGame")!.activeSelf, "После перехода пропал основной экран");
         }
 
         /// <summary>Пять и больше действий уходят в прокрутку, колесо мыши двигает список.</summary>

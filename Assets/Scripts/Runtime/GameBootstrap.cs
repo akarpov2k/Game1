@@ -57,7 +57,8 @@ namespace AnomalyPath.Runtime
             var saves = new SaveService(
                 new FileSaveStorage(saveRoot),
                 items,
-                Services.Resolve<IGameRulesRepository>());
+                Services.Resolve<IGameRulesRepository>(),
+                Services.Resolve<ISpawnRepository>());
             Services.RegisterSingleton<ISaveService>(saves);
             Services.RegisterSingleton<IGameSessionService>(new GameSessionService(
                 Services.Resolve<ITravelService>(),
@@ -69,7 +70,10 @@ namespace AnomalyPath.Runtime
                 Services.Resolve<IQuestService>(),
                 Services.Resolve<ITalentService>(),
                 Services.Resolve<IProgressionService>(),
-                Services.Resolve<IStashService>()));
+                Services.Resolve<IStashService>(),
+                Services.Resolve<ILocationObjectService>(),
+                Services.Resolve<IWorldGenerator>(),
+                Services.Resolve<ITopologyRepository>()));
         }
     }
 }

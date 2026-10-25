@@ -9,6 +9,10 @@
     "locations/loc_route_forest.json",
     "locations/loc_site_house.json",
     "locations/loc_site_anomaly.json",
-    "locations/loc_interior_room.json"
+    "locations/loc_building_industrial.json",
+    "locations/loc_building_laboratory.json",
+    "locations/loc_terrain_forest.json",
+    "locations/loc_terrain_swamp.json",
+    "locations/loc_terrain_field.json"
   ]
 }

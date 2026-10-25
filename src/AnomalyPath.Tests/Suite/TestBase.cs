@@ -305,9 +305,13 @@ namespace AnomalyPath.Tests
             "\"levelUpTalentPoints\":1,\"levelUpHealth\":2}";
 
         protected string TopologyJson() =>
-            "{\"schemaVersion\":1,\"kind\":\"topology\",\"id\":\"topology\",\"transitions\":[]," +
-            "\"routeLength\":[1,2],\"edgeLength\":[1,2],\"costs\":{}," +
-            "\"maxBranchDepth\":4,\"initialStamina\":10,\"dayStartHour\":6,\"nightStartHour\":22}";
+            "{\"schemaVersion\":1,\"kind\":\"topology\",\"id\":\"topology\",\"route\":{\"transitions\":[" +
+            "{\"from\":\"hub\",\"to\":\"path\",\"via\":[\"road\",\"path\"]}," +
+            "{\"from\":\"path\",\"to\":\"path\",\"via\":[\"road\",\"path\"]}]," +
+            "\"lookaheadEdges\":2,\"hubReturn\":{\"stamina\":2,\"hours\":0.5}," +
+            "\"branches\":{\"oddRange\":[1,2],\"evenGrowth\":1,\"maxChains\":2}},\"costs\":{" +
+            "\"road\":{\"stamina\":2,\"hours\":1},\"path\":{\"stamina\":3,\"hours\":1.5}}," +
+            "\"initialStamina\":10,\"dayStartHour\":6,\"nightStartHour\":22}";
 
         protected string Collection(params string[] entries)
         {

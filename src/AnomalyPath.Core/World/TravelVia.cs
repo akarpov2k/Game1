@@ -10,17 +10,8 @@ namespace AnomalyPath.Core.World
         /// <summary>Тропа.</summary>
         Path,
 
-        /// <summary>Дверь.</summary>
-        Door,
-
         /// <summary>Ворота.</summary>
         Gate,
-
-        /// <summary>Лестница.</summary>
-        Stairs,
-
-        /// <summary>Люк.</summary>
-        Hatch,
 
         /// <summary>Коридор.</summary>
         Corridor,

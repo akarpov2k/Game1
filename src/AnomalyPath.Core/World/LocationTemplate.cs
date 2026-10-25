@@ -7,39 +7,41 @@ using AnomalyPath.Core.Localization;
 
 namespace AnomalyPath.Core.World
 {
-    /// <summary>Авторский шаблон локации: роль в цепочке, теги, переходы и шанс появления.</summary>
+    /// <summary>
+    /// Авторский шаблон локации: подтип и роль содержания, теги, «длина» цепочки и шанс появления.
+    /// </summary>
     public sealed class LocationTemplate
     {
         /// <summary>Создаёт шаблон локации.</summary>
         /// <param name="id">Идентификатор.</param>
         /// <param name="titleKey">Ключ названия.</param>
         /// <param name="locationKind">Тип локации из <see cref="LocationKind"/>.</param>
-        /// <param name="nodeType">Роль в цепочке из <see cref="LocationNodeType"/>.</param>
+        /// <param name="subtype">Подтип маршрута из <see cref="LocationSubtype"/>.</param>
+        /// <param name="role">Роль содержания внутри подтипа; <c>null</c> — не уточняется.</param>
         /// <param name="tags">Теги совместимости.</param>
         /// <param name="tier">Тир опасности.</param>
         /// <param name="backgrounds">Пул фонов.</param>
         /// <param name="objectCount">Сколько объектов генерировать.</param>
         /// <param name="danger">Сложность от 0 до 1.</param>
-        /// <param name="connections">Авторские переходы.</param>
-        /// <param name="approachLength">Сколько отрезков пути ведёт к локации; <c>null</c> — из топологии.</param>
+        /// <param name="chainLength">Сколько локаций шаблона стоит подряд.</param>
         /// <param name="fixedEvents">События, которые появляются всегда.</param>
         /// <param name="rarity">Редкость локации из <see cref="LocationRarity"/>.</param>
         /// <param name="spawnChance">Шанс появления от 0 до 1.</param>
         /// <param name="unique">Квестовая уникальная локация.</param>
         /// <param name="traders">Id торговцев, привязанных к этому хабу.</param>
-        /// <exception cref="ArgumentException">Id пуст или значение перечисления не определено.</exception>
+        /// <exception cref="ArgumentException">Поле пусто, значение перечисления не определено или хаб не совпадает с подтипом.</exception>
         public LocationTemplate(
             string id,
             string titleKey,
             LocationKind locationKind,
-            LocationNodeType nodeType,
+            LocationSubtype subtype,
+            string? role,
             IReadOnlyList<LocationTag> tags,
             int tier,
             IReadOnlyList<string> backgrounds,
             IntRange objectCount,
             double danger,
-            IReadOnlyList<ConnectionTemplate> connections,
-            IntRange? approachLength,
+            WeightedRange chainLength,
             IReadOnlyList<string> fixedEvents,
             LocationRarity rarity,
             double spawnChance,
@@ -58,11 +60,25 @@ namespace AnomalyPath.Core.World
                     nameof(locationKind));
             }
 
-            if (!Enum.IsDefined(typeof(LocationNodeType), nodeType))
+            if (!Enum.IsDefined(typeof(LocationSubtype), subtype))
             {
                 throw new ArgumentException(
-                    CoreText.Format(CoreErrors.WorldUnknownNodeType, nodeType),
-                    nameof(nodeType));
+                    CoreText.Format(CoreErrors.WorldUnknownSubtype, subtype),
+                    nameof(subtype));
+            }
+
+            if (locationKind == LocationKind.Hub && subtype != LocationSubtype.Hub)
+            {
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.WorldHubAccess, id),
+                    nameof(locationKind));
+            }
+
+            if (locationKind != LocationKind.Hub && subtype == LocationSubtype.Hub)
+            {
+                throw new ArgumentException(
+                    CoreText.Format(CoreErrors.WorldUnknownSubtype, subtype),
+                    nameof(subtype));
             }
 
             if (!Enum.IsDefined(typeof(LocationRarity), rarity))
@@ -90,14 +106,14 @@ namespace AnomalyPath.Core.World
             Id = id;
             TitleKey = titleKey;
             LocationKind = locationKind;
-            NodeType = nodeType;
+            Subtype = subtype;
+            Role = string.IsNullOrWhiteSpace(role) ? null : role;
             Tags = tags;
             Tier = tier;
             Backgrounds = backgrounds;
             ObjectCount = objectCount;
             Danger = danger;
-            Connections = connections;
-            ApproachLength = approachLength;
+            ChainLength = chainLength ?? throw new ArgumentNullException(nameof(chainLength));
             FixedEvents = fixedEvents;
             Rarity = rarity;
             SpawnChance = spawnChance;
@@ -114,8 +130,11 @@ namespace AnomalyPath.Core.World
         /// <summary>Тип локации.</summary>
         public LocationKind LocationKind { get; }
 
-        /// <summary>Роль в цепочке.</summary>
-        public LocationNodeType NodeType { get; }
+        /// <summary>Подтип маршрута.</summary>
+        public LocationSubtype Subtype { get; }
+
+        /// <summary>Роль содержания внутри подтипа; <c>null</c> — не уточняется.</summary>
+        public string? Role { get; }
 
         /// <summary>Теги совместимости.</summary>
         public IReadOnlyList<LocationTag> Tags { get; }
@@ -132,11 +151,8 @@ namespace AnomalyPath.Core.World
         /// <summary>Сложность от 0 до 1.</summary>
         public double Danger { get; }
 
-        /// <summary>Авторские переходы.</summary>
-        public IReadOnlyList<ConnectionTemplate> Connections { get; }
-
-        /// <summary>Сколько отрезков пути ведёт к локации; <c>null</c> — из топологии.</summary>
-        public IntRange? ApproachLength { get; }
+        /// <summary>Сколько локаций шаблона стоит подряд.</summary>
+        public WeightedRange ChainLength { get; }
 
         /// <summary>События, которые появляются всегда.</summary>
         public IReadOnlyList<string> FixedEvents { get; }
@@ -152,6 +168,9 @@ namespace AnomalyPath.Core.World
 
         /// <summary>Id торговцев, привязанных к хабу.</summary>
         public IReadOnlyList<string> Traders { get; }
+
+        /// <summary>Мирная зона: в неё можно попасть только с пути.</summary>
+        public bool IsHub => Subtype == LocationSubtype.Hub;
 
         /// <summary>Читает шаблон локации из записи данных.</summary>
         /// <param name="value">Загруженная запись.</param>
@@ -169,11 +188,13 @@ namespace AnomalyPath.Core.World
                 throw new DataException(sourcePath, CoreErrors.WorldUnknownLocationKind, locationKindCode);
             }
 
-            var nodeTypeCode = DataMap.RequireString(value, "nodeType", sourcePath);
-            if (!SchemaEnum.TryParse(nodeTypeCode, out LocationNodeType nodeType))
+            var subtypeCode = DataMap.RequireString(value, "subtype", sourcePath);
+            if (!SchemaEnum.TryParse(subtypeCode, out LocationSubtype subtype))
             {
-                throw new DataException(sourcePath, CoreErrors.WorldUnknownNodeType, nodeTypeCode);
+                throw new DataException(sourcePath, CoreErrors.WorldUnknownSubtype, subtypeCode);
             }
+
+            var role = DataMap.OptionalString(value, "role");
 
             var tags = ReadTags(value, sourcePath);
             var backgrounds = DataMap.OptionalStringArray(value, "backgrounds");
@@ -195,15 +216,15 @@ namespace AnomalyPath.Core.World
                 throw new DataException(sourcePath, CoreErrors.WorldChance, "danger");
             }
 
-            var connections = ReadConnections(value, sourcePath);
-            IntRange? approachLength = null;
-            if (value.TryGet("approachLength", out _))
+            var chainLength = WeightedRange.Optional(
+                value,
+                "chainLength",
+                "chainWeights",
+                sourcePath,
+                new IntRange(1, 1));
+            if (chainLength.Range.Min < 1)
             {
-                approachLength = IntRange.FromJson(value, "approachLength", sourcePath);
-                if (approachLength.Value.Min < 1)
-                {
-                    throw new DataException(sourcePath, CoreErrors.WorldRange, "approachLength");
-                }
+                throw new DataException(sourcePath, CoreErrors.WorldRange, "chainLength");
             }
 
             var fixedEvents = DataMap.OptionalStringArray(value, "fixedEvents");
@@ -228,23 +249,30 @@ namespace AnomalyPath.Core.World
             }
 
             var traders = DataMap.OptionalStringArray(value, "traders");
-            return new LocationTemplate(
-                id,
-                titleKey,
-                locationKind,
-                nodeType,
-                tags,
-                tier,
-                backgrounds,
-                objectCount,
-                danger,
-                connections,
-                approachLength,
-                fixedEvents,
-                rarity,
-                spawnChance,
-                unique,
-                traders);
+            try
+            {
+                return new LocationTemplate(
+                    id,
+                    titleKey,
+                    locationKind,
+                    subtype,
+                    role,
+                    tags,
+                    tier,
+                    backgrounds,
+                    objectCount,
+                    danger,
+                    chainLength,
+                    fixedEvents,
+                    rarity,
+                    spawnChance,
+                    unique,
+                    traders);
+            }
+            catch (ArgumentException error)
+            {
+                throw new DataException(sourcePath, CoreErrors.WorldUnknownSubtype, error.Message);
+            }
         }
 
         private static IReadOnlyList<LocationTag> ReadTags(JsonValue value, string sourcePath)
@@ -258,27 +286,6 @@ namespace AnomalyPath.Core.World
                 }
 
                 result.Add(tag);
-            }
-
-            return result;
-        }
-
-        private static IReadOnlyList<ConnectionTemplate> ReadConnections(JsonValue value, string sourcePath)
-        {
-            var result = new List<ConnectionTemplate>();
-            if (!value.TryGet("connections", out var connections) || !connections.IsArray)
-            {
-                return result;
-            }
-
-            foreach (var item in connections.Items)
-            {
-                if (!item.IsObject)
-                {
-                    throw new DataException(sourcePath, CoreErrors.JsonNotObject);
-                }
-
-                result.Add(ConnectionTemplate.FromJson(item, sourcePath));
             }
 
             return result;

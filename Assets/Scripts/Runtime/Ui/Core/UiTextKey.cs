@@ -3,8 +3,9 @@ namespace AnomalyPath.Runtime.Ui.Core
 {
     /// <summary>
     /// Ключи видимых текстов интерфейса. Код ресурса — <c>ui.</c> + имя члена в нижнем регистре,
-    /// сами тексты лежат в <c>strings.{ru,en}.json</c>. Порядок членов — часть сериализации
-    /// (см. комментарий в конце перечисления): новые ключи только дописываются в конец.
+    /// сами тексты лежат в <c>strings.{ru,en}.json</c>. В префабах хранится код
+    /// (<see cref="UiText.Code"/>), а не номер члена, поэтому порядок членов можно менять
+    /// без переноса подписей.
     /// </summary>
     public enum UiTextKey
     {
@@ -244,9 +245,6 @@ namespace AnomalyPath.Runtime.Ui.Core
 
         /// <summary>Роль локации: точка интереса.</summary>
         Game_Node_Site,
-
-        /// <summary>Роль локации: помещение.</summary>
-        Game_Node_Interior,
 
         /// <summary>Переход выполнен.</summary>
         Game_Travel_Success,
@@ -719,10 +717,9 @@ namespace AnomalyPath.Runtime.Ui.Core
         /// <summary>ВРЕМЕННО: тестовый бой не удалось завершить.</summary>
         Game_Test_Kill_Failed,
 
-        // Ключи ниже добавлены после сборки префабов. Порядок членов enum
-        // сериализуется числом в `LocalizedText.key`, поэтому новые ключи
-        // дописываются только в конец: вставка в середину сдвигает уже
-        // сохранённые значения и подписи префабов начинают показывать чужой текст.
+        // Ключи ниже когда-то были вставлены в середину перечисления, пока номер члена
+        // сериализовался в `LocalizedText`. Теперь префабы хранят код ключа строкой,
+        // порядок членов ни на что не влияет.
 
         /// <summary>Подпись коэффициента потери опыта при смерти.</summary>
         NewGame_XpLoss_Label,
@@ -740,6 +737,30 @@ namespace AnomalyPath.Runtime.Ui.Core
         Game_Stash_Opened,
 
         /// <summary>На локации нет тайника.</summary>
-        Game_Stash_None
+        Game_Stash_None,
+
+        /// <summary>Подпись подтипа «путь».</summary>
+        Game_Subtype_Path,
+
+        /// <summary>Подпись подтипа «здание».</summary>
+        Game_Subtype_Building,
+
+        /// <summary>Подпись подтипа «местность».</summary>
+        Game_Subtype_Terrain,
+
+        /// <summary>Действие «В хаб» на локации пути.</summary>
+        Game_Return_Hub,
+
+        /// <summary>В хаб можно вернуться только с пути.</summary>
+        Game_Travel_HubUnavailable,
+
+        /// <summary>Не хватает выносливости на возврат в хаб.</summary>
+        Game_Travel_NotEnoughStamina,
+
+        /// <summary>Строка маршрута: номер шага и цена возврата в хаб.</summary>
+        Game_Route_Summary,
+
+        /// <summary>Действие «Покинуть хаб»: строит маршрут и уводит на первую дорогу.</summary>
+        Game_Leave_Hub
     }
 }

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "locations",
+  "id": "loc_terrain_field",
+  "titleKey": "location.terrain.field.title",
+  "locationKind": "wild",
+  "subtype": "terrain",
+  "role": "field",
+  "tags": ["outdoor", "rural"],
+  "tier": 0,
+  "backgrounds": ["bg_route_highway"],
+  "objectCount": [1, 1],
+  "danger": 0.2,
+  "chainLength": [2, 5],
+  "chainWeights": { "2": 0.2, "3": 0.4, "4": 0.3, "5": 0.1 },
+  "rarity": "common",
+  "spawnChance": 1,
+  "unique": false
+}

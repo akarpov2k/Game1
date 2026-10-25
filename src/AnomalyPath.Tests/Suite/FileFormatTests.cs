@@ -155,15 +155,15 @@ namespace AnomalyPath.Tests
                     {
                         ["catalog.json"] = Catalog("locations/loc_x.json"),
                         ["locations/loc_x.json"] = "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_x\"," +
-                                                   "\"titleKey\":\"t\",\"locationKind\":\"wild\",\"nodeType\":\"route\"," +
+                                                   "\"titleKey\":\"t\",\"locationKind\":\"wild\",\"subtype\":\"path\"," +
                                                    "\"tags\":[\"road\",\"outdoor\"],\"tier\":0,\"backgrounds\":[\"bg\"]," +
-                                                   "\"objectCount\":[1,2],\"danger\":0.2,\"connections\":[]}"
+                                                   "\"objectCount\":[1,2],\"danger\":0.2}"
                     },
                     root =>
                     {
                         var data = new DataLoader(new FileSystemDataSource(root)).Load();
                         Equal(1, data.All("locations").Count, "locations");
-                        Equal("route", data.OfKind("locations")["loc_x"].Get("nodeType").Text, "роль");
+                        Equal("path", data.OfKind("locations")["loc_x"].Get("subtype").Text, "подтип");
                     });
             });
 
@@ -174,17 +174,18 @@ namespace AnomalyPath.Tests
                     {
                         ["catalog.json"] = Catalog("topology.json"),
                         ["topology.json"] = "{\"schemaVersion\":1,\"kind\":\"topology\",\"id\":\"topology\"," +
-                                            "\"transitions\":[{\"from\":\"hub\",\"to\":\"route\",\"via\":[\"road\"]}]," +
-                                            "\"routeLength\":[1,2],\"edgeLength\":[1,2]," +
+                                            "\"route\":{\"transitions\":[{\"from\":\"hub\",\"to\":\"path\",\"via\":[\"road\"]}]," +
+                                            "\"lookaheadEdges\":2,\"hubReturn\":{\"stamina\":2,\"hours\":0.5}," +
+                                            "\"branches\":{\"oddRange\":[1,2],\"evenGrowth\":1,\"maxChains\":2}}," +
                                             "\"costs\":{\"road\":{\"stamina\":2,\"hours\":1}}," +
-                                            "\"maxBranchDepth\":4,\"initialStamina\":10," +
+                                            "\"initialStamina\":10," +
                                             "\"dayStartHour\":6,\"nightStartHour\":22}"
                     },
                     root =>
                     {
                         var data = new DataLoader(new FileSystemDataSource(root)).Load();
                         Equal(1, data.All("topology").Count, "topology");
-                        Equal(2, data.OfKind("topology")["topology"].Get("edgeLength").Items[1].Number, "edgeLength");
+                        Equal(2, data.OfKind("topology")["topology"].Get("route").Get("branches").Get("oddRange").Items[1].Number, "oddRange");
                     });
             });
 
@@ -280,9 +281,9 @@ namespace AnomalyPath.Tests
                     {
                         ["catalog.json"] = Catalog("locations/loc_hub.json"),
                         ["locations/loc_hub.json"] = "{\"schemaVersion\":1,\"kind\":\"locations\",\"id\":\"loc_hub\"," +
-                                                     "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"nodeType\":\"hub\"," +
+                                                     "\"titleKey\":\"t\",\"locationKind\":\"hub\",\"subtype\":\"hub\"," +
                                                      "\"tags\":[\"hub\"],\"tier\":0,\"backgrounds\":[\"bg\"]," +
-                                                     "\"objectCount\":[0,0],\"connections\":[]," +
+                                                     "\"objectCount\":[0,0]," +
                                                      "\"traders\":[\"trd_x\",\"trd_y\"]}"
                     },
                     root =>

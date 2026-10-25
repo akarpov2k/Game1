@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using AnomalyPath.Core.Abstractions;
 using AnomalyPath.Core.Combat;
+using AnomalyPath.Core.Data;
 using AnomalyPath.Core.Death;
 using AnomalyPath.Core.Inventory;
 using AnomalyPath.Core.Loot;
@@ -24,6 +25,9 @@ namespace AnomalyPath.Core.Services
         private readonly ITalentService? _talents;
         private readonly IProgressionService? _progression;
         private readonly IStashService? _stashes;
+        private readonly ILocationObjectService? _locationObjects;
+        private readonly IWorldGenerator? _worldGenerator;
+        private readonly ITopologyRepository? _topology;
 
         /// <summary>Создаёт сервис сессии.</summary>
         /// <param name="travel">Переходы по миру.</param>
@@ -38,6 +42,9 @@ namespace AnomalyPath.Core.Services
         /// Прогрессия: подтягивание уровня при загрузке; <c>null</c> — не подтягивать.
         /// </param>
         /// <param name="stashes">Тайники на локациях; <c>null</c> — тайников нет.</param>
+        /// <param name="locationObjects">Объекты локаций; <c>null</c> — только тайники.</param>
+        /// <param name="worldGenerator">Достройка маршрута при переходах; <c>null</c> — маршрут не растёт.</param>
+        /// <param name="topology">Топология: цена возврата в хаб; <c>null</c> — бесплатно.</param>
         /// <exception cref="ArgumentNullException">Зависимость не задана.</exception>
         public GameSessionService(
             ITravelService travel,
@@ -49,7 +56,10 @@ namespace AnomalyPath.Core.Services
             IQuestService? quests = null,
             ITalentService? talents = null,
             IProgressionService? progression = null,
-            IStashService? stashes = null)
+            IStashService? stashes = null,
+            ILocationObjectService? locationObjects = null,
+            IWorldGenerator? worldGenerator = null,
+            ITopologyRepository? topology = null)
         {
             _travel = travel ?? throw new ArgumentNullException(nameof(travel));
             _combat = combat ?? throw new ArgumentNullException(nameof(combat));
@@ -61,6 +71,9 @@ namespace AnomalyPath.Core.Services
             _talents = talents;
             _progression = progression;
             _stashes = stashes;
+            _locationObjects = locationObjects;
+            _worldGenerator = worldGenerator;
+            _topology = topology;
         }
 
         /// <inheritdoc />
@@ -153,13 +166,102 @@ namespace AnomalyPath.Core.Services
                 return new TravelResult(TravelStatus.InCombat);
             }
 
+            var previous = session.State.World.CurrentLocation;
             var result = _travel.Travel(session.State.World, edgeId);
             if (result.Succeeded)
             {
-                RollLocationStash(session);
+                var world = session.State.World;
+                if (world.CurrentLocation.RouteEdge != previous.RouteEdge)
+                {
+                    _worldGenerator?.Extend(world);
+                }
+
+                PrunePassed(world, previous);
+                EnsureLocationObject(session);
             }
 
             return result;
+        }
+
+        /// <inheritdoc />
+        public TravelResult LeaveHub(GameSession session)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            if (session.InCombat)
+            {
+                return new TravelResult(TravelStatus.InCombat);
+            }
+
+            var world = session.State.World;
+            if (world.CurrentLocation.Subtype != LocationSubtype.Hub)
+            {
+                return new TravelResult(TravelStatus.WrongLocation);
+            }
+
+            if (_worldGenerator == null)
+            {
+                return new TravelResult(TravelStatus.EdgeNotFound);
+            }
+
+            _worldGenerator.BeginRoute(world);
+            var edge = FirstRouteEdge(world);
+            if (edge == null)
+            {
+                return new TravelResult(TravelStatus.EdgeNotFound);
+            }
+
+            var previous = world.CurrentLocation;
+            var result = _travel.Travel(world, edge.EdgeId);
+            if (result.Succeeded)
+            {
+                PrunePassed(world, previous);
+                EnsureLocationObject(session);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public TravelResult ReturnToHub(GameSession session)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            if (session.InCombat)
+            {
+                return new TravelResult(TravelStatus.InCombat);
+            }
+
+            var world = session.State.World;
+            var location = world.CurrentLocation;
+            if (location.Subtype != LocationSubtype.Path)
+            {
+                return new TravelResult(TravelStatus.HubUnavailable);
+            }
+
+            var cost = _topology != null ? _topology.Topology.HubReturnCost(location.RouteStep) : TravelCost.Zero;
+            if (world.Stamina < cost.Stamina)
+            {
+                return new TravelResult(TravelStatus.NotEnoughStamina);
+            }
+
+            if (cost.Stamina > 0)
+            {
+                world.TrySpendStamina(cost.Stamina);
+            }
+
+            world.Clock.Advance(cost.Hours);
+            var previous = location;
+            world.MoveTo(world.LastHubId);
+            PrunePassed(world, previous);
+            EnsureLocationObject(session);
+            return new TravelResult(TravelStatus.Success);
         }
 
         /// <inheritdoc />
@@ -170,8 +272,73 @@ namespace AnomalyPath.Core.Services
                 throw new ArgumentNullException(nameof(session));
             }
 
-            return _stashes != null &&
-                   _stashes.RollOnEntry(session.State.World, session.State.World.CurrentLocation);
+            EnsureLocationObject(session);
+            return session.State.World.CurrentLocation.StashPresent;
+        }
+
+        private void EnsureLocationObject(GameSession session)
+        {
+            var world = session.State.World;
+            var location = world.CurrentLocation;
+            if (location.ObjectSelected)
+            {
+                return;
+            }
+
+            if (_locationObjects != null)
+            {
+                _locationObjects.Select(world, location, NextObjectSeed(world.ObjectSeed));
+            }
+            else
+            {
+                _stashes?.RollOnEntry(world, location);
+            }
+
+            location.MarkObjectSelected();
+        }
+
+        /// <summary>
+        /// Снимает с карты пройденное: покинутую локацию и всё, что осталось позади текущей.
+        /// Хаб и цели квестов остаются, чтобы в хаб можно было вернуться.
+        /// </summary>
+        private static void PrunePassed(WorldState world, LocationInstance previous)
+        {
+            if (previous.InstanceId != world.CurrentLocationId)
+            {
+                world.Map.RemoveEdgesBetween(previous.InstanceId, world.CurrentLocationId);
+            }
+
+            if (previous.Subtype != LocationSubtype.Hub &&
+                previous.InstanceId != world.Map.StartLocationId &&
+                previous.InstanceId != world.CurrentLocationId)
+            {
+                world.Map.RemoveLocation(previous.InstanceId);
+            }
+
+            world.Map.PrunePassed(world.CurrentLocationId);
+        }
+
+        /// <summary>Первое ребро маршрута из хаба: в первую локацию пути звена 1.</summary>
+        private static WorldEdge? FirstRouteEdge(WorldState world)
+        {
+            foreach (var edge in world.Map.EdgesFrom(world.CurrentLocationId))
+            {
+                var target = world.Map.GetLocation(edge.ToId);
+                if (target.Subtype == LocationSubtype.Path && target.RouteEdge == 1 && target.RouteStep == 1)
+                {
+                    return edge;
+                }
+            }
+
+            return null;
+        }
+
+        private static int NextObjectSeed(string objectSeed)
+        {
+            var ticks = DateTime.UtcNow.Ticks;
+            var noise = Guid.NewGuid().GetHashCode();
+            var mixed = unchecked((int)(ticks ^ (ticks >> 32)) ^ noise);
+            return StableHash.Combine(mixed, objectSeed);
         }
 
         /// <inheritdoc />

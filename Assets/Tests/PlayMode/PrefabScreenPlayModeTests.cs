@@ -46,6 +46,45 @@ namespace AnomalyPath.Tests.PlayMode
                 "Подпись кнопки не взята из каталога текстов");
         }
 
+        /// <summary>Каждая локализованная подпись префаба хранит код ключа строкой и берёт текст из каталога.</summary>
+        /// <returns>Корутина теста.</returns>
+        [UnityTest]
+        public IEnumerator NewGame_Prefab_LocalizedTextsUseCatalogCodes()
+        {
+            yield return LoadMain();
+
+            Click("Новая игра");
+            yield return null;
+
+            var panel = GameObject.Find("NewGame");
+            Assert.IsNotNull(panel, "Панель новой игры не создана");
+            var screen = Object.FindAnyObjectByType<GameScreen>();
+            Assert.IsNotNull(screen, "GameScreen не найден в сцене Main");
+
+            var localized = panel.GetComponentsInChildren<LocalizedText>(true);
+            Assert.Greater(localized.Length, 0, "В префабе нет локализованных подписей");
+            foreach (var item in localized)
+            {
+                Assert.IsFalse(string.IsNullOrEmpty(item.Key), $"У «{item.name}» не задан код ключа");
+                Assert.IsTrue(
+                    item.Key.StartsWith("ui.", System.StringComparison.Ordinal),
+                    $"Код «{item.Key}» у «{item.name}» не похож на ключ каталога");
+                var label = item.GetComponent<Text>() ?? item.GetComponentInChildren<Text>(true);
+                Assert.IsNotNull(label, $"У «{item.name}» нет подписи");
+                Assert.AreEqual(
+                    UiText.Get(screen!.Texts, item.Key),
+                    label!.text,
+                    $"Подпись «{item.name}» не из каталога");
+            }
+
+            var back = GameObject.Find("Назад");
+            Assert.IsNotNull(back, "Нет кнопки «Назад»");
+            Assert.AreEqual(
+                UiText.Get(screen!.Texts, UiTextKey.NewGame_Back),
+                back!.GetComponentInChildren<Text>(true).text,
+                "Подпись «Назад» не из каталога текстов");
+        }
+
         /// <summary>Спрайт, заданный в инспекторе, перекрывает картинку темы.</summary>
         /// <returns>Корутина теста.</returns>
         [UnityTest]

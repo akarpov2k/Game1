@@ -46,6 +46,8 @@ namespace AnomalyPath.Tests
                 new QuestTests(dataRoot),
                 new TalentTests(dataRoot),
                 new LootTests(),
+                new SpawnTests(),
+                new LocationObjectTests(),
                 new StashTests(dataRoot),
                 new JackpotTests(),
                 new DeathTests(dataRoot),

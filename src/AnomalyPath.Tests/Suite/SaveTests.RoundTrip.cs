@@ -65,6 +65,7 @@ namespace AnomalyPath.Tests
                 {
                     var map = generator.Generate(42);
                     var state = WorldState.Start(map);
+                    generator.BeginRoute(state);
                     var edge = FirstPaidEdge(map, state.CurrentLocationId);
                     True(travel.Travel(state, edge.EdgeId).Succeeded, "переход");
                     state.SetWeather(WeatherKind.Fog);
@@ -84,16 +85,26 @@ namespace AnomalyPath.Tests
                     Equal(state.Clock.Hours, loaded.Clock.Hours, "часы");
                     Equal(state.Weather, loaded.Weather, "погода");
                     Equal(state.LastHubId, loaded.LastHubId, "последний хаб");
+                    Equal(state.ObjectSeed, loaded.ObjectSeed, "seed объектов");
                     Equal(2, loaded.LootSerial, "счётчик бросков лута");
                     Equal(map.Seed, loaded.Map.Seed, "seed");
                     Equal(map.StartLocationId, loaded.Map.StartLocationId, "стартовая локация");
                     Equal(map.Locations.Count, loaded.Map.Locations.Count, "локации");
                     for (var index = 0; index < map.Locations.Count; index++)
                     {
-                        Equal(map.Locations[index].NodeType, loaded.Map.Locations[index].NodeType, "роль локации");
+                        Equal(map.Locations[index].Subtype, loaded.Map.Locations[index].Subtype, "роль локации");
                     }
 
                     Equal(map.Edges.Count, loaded.Map.Edges.Count, "рёбра");
+                    Equal(map.RouteEdges, loaded.Map.RouteEdges, "звеньев маршрута");
+                    Equal(map.RouteTailId, loaded.Map.RouteTailId, "конец маршрута");
+                    Equal(map.RouteLastBranches, loaded.Map.RouteLastBranches, "веток на последнем звене");
+                    Equal(map.RouteSerial, loaded.Map.RouteSerial, "номер выхода из хаба");
+                    Equal(
+                        string.Join(",", map.RouteFrontIds),
+                        string.Join(",", loaded.Map.RouteFrontIds),
+                        "выходы последнего звена");
+                    Equal(map.Locations[0].RouteStep, loaded.Map.Locations[0].RouteStep, "шаг от хаба");
                     True(loaded.CurrentLocation.Visited, "текущая локация посещена");
                     True(loaded.Map.TryGetEdge(edge.EdgeId, out var savedEdge), "ребро сохранено");
                     Equal(edge.Cost.Stamina, savedEdge!.Cost.Stamina, "стоимость ребра");
@@ -229,7 +240,7 @@ namespace AnomalyPath.Tests
                 });
             });
 
-            Check("сейв: старое поле lootLossFactor читается как страховка", () =>
+            Check("сейв: старая версия формата отклоняется", () =>
             {
                 WithSaveRoot(root =>
                 {
@@ -237,28 +248,40 @@ namespace AnomalyPath.Tests
                     var state = WorldState.Start(map);
                     var storage = new FileSaveStorage(root);
                     var service = new SaveService(storage, items);
-                    var settings = new NewGameSettings(0.4, 1.5, xpLossChance: 0.6);
                     service.Save(
-                        new GameState(state, NewPlayer(items), settings),
+                        new GameState(state, NewPlayer(items), new NewGameSettings(0.4, 1.5, xpLossChance: 0.6)),
                         "slot_1",
                         0,
                         new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
                     var path = storage.GetPath("slot_1");
                     var text = File.ReadAllText(path)
-                        .Replace("\"insuranceChance\": 0.4", "\"lootLossFactor\": 0.4")
                         .Replace($"\"schemaVersion\": {SaveGame.CurrentSchemaVersion}", "\"schemaVersion\": 3")
                         .Replace($"\"saveVersion\": {SaveGame.CurrentSaveVersion}", "\"saveVersion\": 3");
-                    var oldGame = JsonParser.Parse(text, "slot_1");
-                    oldGame.Get("world").Get("settings").Members.Remove("xpLossChance");
-                    File.WriteAllText(path, JsonWriter.Write(oldGame));
+                    File.WriteAllText(path, text);
 
-                    var rules = Bootstrap.Build(_dataRoot).Resolve<IGameRulesRepository>();
-                    var oldService = new SaveService(storage, items, rules);
-                    var loaded = oldService.Load("slot_1");
-                    Equal(0.4, loaded.Settings!.InsuranceChance, "страховка из старого поля");
-                    Equal(1.5, loaded.Settings.TradeDifficulty, "торговля");
-                    False(loaded.Settings.Permadeath, "пермасмерть по умолчанию");
-                    Equal(0.4, loaded.Settings.XpLossChance, "потеря опыта из правил по умолчанию");
+                    Throws<AnomalyPath.Core.Data.DataException>(() => service.Load("slot_1"), "старая версия");
+                });
+            });
+
+            Check("сейв: отрицательный номер выхода из хаба отклоняется", () =>
+            {
+                WithSaveRoot(root =>
+                {
+                    var map = generator.Generate(42);
+                    var state = WorldState.Start(map);
+                    generator.BeginRoute(state);
+                    var storage = new FileSaveStorage(root);
+                    var service = new SaveService(storage, items);
+                    service.Save(
+                        new GameState(state, null),
+                        "slot_1",
+                        0,
+                        new DateTimeOffset(2026, 10, 22, 10, 0, 0, TimeSpan.Zero));
+                    var path = storage.GetPath("slot_1");
+                    var text = File.ReadAllText(path).Replace("\"routeSerial\": 1", "\"routeSerial\": -1");
+                    File.WriteAllText(path, text);
+
+                    Throws<AnomalyPath.Core.Data.DataException>(() => service.Load("slot_1"), "номер маршрута");
                 });
             });
 

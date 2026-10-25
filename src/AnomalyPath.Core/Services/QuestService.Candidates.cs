@@ -23,7 +23,9 @@ namespace AnomalyPath.Core.Services
             var candidates = new List<LocationTemplate>();
             foreach (var template in _locations.All)
             {
-                if (template.NodeType != LocationNodeType.Site || template.LocationKind != LocationKind.Wild ||
+                if (template.LocationKind != LocationKind.Wild ||
+                    template.Subtype == LocationSubtype.Path ||
+                    template.Subtype == LocationSubtype.Hub ||
                     template.Unique)
                 {
                     continue;

@@ -60,7 +60,7 @@ namespace AnomalyPath.Editor.Ui
             var localized = label.gameObject.AddComponent<LocalizedText>();
             SetObject(localized, "label", label);
             var serialized = new SerializedObject(localized);
-            serialized.FindProperty("key").intValue = (int)key;
+            serialized.FindProperty("key").stringValue = UiText.Code(key);
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

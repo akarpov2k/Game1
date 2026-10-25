@@ -33,6 +33,8 @@ namespace AnomalyPath.Tests
 
             TemplateTests();
             GenerationTests(generator, locations, topology);
+            DepartureTests(generator);
+            PruneTests();
             MapMutationTests(generator);
             TravelTests(generator, travel);
             ValidationTests();

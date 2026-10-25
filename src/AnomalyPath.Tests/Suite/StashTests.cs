@@ -331,9 +331,9 @@ namespace AnomalyPath.Tests
         private static (WorldState World, LocationInstance Hub, LocationInstance First, LocationInstance Second)
             NewWorld()
         {
-            var hub = new LocationInstance("loc_hub", "loc_hub", 1, "bg", LocationNodeType.Hub, 0, 0.1);
-            var first = new LocationInstance("loc_1", "loc_1", 11, "bg", LocationNodeType.Route, 1, 0.2);
-            var second = new LocationInstance("loc_2", "loc_2", 12, "bg", LocationNodeType.Site, 2, 0.3);
+            var hub = new LocationInstance("loc_hub", "loc_hub", 1, "bg", LocationSubtype.Hub, 0, 0.1);
+            var first = new LocationInstance("loc_1", "loc_1", 11, "bg", LocationSubtype.Path, 1, 0.2);
+            var second = new LocationInstance("loc_2", "loc_2", 12, "bg", LocationSubtype.Building, 2, 0.3);
             var map = new WorldMap(
                 42,
                 new[] { hub, first, second },

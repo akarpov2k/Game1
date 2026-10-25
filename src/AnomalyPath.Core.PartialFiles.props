@@ -27,6 +27,7 @@
     <Compile Update="Services\CombatService.Attacks.cs"><DependentUpon>CombatService.cs</DependentUpon></Compile>
     <Compile Update="Services\CombatService.Weapons.cs"><DependentUpon>CombatService.cs</DependentUpon></Compile>
     <Compile Update="Services\CombatService.Wear.cs"><DependentUpon>CombatService.cs</DependentUpon></Compile>
+    <Compile Update="Services\WorldGenerator.Branches.cs"><DependentUpon>WorldGenerator.cs</DependentUpon></Compile>
     <Compile Update="Character\CharacterActions.Equipment.cs"><DependentUpon>CharacterActions.cs</DependentUpon></Compile>
     <Compile Update="Character\CharacterActions.Ammo.cs"><DependentUpon>CharacterActions.cs</DependentUpon></Compile>
     <Compile Update="Character\CharacterActions.Items.cs"><DependentUpon>CharacterActions.cs</DependentUpon></Compile>

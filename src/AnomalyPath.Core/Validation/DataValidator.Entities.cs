@@ -14,6 +14,7 @@ using AnomalyPath.Core.Progression;
 using AnomalyPath.Core.Quests;
 using AnomalyPath.Core.Repositories;
 using AnomalyPath.Core.Rules;
+using AnomalyPath.Core.Spawns;
 using AnomalyPath.Core.Talents;
 using AnomalyPath.Core.Templates;
 using AnomalyPath.Core.World;
@@ -138,6 +139,10 @@ namespace AnomalyPath.Core.Validation
                 else if (kind == "lootTables")
                 {
                     Try(() => LootTable.FromJson(resolved, pair.Key), issues);
+                }
+                else if (kind == "spawns")
+                {
+                    Try(() => SpawnEntry.FromJson(resolved, pair.Key), issues);
                 }
                 else if (kind == LootSettings.RecordId)
                 {
